@@ -1,5 +1,6 @@
 import Wedding from '../models/Wedding.js';
 import Task from '../models/Task.js';
+import Event from '../models/Event.js';
 import { calculateProgress } from '../utils/helpers.js';
 
 export const getWeddings = async (req, res) => {
@@ -59,6 +60,7 @@ export const getWedding = async (req, res) => {
 
     const tasks = await Task.find({ wedding: wedding._id })
       .populate('assignedTo', 'name')
+      .populate('event', 'name eventDate')
       .sort({ dueDate: 1 });
 
     const tasksByCategory = tasks.reduce((acc, task) => {
@@ -66,6 +68,27 @@ export const getWedding = async (req, res) => {
       acc[task.category].push(task);
       return acc;
     }, {});
+
+    // Fetch events sorted ascending by eventDate
+    const events = await Event.find({ wedding: wedding._id })
+      .populate('assignedTeam.user', 'name email avatar')
+      .sort({ eventDate: 1 });
+
+    // Add task stats per event
+    const eventsWithStats = await Promise.all(
+      events.map(async (event) => {
+        const eventTasks = await Task.find({ event: event._id });
+        const total = eventTasks.length;
+        const completed = eventTasks.filter(t => t.status === 'done' || t.status === 'verified').length;
+        const pending = eventTasks.filter(t => t.status === 'pending').length;
+        const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+        return {
+          ...event.toObject(),
+          taskStats: { total, completed, pending },
+          progress
+        };
+      })
+    );
 
     res.json({
       wedding: {
@@ -78,7 +101,8 @@ export const getWedding = async (req, res) => {
         }
       },
       tasks,
-      tasksByCategory
+      tasksByCategory,
+      events: eventsWithStats
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -127,6 +151,8 @@ export const deleteWedding = async (req, res) => {
       return res.status(404).json({ message: 'Wedding not found' });
     }
 
+    // Cascade delete events and tasks
+    await Event.deleteMany({ wedding: req.params.id });
     await Task.deleteMany({ wedding: req.params.id });
 
     res.json({ message: 'Wedding deleted' });

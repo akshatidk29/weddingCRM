@@ -5,6 +5,7 @@ import {
   Heart, 
   CheckSquare, 
   Store,
+  Wallet,
   Settings,
   ChevronLeft,
   ChevronRight
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Weddings', href: '/weddings', icon: Heart },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Vendors', href: '/vendors', icon: Store },
+  { name: 'Budget', href: '/budget', icon: Wallet },
 ];
 
 export function Sidebar() {

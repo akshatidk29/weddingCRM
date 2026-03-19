@@ -15,11 +15,19 @@ const vendorSchema = new mongoose.Schema({
   email: {
     type: String,
     lowercase: true,
-    trim: true
+    trim: true,
+    match: [/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Please enter a valid email address']
   },
   phone: {
     type: String,
-    trim: true
+    trim: true,
+    validate: {
+      validator: function(v) {
+        if (!v) return true;
+        return /^\d{10}$/.test(v);
+      },
+      message: 'Phone number must be exactly 10 digits'
+    }
   },
   address: String,
   city: String,

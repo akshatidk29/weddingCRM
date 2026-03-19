@@ -1,5 +1,46 @@
 import mongoose from 'mongoose';
 
+const subtaskSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: [true, 'Subtask title is required'],
+    trim: true
+  },
+  completed: {
+    type: Boolean,
+    default: false
+  },
+  completedAt: Date,
+  amount: { type: Number, default: 0 },
+  paidAmount: { type: Number, default: 0 },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'partial', 'completed'],
+    default: 'pending'
+  }
+}, { _id: true });
+
+const taskVendorSchema = new mongoose.Schema({
+  vendor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vendor',
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'completed'],
+    default: 'pending'
+  },
+  completedAt: Date,
+  amount: { type: Number, default: 0 },
+  paidAmount: { type: Number, default: 0 },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'partial', 'completed'],
+    default: 'pending'
+  }
+}, { _id: true });
+
 const taskSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -27,6 +68,10 @@ const taskSchema = new mongoose.Schema({
     ref: 'Wedding',
     required: true
   },
+  event: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Event'
+  },
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -43,6 +88,8 @@ const taskSchema = new mongoose.Schema({
     ref: 'User'
   },
   notes: String,
+  subtasks: [subtaskSchema],
+  taskVendors: [taskVendorSchema],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -55,5 +102,7 @@ const taskSchema = new mongoose.Schema({
 taskSchema.index({ wedding: 1, category: 1 });
 taskSchema.index({ status: 1 });
 taskSchema.index({ dueDate: 1 });
+taskSchema.index({ 'taskVendors.vendor': 1 });
+taskSchema.index({ event: 1 });
 
 export default mongoose.model('Task', taskSchema);

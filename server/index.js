@@ -9,7 +9,10 @@ import weddingRoutes from './src/routes/weddings.js';
 import taskRoutes from './src/routes/tasks.js';
 import vendorRoutes from './src/routes/vendors.js';
 import dashboardRoutes from './src/routes/dashboard.js';
+import budgetRoutes from './src/routes/budget.js';
+import eventRoutes from './src/routes/events.js';
 import { errorHandler, notFound } from './src/middleware/errorHandler.js';
+import { startNotificationScheduler } from './src/utils/notificationScheduler.js';
 
 dotenv.config();
 
@@ -28,6 +31,8 @@ app.use('/api/weddings', weddingRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/budget', budgetRoutes);
+app.use('/api/events', eventRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
@@ -37,6 +42,7 @@ const PORT = process.env.PORT || 5000;
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
+    startNotificationScheduler();
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });

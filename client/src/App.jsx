@@ -10,6 +10,7 @@ import Weddings from './pages/Weddings';
 import WeddingDetail from './pages/WeddingDetail';
 import Tasks from './pages/Tasks';
 import Vendors from './pages/Vendors';
+import Budget from './pages/Budget';
 import Profile from './pages/Profile';
 import Footer from "./components/layout/Footer";
 import TopNav from "./components/layout/TopNav";
@@ -68,6 +69,7 @@ function App() {
             <Route path="/weddings/:id" element={<WeddingDetail />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/vendors" element={<Vendors />} />
+            <Route path="/budget" element={<Budget />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
 
