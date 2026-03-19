@@ -9,6 +9,7 @@ import Weddings from './pages/Weddings';
 import WeddingDetail from './pages/WeddingDetail';
 import Tasks from './pages/Tasks';
 import Vendors from './pages/Vendors';
+import Budget from './pages/Budget';
 import Settings from './pages/Settings';
 
 function PrivateRoute({ children }) {
@@ -55,6 +56,7 @@ function App() {
             <Route path="/weddings/:id" element={<WeddingDetail />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/vendors" element={<Vendors />} />
+            <Route path="/budget" element={<Budget />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>

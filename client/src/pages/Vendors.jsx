@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Phone, Mail, MapPin, Star, Edit, Trash } from 'lucide-react';
+import { Plus, Search, Phone, Mail, MapPin, Star, Edit, Trash, CheckSquare, Clock, ChevronDown, ChevronRight, Store, PartyPopper } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -17,15 +17,30 @@ export default function Vendors() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingVendor, setEditingVendor] = useState(null);
-  const [filter, setFilter] = useState({ category: '', search: '' });
+  const [filter, setFilter] = useState({ category: '', search: '', wedding: '', event: '' });
+  const [weddings, setWeddings] = useState([]);
+  const [filterEvents, setFilterEvents] = useState([]);
   const [formData, setFormData] = useState({
     name: '', category: 'other', contactPerson: '', email: '', phone: '',
     address: '', city: '', rating: 3, priceRange: 'moderate', notes: ''
   });
+  const [expandedVendor, setExpandedVendor] = useState(null);
+  const [linkedTasks, setLinkedTasks] = useState({});
+  const [linkedEvents, setLinkedEvents] = useState({});
 
   useEffect(() => {
     loadVendors();
+    loadWeddings();
   }, []);
+
+  const loadWeddings = async () => {
+    try {
+      const res = await api.get('/weddings');
+      setWeddings(res.data.weddings);
+    } catch (error) {
+      console.error('Failed to load weddings:', error);
+    }
+  };
 
   const loadVendors = async () => {
     try {
@@ -35,6 +50,61 @@ export default function Vendors() {
       console.error('Failed to load vendors:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLinkedTasks = async (vendorId) => {
+    try {
+      const res = await api.get(`/tasks/by-vendor/${vendorId}`);
+      setLinkedTasks(prev => ({ ...prev, [vendorId]: res.data.tasks }));
+    } catch (error) {
+      console.error('Failed to load linked tasks:', error);
+    }
+  };
+
+  const loadLinkedEventsForVendor = async (vendorId) => {
+    try {
+      const res = await api.get(`/vendors/${vendorId}/linked-events`);
+      setLinkedEvents(prev => ({ ...prev, [vendorId]: res.data.events || [] }));
+    } catch (error) {
+      console.error('Failed to load linked events:', error);
+    }
+  };
+
+  const toggleVendorExpand = async (vendor) => {
+    if (expandedVendor === vendor._id) {
+      setExpandedVendor(null);
+    } else {
+      setExpandedVendor(vendor._id);
+      if (!linkedTasks[vendor._id]) {
+        await loadLinkedTasks(vendor._id);
+      }
+      if (!linkedEvents[vendor._id]) {
+        await loadLinkedEventsForVendor(vendor._id);
+      }
+    }
+  };
+
+  const handleToggleVendorAcrossTasks = async (vendorId, currentStatus) => {
+    // Determine target status. If currently any task has this vendor as pending, we probably want to mark all as completed.
+    // If all are completed, we mark all as pending. 
+    // We'll calculate current state from linkedTasks view.
+    const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+
+    try {
+      const res = await api.put(`/tasks/vendor-toggle/${vendorId}`, { status: newStatus });
+      setLinkedTasks(prev => ({ ...prev, [vendorId]: res.data.tasks }));
+    } catch (error) {
+      console.error('Failed to toggle vendor status across tasks', error);
+    }
+  };
+
+  const handleUpdateVendorTaskStatus = async (taskId, vendorId, status, vendorObjId) => {
+    try {
+      await api.put(`/tasks/${taskId}/vendors/${vendorId}`, { status });
+      await loadLinkedTasks(vendorObjId);
+    } catch (error) {
+      console.error('Failed to update vendor status:', error);
     }
   };
 
@@ -89,13 +159,51 @@ export default function Vendors() {
     });
   };
 
+  // Filter wedding change handler
+  const handleFilterWeddingChange = async (weddingId) => {
+    setFilter({ ...filter, wedding: weddingId, event: '' });
+    if (weddingId) {
+      try {
+        const res = await api.get(`/events/wedding/${weddingId}`);
+        setFilterEvents(res.data.events || []);
+      } catch (error) {
+        setFilterEvents([]);
+      }
+    } else {
+      setFilterEvents([]);
+    }
+  };
+
+  // Build a set of vendor IDs that match the wedding/event filter
+  const getFilteredVendorIds = () => {
+    if (!filter.wedding && !filter.event) return null; // no filtering
+    // We need to check linkedTasks across all vendors, but we may not have loaded them all.
+    // Instead, we'll do a lightweight check: if wedding/event filter is set, only show vendors
+    // whose linked tasks (if loaded) match. For vendors not yet expanded, we include them
+    // and filter will be refined when they expand.
+    return null; // We'll handle this client-side with available data
+  };
+
   const filteredVendors = vendors.filter(v => {
     if (filter.category && v.category !== filter.category) return false;
     if (filter.search) {
       const search = filter.search.toLowerCase();
-      return v.name.toLowerCase().includes(search) || 
-             v.contactPerson?.toLowerCase().includes(search) ||
-             v.city?.toLowerCase().includes(search);
+      if (!v.name.toLowerCase().includes(search) && 
+          !v.contactPerson?.toLowerCase().includes(search) &&
+          !v.city?.toLowerCase().includes(search)) return false;
+    }
+    // Filter by wedding/event if linked tasks are loaded
+    if (filter.wedding || filter.event) {
+      const tasks = linkedTasks[v._id];
+      if (tasks) {
+        const hasMatch = tasks.some(t => {
+          if (filter.event) return (t.event?._id || t.event) === filter.event;
+          if (filter.wedding) return (t.wedding?._id || t.wedding) === filter.wedding;
+          return true;
+        });
+        if (!hasMatch) return false;
+      }
+      // If tasks not loaded yet, include the vendor (we can't filter what we haven't fetched)
     }
     return true;
   });
@@ -145,6 +253,22 @@ export default function Vendors() {
           placeholder="All Categories"
           className="w-48"
         />
+        <Select
+          value={filter.wedding}
+          onChange={(e) => handleFilterWeddingChange(e.target.value)}
+          options={weddings.map(w => ({ value: w._id, label: w.name }))}
+          placeholder="All Weddings"
+          className="w-48"
+        />
+        {filter.wedding && filterEvents.length > 0 && (
+          <Select
+            value={filter.event}
+            onChange={(e) => setFilter({ ...filter, event: e.target.value })}
+            options={filterEvents.map(ev => ({ value: ev._id, label: ev.name }))}
+            placeholder="All Events"
+            className="w-48"
+          />
+        )}
       </div>
 
       {filteredVendors.length === 0 ? (
@@ -157,79 +281,182 @@ export default function Vendors() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredVendors.map(vendor => (
-            <Card key={vendor._id} hover glow className="group">
-              <CardContent className="p-5">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-2xl">
-                    {getCategoryIcon(vendor.category)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-white">{vendor.name}</h3>
-                        <p className="text-sm text-gray-500 capitalize">{vendor.category}</p>
+          {filteredVendors.map(vendor => {
+            const isExpanded = expandedVendor === vendor._id;
+            const vendorTasks = linkedTasks[vendor._id] || [];
+
+            return (
+              <Card key={vendor._id} hover glow className="group">
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-2xl">
+                      {getCategoryIcon(vendor.category)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-semibold text-white">{vendor.name}</h3>
+                          <p className="text-sm text-gray-500 capitalize">{vendor.category}</p>
+                        </div>
+                        <span className="text-sm text-green-400">{priceLabels[vendor.priceRange]}</span>
                       </div>
-                      <span className="text-sm text-green-400">{priceLabels[vendor.priceRange]}</span>
                     </div>
                   </div>
-                </div>
 
-                {vendor.contactPerson && (
-                  <p className="mt-3 text-sm text-gray-400">{vendor.contactPerson}</p>
-                )}
+                  {vendor.contactPerson && (
+                    <p className="mt-3 text-sm text-gray-400">{vendor.contactPerson}</p>
+                  )}
 
-                <div className="mt-3 space-y-1 text-sm text-gray-500">
-                  {vendor.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3 h-3" />
-                      <span>{vendor.phone}</span>
-                    </div>
-                  )}
-                  {vendor.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-3 h-3" />
-                      <span className="truncate">{vendor.email}</span>
-                    </div>
-                  )}
-                  {vendor.city && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3 h-3" />
-                      <span>{vendor.city}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 flex items-center justify-between pt-3 border-t border-white/[0.06]">
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${i < vendor.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`}
-                      />
-                    ))}
+                  <div className="mt-3 space-y-1 text-sm text-gray-500">
+                    {vendor.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3 h-3" />
+                        <span>{vendor.phone}</span>
+                      </div>
+                    )}
+                    {vendor.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-3 h-3" />
+                        <span className="truncate">{vendor.email}</span>
+                      </div>
+                    )}
+                    {vendor.city && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3 h-3" />
+                        <span>{vendor.city}</span>
+                      </div>
+                    )}
                   </div>
-                  
-                  {isManager && (
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handleEdit(vendor)}
-                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(vendor._id)}
-                        className="p-2 hover:bg-red-500/20 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
-                      >
-                        <Trash className="w-4 h-4" />
-                      </button>
+
+                  {/* Linked Events Tags */}
+                  {linkedEvents[vendor._id] && linkedEvents[vendor._id].length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {linkedEvents[vendor._id].map(ev => (
+                        <span key={ev._id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 text-xs font-medium">
+                          <PartyPopper className="w-3 h-3" />
+                          {ev.name}
+                        </span>
+                      ))}
                     </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+
+                  {/* Linked Tasks Button */}
+                  <button
+                    onClick={() => toggleVendorExpand(vendor)}
+                    className="mt-3 w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] transition-colors text-sm"
+                  >
+                    <span className="flex items-center gap-2 text-gray-400">
+                      <CheckSquare className="w-3.5 h-3.5" />
+                      Linked Tasks
+                    </span>
+                    {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-gray-500" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
+                  </button>
+
+                  {/* Expanded Linked Tasks */}
+                  {isExpanded && (
+                    <div className="mt-2 space-y-1.5 border-t border-white/[0.06] pt-2">
+                      {vendorTasks.length > 0 && (
+                        <>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-gray-400 uppercase font-semibold">Mark All</span>
+                            <button
+                              onClick={() => {
+                                const allCompleted = vendorTasks.every(t => t.taskVendors.find(tv => tv.vendor._id === vendor._id)?.status === 'completed');
+                                handleToggleVendorAcrossTasks(vendor._id, allCompleted ? 'completed' : 'pending');
+                              }}
+                              className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                            >
+                              Toggle Across Tasks
+                            </button>
+                          </div>
+                          <div className="px-3 py-2 bg-blue-500/10 rounded-lg mb-2 flex justify-between">
+                            <span className="text-xs text-blue-300">Total Budget: ${vendorTasks.reduce((sum, t) => sum + Math.abs(t.taskVendors.find(tv => tv.vendor?._id === vendor._id)?.amount || 0), 0)}</span>
+                            <span className="text-xs text-green-300">Paid: ${vendorTasks.reduce((sum, t) => sum + Math.abs(t.taskVendors.find(tv => tv.vendor?._id === vendor._id)?.paidAmount || 0), 0)}</span>
+                          </div>
+                        </>
+                      )}
+                      
+                      {vendorTasks.length === 0 ? (
+                        <p className="text-xs text-gray-500 text-center py-2">No tasks linked to this vendor</p>
+                      ) : (
+                        vendorTasks.map(task => {
+                          const vendorEntry = task.taskVendors?.find(tv => tv.vendor?._id === vendor._id);
+                          if (!vendorEntry) return null;
+
+                          return (
+                            <div key={task._id} className="px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm text-white flex-1">{task.title}</p>
+                                <Badge size="sm" variant={task.status === 'verified' ? 'success' : task.status === 'done' ? 'info' : 'warning'}>
+                                  {task.status}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                {task.wedding && <span className="text-xs text-gray-500">{task.wedding.name}</span>}
+                                {task.event && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 text-xs font-medium">
+                                    <PartyPopper className="w-2.5 h-2.5" />
+                                    {task.event.name}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <button
+                                  onClick={() => handleUpdateVendorTaskStatus(task._id, vendorEntry._id, vendorEntry.status === 'completed' ? 'pending' : 'completed', vendor._id)}
+                                  className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                                    vendorEntry.status === 'completed' ? 'bg-green-500 border-green-500' : 'border-gray-600 hover:border-purple-500'
+                                  }`}
+                                >
+                                  {vendorEntry.status === 'completed' && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                </button>
+                                <span className={`text-xs flex-1 ${vendorEntry.status === 'completed' ? 'text-green-400' : 'text-gray-400'}`}>
+                                  {vendorEntry.status === 'completed' ? 'Completed for this task' : 'Pending for this task'}
+                                </span>
+                                {vendorEntry.amount !== 0 && (
+                                  <Badge size="sm" variant={vendorEntry.paymentStatus === 'completed' ? 'success' : vendorEntry.paymentStatus === 'partial' ? 'warning' : 'secondary'}>
+                                    ${Math.abs(vendorEntry.amount)} / Paid: ${Math.abs(vendorEntry.paidAmount || 0)}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-4 flex items-center justify-between pt-3 border-t border-white/[0.06]">
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${i < vendor.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`}
+                        />
+                      ))}
+                    </div>
+                    
+                    {isManager && (
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEdit(vendor)}
+                          className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(vendor._id)}
+                          className="p-2 hover:bg-red-500/20 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
+                        >
+                          <Trash className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

@@ -5,7 +5,8 @@ import {
   createVendor,
   updateVendor,
   deleteVendor,
-  getVendorsByCategory
+  getVendorsByCategory,
+  getVendorLinkedEvents
 } from '../controllers/vendorController.js';
 import { protect, isAdminOrManager } from '../middleware/auth.js';
 
@@ -18,6 +19,8 @@ router.get('/by-category', getVendorsByCategory);
 router.route('/')
   .get(getVendors)
   .post(isAdminOrManager, createVendor);
+
+router.get('/:id/linked-events', getVendorLinkedEvents);
 
 router.route('/:id')
   .get(getVendor)

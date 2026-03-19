@@ -1,4 +1,5 @@
 import Vendor from '../models/Vendor.js';
+import Task from '../models/Task.js';
 
 export const getVendors = async (req, res) => {
   try {
@@ -98,6 +99,37 @@ export const getVendorsByCategory = async (req, res) => {
     }, {});
 
     res.json({ vendors: byCategory });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get linked events & weddings for a vendor
+export const getVendorLinkedEvents = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+
+    const tasks = await Task.find({ 'taskVendors.vendor': vendorId })
+      .populate('event', 'name eventDate status')
+      .populate('wedding', 'name weddingDate');
+
+    // Deduplicate events
+    const eventsMap = {};
+    const weddingsMap = {};
+
+    tasks.forEach(task => {
+      if (task.event) {
+        eventsMap[task.event._id.toString()] = task.event;
+      }
+      if (task.wedding) {
+        weddingsMap[task.wedding._id.toString()] = task.wedding;
+      }
+    });
+
+    res.json({
+      events: Object.values(eventsMap),
+      weddings: Object.values(weddingsMap)
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
