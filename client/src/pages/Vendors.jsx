@@ -1,15 +1,43 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Phone, Mail, MapPin, Star, Edit, Trash } from 'lucide-react';
-import { Card, CardContent } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { Modal } from '../components/ui/Modal';
-import { Input, Select, Textarea } from '../components/ui/Input';
-import { PageLoader } from '../components/ui/Loader';
-import { EmptyState } from '../components/ui/EmptyState';
+import { Plus, Search, Phone, Mail, MapPin, Star, Edit, Building2, ChevronRight } from 'lucide-react';
+import { 
+  Button, Badge, Modal, ModalFooter, Input, Select, Textarea,
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableEmpty,
+  EmptyState
+} from '../components/common';
+import { PageHeader } from '../components/layout/PageHeader';
 import { vendorCategories } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
+
+const priceConfig = {
+  budget: { label: 'Budget', display: '$' },
+  moderate: { label: 'Moderate', display: '$$' },
+  premium: { label: 'Premium', display: '$$$' },
+  luxury: { label: 'Luxury', display: '$$$$' }
+};
+
+function StarRating({ rating, onChange, readonly = false }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map(star => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => !readonly && onChange?.(star)}
+          disabled={readonly}
+          className={readonly ? 'cursor-default' : 'cursor-pointer'}
+        >
+          <Star
+            className={`w-4 h-4 ${
+              star <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-400'
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function Vendors() {
   const { isManager } = useAuth();
@@ -17,6 +45,7 @@ export default function Vendors() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingVendor, setEditingVendor] = useState(null);
+  const [selectedVendor, setSelectedVendor] = useState(null);
   const [filter, setFilter] = useState({ category: '', search: '' });
   const [formData, setFormData] = useState({
     name: '', category: 'other', contactPerson: '', email: '', phone: '',
@@ -53,7 +82,8 @@ export default function Vendors() {
     }
   };
 
-  const handleEdit = (vendor) => {
+  const handleEdit = (vendor, e) => {
+    e?.stopPropagation();
     setEditingVendor(vendor);
     setFormData({
       name: vendor.name,
@@ -75,6 +105,7 @@ export default function Vendors() {
     try {
       await api.delete(`/vendors/${id}`);
       loadVendors();
+      setSelectedVendor(null);
     } catch (error) {
       console.error('Failed to delete vendor:', error);
     }
@@ -100,244 +131,318 @@ export default function Vendors() {
     return true;
   });
 
-  const getCategoryIcon = (category) => {
-    const icons = {
-      catering: '🍽️', decor: '🎨', photography: '📷', videography: '🎥',
-      music: '🎵', makeup: '💄', venue: '🏰', transport: '🚗',
-      invitation: '💌', other: '📦'
-    };
-    return icons[category] || '📦';
-  };
+  const categoryOptions = vendorCategories.map(c => ({ value: c.value, label: c.label }));
+  const priceOptions = [
+    { value: 'budget', label: 'Budget ($)' },
+    { value: 'moderate', label: 'Moderate ($$)' },
+    { value: 'premium', label: 'Premium ($$$)' },
+    { value: 'luxury', label: 'Luxury ($$$$)' }
+  ];
 
-  const priceLabels = { budget: '$', moderate: '$$', premium: '$$$', luxury: '$$$$' };
-
-  if (loading) return <PageLoader />;
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin h-8 w-8 border-2 border-blue-600 border-t-transparent rounded-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Vendors</h1>
-          <p className="text-gray-400">Manage your vendor directory</p>
-        </div>
-        {isManager && (
-          <Button icon={Plus} onClick={() => setShowModal(true)}>
-            Add Vendor
-          </Button>
-        )}
-      </div>
+    <div className="max-w-7xl mx-auto px-6 py-8">
+      <PageHeader 
+        title="Vendors"
+        description="Manage your vendor directory"
+        actions={
+          isManager && (
+            <Button icon={Plus} onClick={() => setShowModal(true)}>
+              Add Vendor
+            </Button>
+          )
+        }
+      />
 
-      <div className="flex flex-wrap gap-4">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search vendors..."
             value={filter.search}
             onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50"
+            className="w-full pl-10 pr-4 py-2 text-sm rounded-md bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
         </div>
         <Select
           value={filter.category}
           onChange={(e) => setFilter({ ...filter, category: e.target.value })}
-          options={vendorCategories}
-          placeholder="All Categories"
+          options={[{ value: '', label: 'All Categories' }, ...categoryOptions]}
           className="w-48"
         />
       </div>
 
+      {/* Vendors Table */}
       {filteredVendors.length === 0 ? (
         <EmptyState
+          icon={Building2}
           title="No vendors found"
           description={filter.search || filter.category ? "Try adjusting your filters" : "Add your first vendor to get started"}
-          action={isManager && !filter.search && !filter.category && (
-            <Button icon={Plus} onClick={() => setShowModal(true)}>Add Vendor</Button>
-          )}
+          action={
+            isManager && !filter.search && !filter.category && (
+              <Button icon={Plus} onClick={() => setShowModal(true)}>Add Vendor</Button>
+            )
+          }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredVendors.map(vendor => (
-            <Card key={vendor._id} hover glow className="group">
-              <CardContent className="p-5">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-2xl">
-                    {getCategoryIcon(vendor.category)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-white">{vendor.name}</h3>
-                        <p className="text-sm text-gray-500 capitalize">{vendor.category}</p>
+        <div className="bg-white rounded-lg border border-gray-200">
+          <Table>
+            <TableHeader>
+              <TableRow hover={false}>
+                <TableHead>Vendor</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead>Price Range</TableHead>
+                {isManager && <TableHead></TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredVendors.map((vendor) => (
+                <TableRow 
+                  key={vendor._id}
+                  onClick={() => setSelectedVendor(vendor)}
+                  className="cursor-pointer"
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center">
+                        <Building2 className="h-5 w-5 text-gray-400" />
                       </div>
-                      <span className="text-sm text-green-400">{priceLabels[vendor.priceRange]}</span>
+                      <div>
+                        <p className="font-medium text-gray-900">{vendor.name}</p>
+                        <p className="text-xs text-gray-400 capitalize">{vendor.category}</p>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                {vendor.contactPerson && (
-                  <p className="mt-3 text-sm text-gray-400">{vendor.contactPerson}</p>
-                )}
-
-                <div className="mt-3 space-y-1 text-sm text-gray-500">
-                  {vendor.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3 h-3" />
-                      <span>{vendor.phone}</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-0.5">
+                      {vendor.contactPerson && (
+                        <p className="text-sm">{vendor.contactPerson}</p>
+                      )}
+                      {vendor.phone && (
+                        <div className="flex items-center gap-1.5 text-sm text-gray-400">
+                          <Phone className="h-3.5 w-3.5" />
+                          {vendor.phone}
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {vendor.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-3 h-3" />
-                      <span className="truncate">{vendor.email}</span>
-                    </div>
-                  )}
-                  {vendor.city && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3 h-3" />
-                      <span>{vendor.city}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 flex items-center justify-between pt-3 border-t border-white/[0.06]">
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${i < vendor.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`}
-                      />
-                    ))}
-                  </div>
-                  
+                  </TableCell>
+                  <TableCell>
+                    {vendor.city ? (
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                        {vendor.city}
+                      </div>
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell>
+                    <StarRating rating={vendor.rating || 0} readonly />
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="default">
+                      {priceConfig[vendor.priceRange]?.display || '$$'}
+                    </Badge>
+                  </TableCell>
                   {isManager && (
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <TableCell>
                       <button
-                        onClick={() => handleEdit(vendor)}
-                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
+                        onClick={(e) => handleEdit(vendor, e)}
+                        className="p-1.5 rounded-sm text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(vendor._id)}
-                        className="p-2 hover:bg-red-500/20 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
-                      >
-                        <Trash className="w-4 h-4" />
-                      </button>
-                    </div>
+                    </TableCell>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 
+      {/* Vendor Detail Modal */}
+      <Modal
+        isOpen={!!selectedVendor}
+        onClose={() => setSelectedVendor(null)}
+        title={selectedVendor?.name}
+        size="md"
+      >
+        {selectedVendor && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Badge variant="default">{selectedVendor.category}</Badge>
+              <Badge variant="default">{priceConfig[selectedVendor.priceRange]?.label}</Badge>
+            </div>
+            
+            <div className="space-y-3 pt-2">
+              {selectedVendor.contactPerson && (
+                <div>
+                  <p className="text-xs text-gray-400 uppercase">Contact Person</p>
+                  <p className="text-sm font-medium">{selectedVendor.contactPerson}</p>
+                </div>
+              )}
+              
+              {selectedVendor.phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm">{selectedVendor.phone}</span>
+                </div>
+              )}
+              
+              {selectedVendor.email && (
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm">{selectedVendor.email}</span>
+                </div>
+              )}
+              
+              {(selectedVendor.address || selectedVendor.city) && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm">
+                    {[selectedVendor.address, selectedVendor.city].filter(Boolean).join(', ')}
+                  </span>
+                </div>
+              )}
+
+              <div>
+                <p className="text-xs text-gray-400 uppercase mb-1">Rating</p>
+                <StarRating rating={selectedVendor.rating || 0} readonly />
+              </div>
+              
+              {selectedVendor.notes && (
+                <div>
+                  <p className="text-xs text-gray-400 uppercase mb-1">Notes</p>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{selectedVendor.notes}</p>
+                </div>
+              )}
+            </div>
+
+            {isManager && (
+              <ModalFooter>
+                <Button variant="danger" onClick={() => handleDelete(selectedVendor._id)}>
+                  Delete
+                </Button>
+                <Button onClick={(e) => { setSelectedVendor(null); handleEdit(selectedVendor, e); }}>
+                  Edit
+                </Button>
+              </ModalFooter>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Add/Edit Vendor Modal */}
       <Modal
         isOpen={showModal}
         onClose={closeModal}
         title={editingVendor ? 'Edit Vendor' : 'Add Vendor'}
         size="lg"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Vendor Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-            <Select
-              label="Category"
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              options={vendorCategories}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Contact Person"
-              value={formData.contactPerson}
-              onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-            />
-            <Input
-              label="Phone"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            />
-          </div>
-
-          <Input
-            label="Email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            />
-            <Input
-              label="City"
-              value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-400">Rating</label>
-              <div className="flex items-center gap-1 py-2">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, rating: star })}
-                    className="p-1"
-                  >
-                    <Star
-                      className={`w-6 h-6 transition-colors ${
-                        star <= formData.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Vendor Name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Vendor name"
+                required
+              />
+              <Select
+                label="Category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                options={categoryOptions}
+              />
             </div>
-            <Select
-              label="Price Range"
-              value={formData.priceRange}
-              onChange={(e) => setFormData({ ...formData, priceRange: e.target.value })}
-              options={[
-                { value: 'budget', label: 'Budget ($)' },
-                { value: 'moderate', label: 'Moderate ($$)' },
-                { value: 'premium', label: 'Premium ($$$)' },
-                { value: 'luxury', label: 'Luxury ($$$$)' }
-              ]}
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Contact Person"
+                value={formData.contactPerson}
+                onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+                placeholder="Contact name"
+              />
+              <Input
+                label="Phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+91 9876543210"
+              />
+            </div>
+
+            <Input
+              label="Email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="vendor@email.com"
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                placeholder="Street address"
+              />
+              <Input
+                label="City"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                placeholder="City"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-900">Rating</label>
+                <div className="py-2">
+                  <StarRating 
+                    rating={formData.rating} 
+                    onChange={(rating) => setFormData({ ...formData, rating })} 
+                  />
+                </div>
+              </div>
+              <Select
+                label="Price Range"
+                value={formData.priceRange}
+                onChange={(e) => setFormData({ ...formData, priceRange: e.target.value })}
+                options={priceOptions}
+              />
+            </div>
+
+            <Textarea
+              label="Notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Additional notes about this vendor..."
+              rows={3}
             />
           </div>
 
-          <Textarea
-            label="Notes"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            rows={3}
-          />
-
-          <div className="flex gap-3 pt-4">
+          <ModalFooter>
             <Button type="button" variant="secondary" onClick={closeModal}>
               Cancel
             </Button>
-            <Button type="submit" className="flex-1">
+            <Button type="submit">
               {editingVendor ? 'Update Vendor' : 'Add Vendor'}
             </Button>
-          </div>
+          </ModalFooter>
         </form>
       </Modal>
     </div>

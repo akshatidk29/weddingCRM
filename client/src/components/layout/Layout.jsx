@@ -1,33 +1,26 @@
 import { Outlet, Navigate } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
-import { Topbar } from './Topbar';
 import { useAuth } from '../../context/AuthContext';
-import { PageLoader } from '../ui/Loader';
 
 export function Layout() {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <PageLoader />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin h-8 w-8 border-2 border-blue-600 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
-      <Sidebar />
-      <div className="ml-64 min-h-screen transition-all duration-300">
-        <Topbar />
-        <main className="p-6">
-          <Outlet />
-        </main>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <main>
+        <Outlet />
+      </main>
     </div>
   );
 }

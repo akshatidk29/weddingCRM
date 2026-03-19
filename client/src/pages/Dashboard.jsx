@@ -1,22 +1,60 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Users, Heart, CheckSquare, AlertTriangle, TrendingUp, 
-  Calendar, ArrowUpRight, Clock
+  Users, Heart, CheckSquare, TrendingUp, 
+  Calendar, ArrowRight, Clock, AlertCircle
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { PageLoader } from '../components/ui/Loader';
-import { formatDate, formatRelative, daysUntil, formatCurrency } from '../utils/helpers';
+import { Card, Badge } from '../components/common';
+import { PageHeader } from '../components/layout/PageHeader';
+import { formatDate, formatRelative, daysUntil } from '../utils/helpers';
+import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
+function MetricCard({ label, value, change, icon: Icon, trend }) {
+  return (
+    <div className="flex items-center gap-4 p-5 bg-white rounded-lg border border-gray-200">
+      <div className="p-3 rounded-md bg-gray-100">
+        <Icon className="h-5 w-5 text-gray-600" />
+      </div>
+      <div>
+        <p className="text-2xl font-semibold text-gray-900">{value}</p>
+        <p className="text-sm text-gray-500">{label}</p>
+        {change && (
+          <p className={`text-xs mt-0.5 ${trend === 'up' ? 'text-emerald-600' : 'text-gray-400'}`}>
+            {change}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({ title, action, actionHref }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+      {action && (
+        <Link 
+          to={actionHref} 
+          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+        >
+          {action}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export default function Dashboard() {
+  const { user, isManager } = useAuth();
   const [stats, setStats] = useState(null);
   const [activity, setActivity] = useState(null);
   const [monthlyData, setMonthlyData] = useState(null);
+  const [myTasks, setMyTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,14 +63,22 @@ export default function Dashboard() {
 
   const loadDashboard = async () => {
     try {
-      const [statsRes, activityRes, monthlyRes] = await Promise.all([
-        api.get('/dashboard/stats'),
-        api.get('/dashboard/activity'),
-        api.get('/dashboard/monthly')
-      ]);
-      setStats(statsRes.data.stats);
-      setActivity(activityRes.data);
-      setMonthlyData(monthlyRes.data);
+      // Team members see limited dashboard
+      if (!isManager) {
+        const [tasksRes] = await Promise.all([
+          api.get('/tasks/my-tasks')
+        ]);
+        setMyTasks(tasksRes.data.tasks || []);
+      } else {
+        const [statsRes, activityRes, monthlyRes] = await Promise.all([
+          api.get('/dashboard/stats'),
+          api.get('/dashboard/activity'),
+          api.get('/dashboard/monthly')
+        ]);
+        setStats(statsRes.data.stats);
+        setActivity(activityRes.data);
+        setMonthlyData(monthlyRes.data);
+      }
     } catch (error) {
       console.error('Failed to load dashboard:', error);
     } finally {
@@ -40,38 +86,15 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) return <PageLoader />;
-
-  const statCards = [
-    { 
-      label: 'Total Leads', 
-      value: stats?.totalLeads || 0, 
-      icon: Users, 
-      color: 'from-blue-500 to-cyan-500',
-      change: `+${stats?.newLeadsThisMonth || 0} this month`
-    },
-    { 
-      label: 'Active Weddings', 
-      value: stats?.activeWeddings || 0, 
-      icon: Heart, 
-      color: 'from-pink-500 to-rose-500',
-      change: 'Currently planning'
-    },
-    { 
-      label: 'Pending Tasks', 
-      value: stats?.pendingTasks || 0, 
-      icon: CheckSquare, 
-      color: 'from-purple-500 to-violet-500',
-      change: `${stats?.overdueTasks || 0} overdue`
-    },
-    { 
-      label: 'Conversion Rate', 
-      value: `${stats?.conversionRate || 0}%`, 
-      icon: TrendingUp, 
-      color: 'from-green-500 to-emerald-500',
-      change: `${stats?.conversions || 0} bookings`
-    }
-  ];
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin h-8 w-8 border-2 border-blue-600 border-t-transparent rounded-full" />
+        </div>
+      </div>
+    );
+  }
 
   const chartData = monthlyData?.leadsPerMonth?.map(item => ({
     month: new Date(item._id.year, item._id.month - 1).toLocaleDateString('en', { month: 'short' }),
@@ -81,212 +104,361 @@ export default function Dashboard() {
     )?.count || 0
   })) || [];
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-          <p className="text-gray-400">Welcome back! Here's what's happening.</p>
-        </div>
-      </div>
+  const getStageVariant = (stage) => {
+    const variants = {
+      inquiry: 'default',
+      proposal: 'warning',
+      negotiation: 'primary',
+      booked: 'success',
+      lost: 'error'
+    };
+    return variants[stage] || 'default';
+  };
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((stat, idx) => (
-          <Card key={idx} hover glow>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-400 mb-1">{stat.label}</p>
-                  <p className="text-3xl font-bold text-white">{stat.value}</p>
-                  <p className="text-xs text-gray-500 mt-1">{stat.change}</p>
-                </div>
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
-                  <stat.icon className="w-6 h-6 text-white" />
-                </div>
+  const getStatusVariant = (status) => {
+    const variants = {
+      pending: 'default',
+      in_progress: 'warning',
+      completed: 'success',
+      verified: 'primary'
+    };
+    return variants[status] || 'default';
+  };
+
+  // Team Member Dashboard - focused on their tasks
+  if (!isManager) {
+    const pendingTasks = myTasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
+    const completedTasks = myTasks.filter(t => t.status === 'completed' || t.status === 'verified');
+    const overdueTasks = myTasks.filter(t => 
+      new Date(t.dueDate) < new Date() && t.status !== 'completed' && t.status !== 'verified'
+    );
+
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <PageHeader 
+          title={`Welcome back, ${user?.name?.split(' ')[0]}`}
+          description="Here are your assigned tasks and progress."
+        />
+
+        {/* Task Summary */}
+        <section className="mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <MetricCard 
+              label="Pending Tasks"
+              value={pendingTasks.length}
+              change="Needs your attention"
+              icon={CheckSquare}
+            />
+            <MetricCard 
+              label="Completed"
+              value={completedTasks.length}
+              change="Good progress!"
+              icon={TrendingUp}
+              trend="up"
+            />
+            <MetricCard 
+              label="Overdue"
+              value={overdueTasks.length}
+              change={overdueTasks.length > 0 ? "Action required" : "All on track"}
+              icon={AlertCircle}
+            />
+          </div>
+        </section>
+
+        {/* My Tasks */}
+        <section className="mb-12">
+          <Card padding="md">
+            <SectionHeader title="My Tasks" action="View all" actionHref="/tasks" />
+            {myTasks.length > 0 ? (
+              <div className="space-y-2">
+                {myTasks.slice(0, 10).map((task) => {
+                  const isOverdue = new Date(task.dueDate) < new Date() && 
+                    task.status !== 'completed' && task.status !== 'verified';
+                  
+                  return (
+                    <Link
+                      key={task._id}
+                      to={`/weddings/${task.wedding?._id}`}
+                      className="flex items-center justify-between p-3 rounded-md hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-200"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-md flex items-center justify-center ${
+                          isOverdue ? 'bg-red-50' : 'bg-gray-100'
+                        }`}>
+                          <CheckSquare className={`h-4 w-4 ${
+                            isOverdue ? 'text-red-600' : 'text-gray-400'
+                          }`} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{task.title}</p>
+                          <p className="text-xs text-gray-400">{task.wedding?.name}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant={getStatusVariant(task.status)} size="sm">
+                          {task.status.replace('_', ' ')}
+                        </Badge>
+                        <div className={`flex items-center gap-1.5 text-xs ${
+                          isOverdue ? 'text-red-600' : 'text-gray-500'
+                        }`}>
+                          <Clock className="h-3.5 w-3.5" />
+                          {formatDate(task.dueDate)}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
-            </CardContent>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-8">
+                No tasks assigned to you yet
+              </p>
+            )}
           </Card>
-        ))}
+        </section>
       </div>
+    );
+  }
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Lead & Conversion Trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorConversions" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
-                  <YAxis stroke="#9ca3af" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1f2937', 
-                      border: '1px solid #374151',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Area type="monotone" dataKey="leads" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorLeads)" />
-                  <Area type="monotone" dataKey="conversions" stroke="#22c55e" fillOpacity={1} fill="url(#colorConversions)" />
-                </AreaChart>
-              </ResponsiveContainer>
+  // Manager/Admin Dashboard - full view
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Header */}
+      <PageHeader 
+        title={`Welcome back, ${user?.name?.split(' ')[0]}`}
+        description="Here's what's happening with your weddings today."
+      />
+
+      {/* Key Metrics */}
+      <section className="mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <MetricCard 
+            label="Total Leads"
+            value={stats?.totalLeads || 0}
+            change={`+${stats?.newLeadsThisMonth || 0} this month`}
+            icon={Users}
+            trend="up"
+          />
+          <MetricCard 
+            label="Active Weddings"
+            value={stats?.activeWeddings || 0}
+            change="Currently planning"
+            icon={Heart}
+          />
+          <MetricCard 
+            label="Pending Tasks"
+            value={stats?.pendingTasks || 0}
+            change={stats?.overdueTasks ? `${stats.overdueTasks} overdue` : 'All on track'}
+            icon={CheckSquare}
+          />
+          <MetricCard 
+            label="Conversion Rate"
+            value={`${stats?.conversionRate || 0}%`}
+            change={`${stats?.conversions || 0} bookings`}
+            icon={TrendingUp}
+            trend="up"
+          />
+        </div>
+      </section>
+
+      {/* Charts & Pipeline */}
+      <section className="mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Trends Chart */}
+          <Card className="lg:col-span-2" padding="md">
+            <SectionHeader title="Lead & Conversion Trends" />
+            <div className="h-64">
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorConversions" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#059669" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#059669" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke="#9ca3af" 
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      stroke="#9ca3af" 
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '0.375rem',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                      }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="leads" 
+                      stroke="#2563eb" 
+                      strokeWidth={2}
+                      fillOpacity={1} 
+                      fill="url(#colorLeads)" 
+                      name="Leads"
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="conversions" 
+                      stroke="#059669" 
+                      strokeWidth={2}
+                      fillOpacity={1} 
+                      fill="url(#colorConversions)" 
+                      name="Conversions"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                  No data available yet
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Pipeline Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          {/* Pipeline Overview */}
+          <Card padding="md">
+            <SectionHeader title="Pipeline Overview" />
+            <div className="space-y-3">
               {Object.entries(stats?.leadsByStage || {}).map(([stage, count]) => (
-                <div key={stage} className="flex items-center justify-between">
+                <div key={stage} className="flex items-center justify-between py-2">
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      stage === 'inquiry' ? 'bg-blue-500' :
-                      stage === 'proposal' ? 'bg-yellow-500' :
-                      stage === 'negotiation' ? 'bg-purple-500' :
-                      'bg-green-500'
+                    <div className={`w-2 h-2 rounded-full ${
+                      stage === 'inquiry' ? 'bg-gray-400' :
+                      stage === 'proposal' ? 'bg-amber-500' :
+                      stage === 'negotiation' ? 'bg-blue-600' :
+                      stage === 'booked' ? 'bg-emerald-600' :
+                      'bg-red-600'
                     }`} />
-                    <span className="text-gray-400 capitalize">{stage}</span>
+                    <span className="text-sm text-gray-600 capitalize">{stage}</span>
                   </div>
-                  <span className="text-white font-semibold">{count}</span>
+                  <span className="text-sm font-medium text-gray-900">{count}</span>
                 </div>
               ))}
+              {Object.keys(stats?.leadsByStage || {}).length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-4">No leads yet</p>
+              )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </Card>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Leads</CardTitle>
-            <Link to="/leads" className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1">
-              View all <ArrowUpRight className="w-4 h-4" />
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+      {/* Recent Activity */}
+      <section className="mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Leads */}
+          <Card padding="md">
+            <SectionHeader title="Recent Leads" action="View all" actionHref="/leads" />
+            <div className="space-y-2">
               {activity?.recentLeads?.length > 0 ? (
                 activity.recentLeads.map((lead) => (
-                  <div key={lead._id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors">
+                  <div 
+                    key={lead._id} 
+                    className="flex items-center justify-between p-3 rounded-md hover:bg-gray-100 transition-colors"
+                  >
                     <div>
-                      <p className="text-white font-medium">{lead.name}</p>
-                      <p className="text-sm text-gray-500">{formatRelative(lead.createdAt)}</p>
+                      <p className="text-sm font-medium text-gray-900">{lead.name}</p>
+                      <p className="text-xs text-gray-400">{formatRelative(lead.createdAt)}</p>
                     </div>
-                    <Badge variant={
-                      lead.stage === 'booked' ? 'success' :
-                      lead.stage === 'negotiation' ? 'primary' :
-                      lead.stage === 'proposal' ? 'warning' : 'info'
-                    }>
+                    <Badge variant={getStageVariant(lead.stage)}>
                       {lead.stage}
                     </Badge>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">No recent leads</p>
+                <p className="text-sm text-gray-400 text-center py-8">No recent leads</p>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Upcoming Tasks</CardTitle>
-            <Link to="/tasks" className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1">
-              View all <ArrowUpRight className="w-4 h-4" />
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          {/* Upcoming Tasks */}
+          <Card padding="md">
+            <SectionHeader title="Upcoming Tasks" action="View all" actionHref="/tasks" />
+            <div className="space-y-2">
               {activity?.upcomingTasks?.length > 0 ? (
                 activity.upcomingTasks.map((task) => (
-                  <div key={task._id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors">
+                  <div 
+                    key={task._id} 
+                    className="flex items-center justify-between p-3 rounded-md hover:bg-gray-100 transition-colors"
+                  >
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${
-                        task.category === 'fnb' ? 'bg-orange-500/20' :
-                        task.category === 'decor' ? 'bg-pink-500/20' :
-                        task.category === 'logistics' ? 'bg-blue-500/20' :
-                        'bg-purple-500/20'
-                      }`}>
-                        {task.category === 'fnb' ? '🍽️' :
-                         task.category === 'decor' ? '🎨' :
-                         task.category === 'logistics' ? '🚚' :
-                         task.category === 'av' ? '🎬' : '📋'}
+                      <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center">
+                        <CheckSquare className="h-4 w-4 text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-white font-medium">{task.title}</p>
-                        <p className="text-sm text-gray-500">{task.wedding?.name}</p>
+                        <p className="text-sm font-medium text-gray-900">{task.title}</p>
+                        <p className="text-xs text-gray-400">{task.wedding?.name}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                      <Clock className="w-4 h-4" />
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <Clock className="h-3.5 w-3.5" />
                       {formatDate(task.dueDate)}
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">No upcoming tasks</p>
+                <p className="text-sm text-gray-400 text-center py-8">No upcoming tasks</p>
               )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </Card>
+        </div>
+      </section>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Upcoming Weddings</CardTitle>
-          <Link to="/weddings" className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1">
-            View all <ArrowUpRight className="w-4 h-4" />
-          </Link>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {activity?.recentWeddings?.length > 0 ? (
-              activity.recentWeddings.map((wedding) => {
+      {/* Upcoming Weddings */}
+      <section className="mb-12">
+        <Card padding="md">
+          <SectionHeader title="Upcoming Weddings" action="View all" actionHref="/weddings" />
+          {activity?.recentWeddings?.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activity.recentWeddings.map((wedding) => {
                 const days = daysUntil(wedding.weddingDate);
+                const isUrgent = days !== null && days >= 0 && days <= 7;
+                
                 return (
                   <Link 
                     key={wedding._id} 
                     to={`/weddings/${wedding._id}`}
-                    className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.05] hover:border-purple-500/30 transition-all"
+                    className="block p-4 rounded-md border border-gray-200 hover:border-blue-600 hover:shadow-sm transition-all"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <p className="text-white font-semibold">{wedding.name}</p>
-                        <p className="text-sm text-gray-500">{wedding.clientName}</p>
+                        <p className="font-medium text-gray-900">{wedding.name}</p>
+                        <p className="text-sm text-gray-400">{wedding.clientName}</p>
                       </div>
-                      {days !== null && days >= 0 && days <= 7 && (
-                        <Badge variant="warning">{days}d left</Badge>
+                      {isUrgent && (
+                        <Badge variant="warning" size="sm">
+                          {days === 0 ? 'Today' : `${days}d left`}
+                        </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                      <Calendar className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Calendar className="h-4 w-4" />
                       {formatDate(wedding.weddingDate)}
                     </div>
                   </Link>
                 );
-              })
-            ) : (
-              <p className="text-gray-500 col-span-full text-center py-4">No upcoming weddings</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-8">No upcoming weddings</p>
+          )}
+        </Card>
+      </section>
     </div>
   );
 }
