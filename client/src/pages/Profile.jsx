@@ -79,7 +79,7 @@ export default function Profile() {
       <div className="font-body min-h-screen bg-[#faf9f7] pb-20">
 
         {/* ── TOP HERO IMAGE SECTION ── */}
-        <div className="relative h-[300px] sm:h-[350px] w-full overflow-hidden bg-[#faf9f7]">
+        <div className="relative h-75 sm:h-87.5 w-full overflow-hidden bg-[#faf9f7]">
           <img
             src="image.png"
             // 90% anchors the focus near the bottom, but keeps a small margin of the very bottom visible/safe.
@@ -107,7 +107,7 @@ export default function Profile() {
                 {/* User Info */}
                 <div className="p-8 text-center border-b border-stone-100">
                   <div className="relative inline-block mb-4">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-rose-100 to-orange-50 p-1 shadow-inner">
+                    <div className="w-24 h-24 rounded-full bg-linear-to-tr from-rose-100 to-orange-50 p-1 shadow-inner">
                       <div className="w-full h-full rounded-full bg-white flex items-center justify-center font-display text-3xl text-rose-500 font-bold">
                         {user?.name?.[0]}
                       </div>

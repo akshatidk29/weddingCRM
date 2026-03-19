@@ -37,7 +37,7 @@ function NavItem({ to, label, icon: Icon, onClick }) {
         )
       }
     >
-      <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+      <Icon className="h-3.5 w-3.5 shrink-0" />
       {label}
     </NavLink>
   );
@@ -126,7 +126,7 @@ export default function TopNav() {
                           {user?.name?.[0]?.toUpperCase()}
                         </span>
                       </div>
-                      <span className="hidden sm:block text-sm font-medium text-stone-700 truncate max-w-[120px]">
+                      <span className="hidden sm:block text-sm font-medium text-stone-700 truncate max-w-30">
                         {user?.name}
                       </span>
                       <ChevronDown

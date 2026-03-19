@@ -12,106 +12,6 @@ import { formatDate, categoryColors, taskCategories, vendorCategories, isOverdue
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
-const statusConfig = {
-  pending: { variant: 'default', label: 'Pending' },
-  in_progress: { variant: 'warning', label: 'In Progress' },
-  completed: { variant: 'success', label: 'Completed' },
-  verified: { variant: 'success', label: 'Verified' }
-};
-
-function StatCard({ label, value, icon: Icon, active, onClick, variant = 'default' }) {
-  const variantClasses = {
-    default: 'text-gray-900',
-    warning: 'text-amber-500',
-    success: 'text-emerald-600',
-    error: 'text-red-600'
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center justify-between p-4 bg-white rounded-lg border transition-all ${
-        active ? 'border-blue-600 shadow-sm' : 'border-gray-200 hover:border-gray-400'
-      }`}
-    >
-      <div>
-        <p className="text-sm text-gray-400">{label}</p>
-        <p className={`text-2xl font-semibold ${variantClasses[variant]}`}>{value}</p>
-      </div>
-      <Icon className={`h-6 w-6 ${variantClasses[variant]}`} />
-    </button>
-  );
-}
-
-function TaskItem({ task, onStatusChange, canVerify }) {
-  const overdue = isOverdue(task.dueDate) && task.status !== 'completed' && task.status !== 'verified';
-  const isCompleted = task.status === 'completed' || task.status === 'verified';
-  
-  const getNextStatus = (current) => {
-    if (current === 'pending') return 'in_progress';
-    if (current === 'in_progress') return 'completed';
-    if (current === 'completed' && canVerify) return 'verified';
-    return null;
-  };
-
-  const nextStatus = getNextStatus(task.status);
-  const category = taskCategories.find(c => c.value === task.category);
-
-  return (
-    <div className={`flex items-center gap-4 p-4 border-b border-gray-200 last:border-0 ${
-      overdue ? 'bg-red-50' : 'hover:bg-gray-100'
-    } transition-colors`}>
-      <button
-        onClick={() => nextStatus && onStatusChange(task._id, nextStatus)}
-        disabled={!nextStatus}
-        className="flex-shrink-0"
-      >
-        {isCompleted ? (
-          <CheckCircle className={`h-5 w-5 ${task.status === 'verified' ? 'text-emerald-600' : 'text-gray-400'}`} />
-        ) : (
-          <Circle className="h-5 w-5 text-gray-400 hover:text-blue-600" />
-        )}
-      </button>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className={`font-medium ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-            {task.title}
-          </p>
-          {task.priority === 'high' && <Badge variant="warning" size="sm">High</Badge>}
-          {task.status === 'verified' && <Badge variant="success" size="sm">Verified</Badge>}
-        </div>
-        <div className="flex items-center gap-2 mt-1 text-sm text-gray-400">
-          <Link 
-            to={`/weddings/${task.wedding?._id}`} 
-            className="hover:text-blue-600"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {task.wedding?.name}
-          </Link>
-          {task.assignedTo && (
-            <>
-              <span>•</span>
-              <span>{task.assignedTo.name}</span>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        {task.dueDate && (
-          <span className={`text-sm ${overdue ? 'text-red-600' : 'text-gray-400'}`}>
-            {formatDate(task.dueDate)}
-          </span>
-        )}
-        <Badge variant="default" size="sm">
-          {category?.label || task.category}
-        </Badge>
-      </div>
-    </div>
-  );
-}
-
 export default function Tasks() {
   const { user, isManager, isAdmin } = useAuth();
   const [tasks, setTasks] = useState([]);
@@ -145,18 +45,12 @@ export default function Tasks() {
     loadVendors();
   }, []);
 
-  const loadData = async () => {
+  const loadTasks = async () => {
     try {
-      // Team members only fetch their tasks
-      const tasksEndpoint = isManager ? '/tasks' : '/tasks/my-tasks';
-      const [tasksRes, weddingsRes] = await Promise.all([
-        api.get(tasksEndpoint),
-        api.get('/weddings')
-      ]);
-      setTasks(tasksRes.data.tasks || []);
-      setWeddings(weddingsRes.data.weddings || []);
+      const res = await api.get('/tasks');
+      setTasks(res.data.tasks);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('Failed to load tasks:', error);
     } finally {
       setLoading(false);
     }
@@ -402,114 +296,117 @@ export default function Tasks() {
   };
 
   const filteredTasks = tasks.filter(task => {
+    if (filter.status && task.status !== filter.status) return false;
     if (filter.category && task.category !== filter.category) return false;
     if (filter.wedding && task.wedding?._id !== filter.wedding) return false;
     if (filter.event && (task.event?._id || task.event) !== filter.event) return false;
     if (view === 'my' && task.assignedTo?._id !== user._id) return false;
-    if (view === 'overdue') {
-      return isOverdue(task.dueDate) && task.status !== 'completed' && task.status !== 'verified';
-    }
-    if (view === 'pending') return task.status === 'pending' || task.status === 'in_progress';
-    if (view === 'completed') return task.status === 'completed' || task.status === 'verified';
+    if (view === 'overdue' && (!isOverdue(task.dueDate) || task.status !== 'pending')) return false;
     return true;
   });
 
-  // Group tasks by category
-  const groupedTasks = filteredTasks.reduce((acc, task) => {
-    const cat = task.category || 'other';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(task);
-    return acc;
-  }, {});
-
   const stats = {
     total: tasks.length,
-    pending: tasks.filter(t => t.status === 'pending' || t.status === 'in_progress').length,
-    completed: tasks.filter(t => t.status === 'completed' || t.status === 'verified').length,
-    overdue: tasks.filter(t => (t.status === 'pending' || t.status === 'in_progress') && isOverdue(t.dueDate)).length
+    pending: tasks.filter(t => t.status === 'pending').length,
+    done: tasks.filter(t => t.status === 'done').length,
+    overdue: tasks.filter(t => t.status === 'pending' && isOverdue(t.dueDate)).length
   };
 
-  const categoryOptions = taskCategories.map(c => ({ value: c.value, label: c.label }));
-  const weddingOptions = weddings.map(w => ({ value: w._id, label: w.name }));
+  if (loading) return <PageLoader />;
 
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin h-8 w-8 border-2 border-blue-600 border-t-transparent rounded-full" />
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Tasks</h1>
+          <p className="text-gray-400">Manage all tasks across weddings</p>
         </div>
         <Button icon={Plus} onClick={() => setShowTaskModal(true)}>
           New Task
         </Button>
       </div>
-    );
-  }
 
-  return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      <PageHeader 
-        title="Tasks"
-        description="Manage all tasks across weddings"
-      />
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard 
-          label={isManager ? "Total Tasks" : "My Tasks"}
-          value={stats.total}
-          icon={CheckSquare}
-          active={view === 'all' || view === 'my'}
-          onClick={() => setView(isManager ? 'all' : 'my')}
-        />
-        <StatCard 
-          label="Pending"
-          value={stats.pending}
-          icon={Clock}
-          variant="warning"
-          active={view === 'pending'}
-          onClick={() => setView('pending')}
-        />
-        <StatCard 
-          label="Completed"
-          value={stats.completed}
-          icon={CheckCircle}
-          variant="success"
-          active={view === 'completed'}
-          onClick={() => setView('completed')}
-        />
-        <StatCard 
-          label="Overdue"
-          value={stats.overdue}
-          icon={AlertTriangle}
-          variant="error"
-          active={view === 'overdue'}
-          onClick={() => setView('overdue')}
-        />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card hover onClick={() => { setView('all'); setFilter({ ...filter, status: '' }); }}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Total</p>
+                <p className="text-2xl font-bold text-white">{stats.total}</p>
+              </div>
+              <CheckSquare className="w-8 h-8 text-purple-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card hover onClick={() => { setView('all'); setFilter({ ...filter, status: 'pending' }); }}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Pending</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
+              </div>
+              <Clock className="w-8 h-8 text-yellow-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card hover onClick={() => { setView('all'); setFilter({ ...filter, status: 'done' }); }}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Completed</p>
+                <p className="text-2xl font-bold text-green-400">{stats.done}</p>
+              </div>
+              <CheckSquare className="w-8 h-8 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card hover onClick={() => setView('overdue')}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Overdue</p>
+                <p className="text-2xl font-bold text-red-400">{stats.overdue}</p>
+              </div>
+              <AlertTriangle className="w-8 h-8 text-red-400" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div className="flex gap-1">
-          {(isManager ? ['all', 'my', 'pending', 'completed', 'overdue'] : ['my', 'pending', 'completed', 'overdue']).map(v => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                view === v
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {v === 'all' ? 'All' : v === 'my' ? 'My Tasks' : v.charAt(0).toUpperCase() + v.slice(1)}
-            </button>
-          ))}
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setView('all')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              view === 'all' ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400 hover:bg-white/5'
+            }`}
+          >
+            All Tasks
+          </button>
+          <button
+            onClick={() => setView('my')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              view === 'my' ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400 hover:bg-white/5'
+            }`}
+          >
+            My Tasks
+          </button>
+          <button
+            onClick={() => setView('overdue')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              view === 'overdue' ? 'bg-red-500/20 text-red-400' : 'text-gray-400 hover:bg-white/5'
+            }`}
+          >
+            Overdue
+          </button>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 ml-auto">
           <Select
             value={filter.category}
             onChange={(e) => setFilter({ ...filter, category: e.target.value })}
-            options={[{ value: '', label: 'All Categories' }, ...categoryOptions]}
+            options={taskCategories}
+            placeholder="All Categories"
             className="w-40"
           />
           <Select
@@ -531,7 +428,6 @@ export default function Tasks() {
         </div>
       </div>
 
-      {/* Tasks List */}
       {filteredTasks.length === 0 ? (
         <EmptyState
           icon={CheckSquare}
@@ -541,7 +437,7 @@ export default function Tasks() {
       ) : (
         <Card>
           <CardContent className="p-0">
-            <div className="divide-y divide-white/[0.06]">
+            <div className="divide-y divide-white/6">
               {filteredTasks.map(task => {
                 const catInfo = categoryColors[task.category] || categoryColors.other;
                 const overdue = task.status === 'pending' && isOverdue(task.dueDate);
@@ -550,7 +446,7 @@ export default function Tasks() {
 
                 return (
                   <div key={task._id} className="transition-colors">
-                    <div className="p-4 flex items-center gap-4 hover:bg-white/[0.02]">
+                    <div className="p-4 flex items-center gap-4 hover:bg-white/2">
                       <button
                         onClick={() => {
                           if (task.status === 'pending') {
@@ -652,13 +548,13 @@ export default function Tasks() {
 
                     {/* Expanded subtask + vendor details */}
                     {isExpanded && (
-                      <div className="px-4 pb-4 ml-20 space-y-3 border-t border-white/[0.03] pt-3">
+                      <div className="px-4 pb-4 ml-20 space-y-3 border-t border-white/3 pt-3">
                         {/* Subtasks */}
                         {info.hasSubtasks && (
                           <div className="space-y-1">
                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Subtasks</p>
                             {task.subtasks.map(sub => (
-                              <div key={sub._id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white/[0.03] group">
+                              <div key={sub._id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white/3 group">
                                 <button
                                   onClick={() => handleToggleSubtask(task._id, sub._id)}
                                   className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
@@ -691,7 +587,7 @@ export default function Tasks() {
                           <div className="space-y-1">
                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-2">Vendors</p>
                             {task.taskVendors.map(v => (
-                              <div key={v._id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white/[0.03]">
+                              <div key={v._id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white/3">
                                 <button
                                   onClick={() => handleUpdateVendorStatus(task._id, v._id, v.status === 'completed' ? 'pending' : 'completed')}
                                   className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
@@ -816,7 +712,7 @@ export default function Tasks() {
             <label className="block text-sm font-medium text-gray-400">Subtasks</label>
             <div className="space-y-1.5">
               {taskForm.subtasks.map((sub, idx) => (
-                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] rounded-lg">
+                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/3 rounded-lg">
                   <div className={`w-3.5 h-3.5 rounded border ${sub.completed ? 'bg-green-500 border-green-500' : 'border-gray-600'}`} />
                   <span className={`text-sm flex-1 ${sub.completed ? 'text-gray-500 line-through' : 'text-gray-300'}`}>{sub.title}</span>
                   {sub.amount !== 0 && (
@@ -864,7 +760,7 @@ export default function Tasks() {
             <label className="block text-sm font-medium text-gray-400">Vendors</label>
             <div className="space-y-1.5">
               {taskForm.taskVendors.map((v, idx) => (
-                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] rounded-lg">
+                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/3 rounded-lg">
                   <Store className="w-3.5 h-3.5 text-gray-500" />
                   <span className="text-sm text-gray-300 flex-1">{getVendorDisplayName(v)}</span>
                   {getVendorDisplayPhone(v) && (
@@ -898,7 +794,7 @@ export default function Tasks() {
               options={vendors.map(v => ({ value: v._id, label: `${v.name} (${v.category})` }))}
             />
 
-            <div className="border border-white/[0.06] rounded-lg p-3 space-y-2">
+            <div className="border border-white/6 rounded-lg p-3 space-y-2">
               <p className="text-xs text-gray-400 font-medium">Or add new vendor</p>
               <div className="grid grid-cols-2 gap-2">
                 <input type="text" placeholder="Vendor name *" value={newVendor.name} onChange={(e) => setNewVendor({ ...newVendor, name: e.target.value })} className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50" />

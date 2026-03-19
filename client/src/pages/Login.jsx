@@ -67,13 +67,13 @@ export default function Login() {
         <div className="lg:hidden flex flex-col min-h-screen">
 
           {/* Image — takes top 45% of screen */}
-          <div className="relative flex-shrink-0" style={{ height: '45vh' }}>
+          <div className="relative shrink-0" style={{ height: '45vh' }}>
             <img
               src="Login.jpg" alt=""
               className="absolute inset-0 w-full h-full object-cover object-top"
               onError={e => { e.currentTarget.style.display = 'none'; }}
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-stone-950/70 via-stone-950/25 to-stone-950/55" />
+            <div className="absolute inset-0 bg-linear-to-b from-stone-950/70 via-stone-950/25 to-stone-950/55" />
             <div className="absolute inset-0 flex flex-col p-5 z-10">
               <Link to="/" className="inline-flex items-center gap-1.5 text-white/60 hover:text-white transition-colors text-sm w-fit">
                 <ArrowLeft className="h-4 w-4" /> Back
@@ -163,7 +163,7 @@ export default function Login() {
         <div className="hidden lg:flex max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 min-h-screen flex-row gap-10 py-8">
 
           {/* Left: image card */}
-          <div className="w-[52%] sticky top-8 self-start flex-shrink-0">
+          <div className="w-[52%] sticky top-8 self-start shrink-0">
             <div className="relative w-full rounded-2xl overflow-hidden"
               style={{ height: 'calc(100vh - 4rem)' }}>
               <img
@@ -171,7 +171,7 @@ export default function Login() {
                 className="absolute inset-0 w-full h-full object-cover object-top"
                 onError={e => { e.currentTarget.style.display = 'none'; }}
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-stone-950/72 via-stone-950/20 to-stone-950/55" />
+              <div className="absolute inset-0 bg-linear-to-b from-stone-950/72 via-stone-950/20 to-stone-950/55" />
               <div className="absolute inset-0 flex flex-col z-10 p-8 xl:p-10">
                 <Link to="/" className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm w-fit">
                   <ArrowLeft className="h-4 w-4" /> Back to home
@@ -182,7 +182,7 @@ export default function Login() {
                     <AnimatedLagna />
                   </h1>
                   <p className={`font-display italic text-white/60 text-base mt-3 leading-snug max-w-[22ch]
-                    transition-all duration-700 delay-[1100ms]
+                    transition-all duration-700 delay-1100
                     ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
                     The modern CRM for{' '}
                     <span className="text-rose-300 not-italic font-semibold">wedding planners</span>{' '}

@@ -123,8 +123,8 @@ export default function Landing() {
           HERO
       ══════════════════════ */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-50/60 via-[#faf9f7] to-amber-50/40" />
-        <div className="absolute top-0 right-0 w-full lg:w-1/2 h-full bg-gradient-to-bl from-rose-50/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-br from-rose-50/60 via-[#faf9f7] to-amber-50/40" />
+        <div className="absolute top-0 right-0 w-full lg:w-1/2 h-full bg-linear-to-bl from-rose-50/80 to-transparent pointer-events-none" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 w-full pt-24 pb-16">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
@@ -134,7 +134,7 @@ export default function Landing() {
 
               <AnimatedLagna />
 
-              <div className={`transition-all duration-700 delay-[820ms] ${heroLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+              <div className={`transition-all duration-700 delay-820 ${heroLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
                 <p className="font-display italic text-xl sm:text-2xl text-stone-500 mb-4 leading-snug">
                   The modern CRM for{' '}
                   <span className="text-rose-400 not-italic font-bold">wedding planners</span>{' '}
@@ -146,7 +146,7 @@ export default function Landing() {
                 </p>
               </div>
 
-              <div className={`flex flex-wrap gap-3 mt-9 transition-all duration-700 delay-[1050ms] ${heroLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+              <div className={`flex flex-wrap gap-3 mt-9 transition-all duration-700 delay-1050 ${heroLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
                 <Link
                   to="/register"
                   className="group inline-flex items-center gap-2 px-7 py-3.5 bg-stone-900 text-white rounded-full text-sm font-medium hover:bg-stone-800 transition-all hover:shadow-lg hover:shadow-stone-900/20"
@@ -165,10 +165,10 @@ export default function Landing() {
             </div>
 
             {/* Right — image */}
-            <div className={`transition-all duration-1000 delay-[600ms] ${heroLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className={`transition-all duration-1000 delay-600 ${heroLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <div className="relative">
                 {/* Soft Glow Background - Adjusted to be more subtle for a floating image */}
-                <div className="absolute -inset-10 bg-gradient-to-br from-rose-200/30 to-blue-100/20 rounded-full blur-3xl opacity-60" />
+                <div className="absolute -inset-10 bg-linear-to-br from-rose-200/30 to-blue-100/20 rounded-full blur-3xl opacity-60" />
 
                 <div className="relative flex items-center justify-center">
                   <img
@@ -178,7 +178,7 @@ export default function Landing() {
                        2. Removed fixed aspect ratio to let the image's natural shape lead.
                        3. Removed the border and shadow from this specific wrapper to let the image 'float'.
                     */
-                    className="w-full h-auto max-h-[500px] object-contain drop-shadow-2xl"
+                    className="w-full h-auto max-h-125 object-contain drop-shadow-2xl"
                     onError={e => {
                       e.currentTarget.style.display = 'none';
                       e.currentTarget.nextElementSibling.style.display = 'flex';
@@ -187,7 +187,7 @@ export default function Landing() {
 
                   {/* Fallback Placeholder */}
                   <div
-                    className="w-full aspect-[4/3] bg-gradient-to-br from-rose-50 to-amber-50/40 rounded-2xl items-center justify-center text-stone-400 text-xs text-center p-8 border border-dashed border-stone-200"
+                    className="w-full aspect-4/3 bg-linear-to-br from-rose-50 to-amber-50/40 rounded-2xl items-center justify-center text-stone-400 text-xs text-center p-8 border border-dashed border-stone-200"
                     style={{ display: 'none' }}
                   >
                     Dashboard Preview
@@ -309,7 +309,7 @@ export default function Landing() {
                   className={f.flip ? 'lg:order-1' : ''}
                 >
                   <div className="relative">
-                    <div className="absolute -inset-4 bg-gradient-to-br from-rose-100/30 to-amber-100/20 rounded-2xl blur-xl" />
+                    <div className="absolute -inset-4 bg-linear-to-br from-rose-100/30 to-amber-100/20 rounded-2xl blur-xl" />
                     <div className="relative rounded-2xl overflow-hidden border border-stone-100 shadow-xl shadow-stone-900/5">
                       <img
                         src={f.img}
@@ -322,7 +322,7 @@ export default function Landing() {
                         }}
                       />
                       <div
-                        className="w-full bg-gradient-to-br from-stone-50 to-rose-50/30 items-center justify-center text-stone-300 text-xs text-center p-8"
+                        className="w-full bg-linear-to-br from-stone-50 to-rose-50/30 items-center justify-center text-stone-300 text-xs text-center p-8"
                         style={{ aspectRatio: '16/10', display: 'none' }}
                       >
                         Place screenshot at {f.img}
@@ -383,14 +383,14 @@ export default function Landing() {
               <h4 className="text-xl font-bold text-stone-900 mb-3 tracking-tight">
                 {item.label}
               </h4>
-              <p className="text-stone-500 text-sm leading-relaxed max-w-[240px]">
+              <p className="text-stone-500 text-sm leading-relaxed max-w-60">
                 {item.desc}
               </p>
             </div>
 
             {/* The Animated Bar - Now sits at the bottom for a "foundation" look */}
             <div className="mt-10">
-              <div className="w-full h-[1px] bg-stone-100 relative overflow-hidden">
+              <div className="w-full h-px bg-stone-100 relative overflow-hidden">
                 <div 
                   className={`absolute inset-0 w-0 group-hover:w-full h-full ${item.bar} transition-all duration-700 ease-out`} 
                 />
@@ -407,7 +407,7 @@ export default function Landing() {
           CTA
       ══════════════════════ */}
       <section className="py-24 sm:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-50 via-amber-50 to-[#faf9f7]" />
+        <div className="absolute inset-0 bg-linear-to-br from-rose-50 via-amber-50 to-[#faf9f7]" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-rose-200/30 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-3xl mx-auto px-5 sm:px-8 text-center">

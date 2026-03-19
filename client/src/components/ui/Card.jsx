@@ -4,8 +4,8 @@ export function Card({ children, className = '', hover = false, glow = false }) 
   return (
     <div 
       className={clsx(
-        'bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl',
-        hover && 'hover:bg-white/[0.05] hover:border-white/[0.1] transition-all duration-300',
+        'bg-white/3 backdrop-blur-xl border border-white/6 rounded-2xl',
+        hover && 'hover:bg-white/5 hover:border-white/10 transition-all duration-300',
         glow && 'hover:shadow-lg hover:shadow-purple-500/10',
         className
       )}
@@ -17,7 +17,7 @@ export function Card({ children, className = '', hover = false, glow = false }) 
 
 export function CardHeader({ children, className = '' }) {
   return (
-    <div className={clsx('px-6 py-4 border-b border-white/[0.06]', className)}>
+    <div className={clsx('px-6 py-4 border-b border-white/6', className)}>
       {children}
     </div>
   );

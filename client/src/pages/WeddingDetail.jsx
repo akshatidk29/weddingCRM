@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, Calendar, MapPin, Users, DollarSign, 
+import { useParams, Link } from 'react-router-dom';
+import {
+  ArrowLeft, Calendar, MapPin, Users, DollarSign,
   Plus, CheckCircle, Circle, Clock, UserPlus, Store, Edit, Check,
   ChevronDown, ChevronRight, Trash2, Phone, X, AlertCircle, Mail,
   PartyPopper, Target
@@ -17,113 +17,14 @@ import { formatDate, formatCurrency, categoryColors, taskCategories, vendorCateg
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
-const statusConfig = {
-  planning: { variant: 'primary', label: 'Planning' },
-  in_progress: { variant: 'warning', label: 'In Progress' },
-  completed: { variant: 'success', label: 'Completed' },
-  cancelled: { variant: 'error', label: 'Cancelled' }
-};
-
-const taskStatusConfig = {
-  pending: { variant: 'default', label: 'Pending' },
-  in_progress: { variant: 'warning', label: 'In Progress' },
-  completed: { variant: 'success', label: 'Completed' },
-  verified: { variant: 'success', label: 'Verified' }
-};
-
-function Section({ title, action, children }) {
-  return (
-    <section className="py-8 border-b border-gray-200 last:border-0">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function InfoItem({ icon: Icon, label, value }) {
-  if (!value) return null;
-  return (
-    <div className="flex items-start gap-3">
-      <div className="p-2 rounded-md bg-gray-100">
-        <Icon className="h-4 w-4 text-gray-400" />
-      </div>
-      <div>
-        <p className="text-xs text-gray-400 uppercase tracking-wide">{label}</p>
-        <p className="text-sm font-medium text-gray-900">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function TaskItem({ task, onStatusChange, canVerify, isManager }) {
-  const overdue = isOverdue(task.dueDate) && task.status !== 'completed' && task.status !== 'verified';
-  
-  const getNextStatus = (current) => {
-    if (current === 'pending') return 'in_progress';
-    if (current === 'in_progress') return 'completed';
-    if (current === 'completed' && canVerify) return 'verified';
-    return null;
-  };
-
-  const nextStatus = getNextStatus(task.status);
-
-  return (
-    <div className={`flex items-center gap-4 p-4 rounded-md border ${
-      overdue ? 'border-red-600/30 bg-red-50' : 'border-gray-200 bg-white'
-    }`}>
-      <button
-        onClick={() => nextStatus && onStatusChange(task._id, nextStatus)}
-        disabled={!nextStatus}
-        className="flex-shrink-0"
-      >
-        {task.status === 'completed' || task.status === 'verified' ? (
-          <CheckCircle className={`h-5 w-5 ${task.status === 'verified' ? 'text-emerald-600' : 'text-gray-400'}`} />
-        ) : (
-          <Circle className="h-5 w-5 text-gray-400 hover:text-blue-600" />
-        )}
-      </button>
-      
-      <div className="flex-1 min-w-0">
-        <p className={`font-medium ${task.status === 'completed' || task.status === 'verified' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-          {task.title}
-        </p>
-        <div className="flex items-center gap-3 mt-1">
-          {task.assignedTo && (
-            <span className="text-xs text-gray-400">
-              {task.assignedTo.name}
-            </span>
-          )}
-          {task.dueDate && (
-            <span className={`text-xs ${overdue ? 'text-red-600' : 'text-gray-400'}`}>
-              Due {formatDate(task.dueDate)}
-            </span>
-          )}
-        </div>
-      </div>
-      
-      <Badge variant={taskStatusConfig[task.status]?.variant || 'default'} size="sm">
-        {taskStatusConfig[task.status]?.label || task.status}
-      </Badge>
-    </div>
-  );
-}
-
 export default function WeddingDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user, isManager, isAdmin } = useAuth();
   const [wedding, setWedding] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [tasksByCategory, setTasksByCategory] = useState({});
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState([]);
-  const [vendors, setVendors] = useState([]);
-  
-  // Modal states
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [showVendorModal, setShowVendorModal] = useState(false);
@@ -138,8 +39,7 @@ export default function WeddingDetail() {
   const [expandedCategories, setExpandedCategories] = useState({});
   const [expandedTasks, setExpandedTasks] = useState({});
   const [expandedEvents, setExpandedEvents] = useState({});
-  
-  // Form states
+
   const [taskForm, setTaskForm] = useState({
     title: '', description: '', category: 'other', priority: 'medium',
     assignedTo: '', dueDate: '', notes: '', event: '',
@@ -156,22 +56,24 @@ export default function WeddingDetail() {
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [newSubtaskAmount, setNewSubtaskAmount] = useState('');
   const [newVendor, setNewVendor] = useState({ name: '', phone: '', email: '', address: '', city: '', category: 'other', amount: '' });
-  
+
   const [teamForm, setTeamForm] = useState({ userId: '', role: '' });
   const [vendorForm, setVendorForm] = useState({ vendorId: '', category: '', amount: '', notes: '' });
 
   useEffect(() => {
-    loadData();
+    loadWedding();
+    loadUsers();
+    loadVendors();
   }, [id]);
 
-  const loadData = async () => {
+  const loadWedding = async () => {
     try {
       const res = await api.get(`/weddings/${id}`);
       setWedding(res.data.wedding);
       setTasks(res.data.tasks);
       setTasksByCategory(res.data.tasksByCategory);
       setEvents(res.data.events || []);
-      
+
       const expanded = {};
       Object.keys(res.data.tasksByCategory).forEach(cat => { expanded[cat] = true; });
       setExpandedCategories(expanded);
@@ -180,9 +82,27 @@ export default function WeddingDetail() {
       (res.data.events || []).forEach(ev => { evExpanded[ev._id] = true; });
       setExpandedEvents(evExpanded);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('Failed to load wedding:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const res = await api.get('/auth/users');
+      setUsers(res.data.users);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+    }
+  };
+
+  const loadVendors = async () => {
+    try {
+      const res = await api.get('/vendors');
+      setVendors(res.data.vendors);
+    } catch (error) {
+      console.error('Failed to load vendors:', error);
     }
   };
 
@@ -268,11 +188,11 @@ export default function WeddingDetail() {
     }
   };
 
-  const handleAddTeamMember = async (e) => {
+  const handleAddTeam = async (e) => {
     e.preventDefault();
     try {
       await api.post(`/weddings/${id}/team`, teamForm);
-      loadData();
+      loadWedding();
       setShowTeamModal(false);
       setTeamForm({ userId: '', role: '' });
     } catch (error) {
@@ -280,20 +200,11 @@ export default function WeddingDetail() {
     }
   };
 
-  const handleRemoveTeamMember = async (userId) => {
-    try {
-      await api.delete(`/weddings/${id}/team/${userId}`);
-      loadData();
-    } catch (error) {
-      console.error('Failed to remove team member:', error);
-    }
-  };
-
   const handleAddVendor = async (e) => {
     e.preventDefault();
     try {
       await api.post(`/weddings/${id}/vendors`, vendorForm);
-      loadData();
+      loadWedding();
       setShowVendorModal(false);
       setVendorForm({ vendorId: '', category: '', amount: '', notes: '' });
     } catch (error) {
@@ -434,8 +345,8 @@ export default function WeddingDetail() {
     const v = vendors.find(ven => ven._id === vendorId);
     if (!v) return;
     // Check if already added
-    const alreadyAdded = taskForm.taskVendors.some(tv => 
-      (tv.vendor && (tv.vendor._id === v._id || tv.vendor === v._id)) || 
+    const alreadyAdded = taskForm.taskVendors.some(tv =>
+      (tv.vendor && (tv.vendor._id === v._id || tv.vendor === v._id)) ||
       tv.name?.toLowerCase() === v.name.toLowerCase()
     );
     if (alreadyAdded) return;
@@ -500,51 +411,48 @@ export default function WeddingDetail() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8">
-      {/* Back Button */}
-      <button
-        onClick={() => navigate('/weddings')}
-        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
+    <div className="space-y-6">
+      <Link to="/weddings" className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+        <ArrowLeft className="w-4 h-4" />
         Back to Weddings
-      </button>
+      </Link>
 
-      {/* Header Section */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">{wedding.name}</h1>
-              <Badge variant={status.variant}>{status.label}</Badge>
-            </div>
-            <p className="text-gray-600">Client: {wedding.clientName}</p>
-            {days !== null && days >= 0 && (
-              <p className={`text-sm mt-1 ${days <= 7 ? 'text-amber-500' : 'text-gray-400'}`}>
-                {days === 0 ? 'Wedding is today!' : `${days} days until the wedding`}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h1 className="text-2xl font-bold text-white mb-2">{wedding.name}</h1>
+                  <p className="text-gray-400">{wedding.clientName}</p>
+                </div>
+                <div className="text-right">
+                  {days !== null && days >= 0 && (
+                    <div className={`text-3xl font-bold ${days <= 7 ? 'text-yellow-400' : 'text-purple-400'}`}>
+                      {days === 0 ? 'Today!' : `${days} days`}
+                    </div>
+                  )}
+                  <p className="text-sm text-gray-500">until the big day</p>
+                </div>
+              </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-white/[0.02]">
+                <div className="p-4 rounded-xl bg-white/2">
                   <Calendar className="w-5 h-5 text-purple-400 mb-2" />
                   <p className="text-sm text-gray-500">Date</p>
                   <p className="text-white font-medium">{formatDate(wedding.weddingDate)}</p>
                 </div>
-                <div className="p-4 rounded-xl bg-white/[0.02]">
+                <div className="p-4 rounded-xl bg-white/2">
                   <MapPin className="w-5 h-5 text-purple-400 mb-2" />
                   <p className="text-sm text-gray-500">Venue</p>
                   <p className="text-white font-medium">{wedding.venue?.name || 'TBD'}</p>
                 </div>
-                <div className="p-4 rounded-xl bg-white/[0.02]">
+                <div className="p-4 rounded-xl bg-white/2">
                   <Users className="w-5 h-5 text-purple-400 mb-2" />
                   <p className="text-sm text-gray-500">Guests</p>
                   <p className="text-white font-medium">{wedding.guestCount || 0}</p>
                 </div>
-                <div className="p-4 rounded-xl bg-white/[0.02]">
+                <div className="p-4 rounded-xl bg-white/2">
                   <DollarSign className="w-5 h-5 text-purple-400 mb-2" />
                   <p className="text-sm text-gray-500">Budget</p>
                   <p className="text-white font-medium">{formatCurrency(wedding.budget?.estimated)}</p>
@@ -553,229 +461,229 @@ export default function WeddingDetail() {
 
               <div className="mt-6">
                 {/* EVENTS SECTION */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold flex items-center">
-              <PartyPopper className="h-5 w-5 mr-2 text-indigo-500" />
-              Wedding Events
-            </h2>
-            {(isAdmin || isManager) && (
-              <Button onClick={() => setShowEventModal(true)} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Event
-              </Button>
-            )}
-          </div>
-          
-          {events.length === 0 ? (
-            <div className="bg-white border rounded-lg p-8 text-center text-gray-500">
-              <PartyPopper className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-              <p>No events planned yet.</p>
-              {(isAdmin || isManager) && (
-                <Button variant="outline" className="mt-4" onClick={() => setShowEventModal(true)}>
-                  Create First Event
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {events.map((event) => (
-                <div key={event._id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                  <div 
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-b cursor-pointer hover:bg-gray-100 transition-colors"
-                    onClick={() => setExpandedEvents({...expandedEvents, [event._id]: !expandedEvents[event._id]})}
-                  >
-                    <div className="flex items-center flex-1">
-                      {expandedEvents[event._id] ? (
-                        <ChevronDown className="h-5 w-5 text-gray-400 mr-2" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-gray-400 mr-2" />
-                      )}
-                      <div>
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-semibold text-lg text-gray-900">{event.name}</h3>
-                          <Badge variant={
-                            event.status === 'completed' ? 'success' : 
-                            event.status === 'in_progress' ? 'warning' : 'secondary'
-                          }>
-                            {event.status === 'completed' ? 'Completed' : 
-                             event.status === 'in_progress' ? 'In Progress' : 'Pending'}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                          <span className="flex items-center"><Calendar className="h-3.5 w-3.5 mr-1" /> {formatDate(event.eventDate)}</span>
-                          {event.venue?.name && <span className="flex items-center"><MapPin className="h-3.5 w-3.5 mr-1" /> {event.venue.name}</span>}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 sm:mt-0 flex items-center justify-between sm:justify-end gap-6 sm:w-1/3">
-                      <div className="text-right">
-                        <div className="text-xs text-gray-500 mb-1">Task Progress</div>
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${event.progress === 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
-                              style={{ width: `${event.progress || 0}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium">{event.progress || 0}%</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                        {(isAdmin || isManager) && (
-                          <>
-                            <Button variant="ghost" size="sm" onClick={() => openEditEvent(event)}>
-                              <Edit className="h-4 w-4 text-gray-500" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDeleteEvent(event._id)}>
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold flex items-center">
+                      <PartyPopper className="h-5 w-5 mr-2 text-indigo-500" />
+                      Wedding Events
+                    </h2>
+                    {(isAdmin || isManager) && (
+                      <Button onClick={() => setShowEventModal(true)} size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Event
+                      </Button>
+                    )}
                   </div>
-                  
-                  {expandedEvents[event._id] && (
-                    <div className="p-4 border-b bg-white">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="md:col-span-2">
-                          {event.description && (
-                            <div className="mb-4">
-                              <h4 className="text-sm font-semibold text-gray-700 mb-1">Details</h4>
-                              <p className="text-sm text-gray-600">{event.description}</p>
-                            </div>
-                          )}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="text-sm font-semibold text-gray-700 flex items-center">
-                                <Target className="h-4 w-4 mr-1 text-gray-400" /> Event Tasks
-                              </h4>
-                              <Button variant="outline" size="sm" onClick={() => openAddTaskToEvent(event._id)} className="h-7 text-xs">
-                                <Plus className="h-3 w-3 mr-1" /> Add Task
-                              </Button>
-                            </div>
-                            
-                            {tasks.filter(t => t.event?._id === event._id || t.event === event._id).length === 0 ? (
-                              <div className="text-sm text-gray-500 italic py-2">No tasks assigned to this event yet.</div>
-                            ) : (
-                              <div className="space-y-2">
-                                {tasks.filter(t => t.event?._id === event._id || t.event === event._id).map(task => (
-                                  <div key={task._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-md hover:bg-gray-50">
-                                    <div className="flex items-center gap-3">
-                                      <div onClick={() => toggleTaskStatus(task._id, task.status)} className="cursor-pointer">
-                                        {task.status === 'done' || task.status === 'verified' ? (
-                                          <CheckCircle className="h-5 w-5 text-green-500" />
-                                        ) : task.status === 'in_progress' ? (
-                                          <Clock className="h-5 w-5 text-yellow-500" />
-                                        ) : (
-                                          <Circle className="h-5 w-5 text-gray-300" />
-                                        )}
-                                      </div>
-                                      <div className="cursor-pointer" onClick={() => toggleTaskExpand(task._id)}>
-                                        <div className={`font-medium ${task.status === 'done' || task.status === 'verified' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-                                          {task.title}
-                                        </div>
-                                        {task.dueDate && (
-                                          <div className={`text-xs ${isOverdue(task.dueDate) && task.status !== 'done' && task.status !== 'verified' ? 'text-red-500 font-medium flex items-center' : 'text-gray-500'}`}>
-                                            {isOverdue(task.dueDate) && task.status !== 'done' && task.status !== 'verified' && <AlertCircle className="h-3 w-3 mr-1 inline" />}
-                                            Due: {formatDate(task.dueDate)}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-3 mt-2 sm:mt-0">
-                                      {task.assignedTo && (
-                                        <div className="flex items-center" title={`Assigned to ${task.assignedTo.name}`}>
-                                          <Avatar name={task.assignedTo.name} size="xs" />
-                                        </div>
-                                      )}
-                                      <Badge variant="outline" className={categoryColors[task.category]?.text || 'text-gray-500'}>
-                                        {categoryColors[task.category]?.icon} {taskCategories.find(c => c.value === task.category)?.label || task.category}
-                                      </Badge>
-                                      {(isAdmin || isManager) && (
-                                        <Button variant="ghost" size="sm" onClick={() => openEditTask(task)} className="h-8 w-8 p-0">
-                                          <Edit className="h-4 w-4 text-gray-400" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
+
+                  {events.length === 0 ? (
+                    <div className="bg-white border rounded-lg p-8 text-center text-gray-500">
+                      <PartyPopper className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p>No events planned yet.</p>
+                      {(isAdmin || isManager) && (
+                        <Button variant="outline" className="mt-4" onClick={() => setShowEventModal(true)}>
+                          Create First Event
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {events.map((event) => (
+                        <div key={event._id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                          <div
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-b cursor-pointer hover:bg-gray-100 transition-colors"
+                            onClick={() => setExpandedEvents({ ...expandedEvents, [event._id]: !expandedEvents[event._id] })}
+                          >
+                            <div className="flex items-center flex-1">
+                              {expandedEvents[event._id] ? (
+                                <ChevronDown className="h-5 w-5 text-gray-400 mr-2" />
+                              ) : (
+                                <ChevronRight className="h-5 w-5 text-gray-400 mr-2" />
+                              )}
+                              <div>
+                                <div className="flex items-center gap-3">
+                                  <h3 className="font-semibold text-lg text-gray-900">{event.name}</h3>
+                                  <Badge variant={
+                                    event.status === 'completed' ? 'success' :
+                                      event.status === 'in_progress' ? 'warning' : 'secondary'
+                                  }>
+                                    {event.status === 'completed' ? 'Completed' :
+                                      event.status === 'in_progress' ? 'In Progress' : 'Pending'}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                                  <span className="flex items-center"><Calendar className="h-3.5 w-3.5 mr-1" /> {formatDate(event.eventDate)}</span>
+                                  {event.venue?.name && <span className="flex items-center"><MapPin className="h-3.5 w-3.5 mr-1" /> {event.venue.name}</span>}
+                                </div>
                               </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-semibold text-gray-700 flex items-center">
-                              <Users className="h-4 w-4 mr-1 text-gray-400" /> Event Team
-                            </h4>
-                            {(isAdmin || isManager) && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => { setSelectedEventForTeam(event._id); setShowEventTeamModal(true); }}
-                                className="h-7 w-7 p-0 rounded-full bg-gray-100 hover:bg-gray-200"
-                              >
-                                <Plus className="h-3 w-3 text-gray-600" />
-                              </Button>
-                            )}
-                          </div>
-                          
-                          {(!event.assignedTeam || event.assignedTeam.length === 0) ? (
-                            <div className="text-sm text-gray-500 italic">No specific team assigned.</div>
-                          ) : (
-                            <div className="space-y-3">
-                              {event.assignedTeam.map((member, index) => (
-                                <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
-                                  <div className="flex items-center gap-2">
-                                    <Avatar name={member.user?.name} size="sm" src={member.user?.avatar} />
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-800">{member.user?.name}</p>
-                                      <p className="text-xs text-gray-500 capitalize">{member.role || 'Member'}</p>
-                                    </div>
+                            </div>
+
+                            <div className="mt-4 sm:mt-0 flex items-center justify-between sm:justify-end gap-6 sm:w-1/3">
+                              <div className="text-right">
+                                <div className="text-xs text-gray-500 mb-1">Task Progress</div>
+                                <div className="flex items-center justify-end gap-2">
+                                  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full ${event.progress === 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
+                                      style={{ width: `${event.progress || 0}%` }}
+                                    />
                                   </div>
-                                  {(isAdmin || isManager) && (
-                                    <button 
-                                      onClick={() => handleRemoveEventTeam(event._id, member.user?._id)}
-                                      className="text-gray-400 hover:text-red-500 transition-colors"
-                                      title="Remove from event"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </button>
+                                  <span className="text-sm font-medium">{event.progress || 0}%</span>
+                                </div>
+                              </div>
+
+                              <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                                {(isAdmin || isManager) && (
+                                  <>
+                                    <Button variant="ghost" size="sm" onClick={() => openEditEvent(event)}>
+                                      <Edit className="h-4 w-4 text-gray-500" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteEvent(event._id)}>
+                                      <Trash2 className="h-4 w-4 text-red-500" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {expandedEvents[event._id] && (
+                            <div className="p-4 border-b bg-white">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="md:col-span-2">
+                                  {event.description && (
+                                    <div className="mb-4">
+                                      <h4 className="text-sm font-semibold text-gray-700 mb-1">Details</h4>
+                                      <p className="text-sm text-gray-600">{event.description}</p>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h4 className="text-sm font-semibold text-gray-700 flex items-center">
+                                        <Target className="h-4 w-4 mr-1 text-gray-400" /> Event Tasks
+                                      </h4>
+                                      <Button variant="outline" size="sm" onClick={() => openAddTaskToEvent(event._id)} className="h-7 text-xs">
+                                        <Plus className="h-3 w-3 mr-1" /> Add Task
+                                      </Button>
+                                    </div>
+
+                                    {tasks.filter(t => t.event?._id === event._id || t.event === event._id).length === 0 ? (
+                                      <div className="text-sm text-gray-500 italic py-2">No tasks assigned to this event yet.</div>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        {tasks.filter(t => t.event?._id === event._id || t.event === event._id).map(task => (
+                                          <div key={task._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-md hover:bg-gray-50">
+                                            <div className="flex items-center gap-3">
+                                              <div onClick={() => toggleTaskStatus(task._id, task.status)} className="cursor-pointer">
+                                                {task.status === 'done' || task.status === 'verified' ? (
+                                                  <CheckCircle className="h-5 w-5 text-green-500" />
+                                                ) : task.status === 'in_progress' ? (
+                                                  <Clock className="h-5 w-5 text-yellow-500" />
+                                                ) : (
+                                                  <Circle className="h-5 w-5 text-gray-300" />
+                                                )}
+                                              </div>
+                                              <div className="cursor-pointer" onClick={() => toggleTaskExpand(task._id)}>
+                                                <div className={`font-medium ${task.status === 'done' || task.status === 'verified' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                                                  {task.title}
+                                                </div>
+                                                {task.dueDate && (
+                                                  <div className={`text-xs ${isOverdue(task.dueDate) && task.status !== 'done' && task.status !== 'verified' ? 'text-red-500 font-medium flex items-center' : 'text-gray-500'}`}>
+                                                    {isOverdue(task.dueDate) && task.status !== 'done' && task.status !== 'verified' && <AlertCircle className="h-3 w-3 mr-1 inline" />}
+                                                    Due: {formatDate(task.dueDate)}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 mt-2 sm:mt-0">
+                                              {task.assignedTo && (
+                                                <div className="flex items-center" title={`Assigned to ${task.assignedTo.name}`}>
+                                                  <Avatar name={task.assignedTo.name} size="xs" />
+                                                </div>
+                                              )}
+                                              <Badge variant="outline" className={categoryColors[task.category]?.text || 'text-gray-500'}>
+                                                {categoryColors[task.category]?.icon} {taskCategories.find(c => c.value === task.category)?.label || task.category}
+                                              </Badge>
+                                              {(isAdmin || isManager) && (
+                                                <Button variant="ghost" size="sm" onClick={() => openEditTask(task)} className="h-8 w-8 p-0">
+                                                  <Edit className="h-4 w-4 text-gray-400" />
+                                                </Button>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-sm font-semibold text-gray-700 flex items-center">
+                                      <Users className="h-4 w-4 mr-1 text-gray-400" /> Event Team
+                                    </h4>
+                                    {(isAdmin || isManager) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => { setSelectedEventForTeam(event._id); setShowEventTeamModal(true); }}
+                                        className="h-7 w-7 p-0 rounded-full bg-gray-100 hover:bg-gray-200"
+                                      >
+                                        <Plus className="h-3 w-3 text-gray-600" />
+                                      </Button>
+                                    )}
+                                  </div>
+
+                                  {(!event.assignedTeam || event.assignedTeam.length === 0) ? (
+                                    <div className="text-sm text-gray-500 italic">No specific team assigned.</div>
+                                  ) : (
+                                    <div className="space-y-3">
+                                      {event.assignedTeam.map((member, index) => (
+                                        <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
+                                          <div className="flex items-center gap-2">
+                                            <Avatar name={member.user?.name} size="sm" src={member.user?.avatar} />
+                                            <div>
+                                              <p className="text-sm font-medium text-gray-800">{member.user?.name}</p>
+                                              <p className="text-xs text-gray-500 capitalize">{member.role || 'Member'}</p>
+                                            </div>
+                                          </div>
+                                          {(isAdmin || isManager) && (
+                                            <button
+                                              onClick={() => handleRemoveEventTeam(event._id, member.user?._id)}
+                                              className="text-gray-400 hover:text-red-500 transition-colors"
+                                              title="Remove from event"
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
                                   )}
                                 </div>
-                              ))}
+                              </div>
                             </div>
                           )}
                         </div>
-                      </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* GENERAL TASKS SECTION */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold flex items-center">
-            <CheckCircle className="h-5 w-5 mr-2 text-indigo-500" />
-            General Tasks (Not in Events)
-          </h2>
-          <Button icon={Plus} size="sm" onClick={() => openAddTaskToEvent('')}>Add Task</Button>
-        </div>
+                {/* GENERAL TASKS SECTION */}
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold flex items-center">
+                    <CheckCircle className="h-5 w-5 mr-2 text-indigo-500" />
+                    General Tasks (Not in Events)
+                  </h2>
+                  <Button icon={Plus} size="sm" onClick={() => openAddTaskToEvent('')}>Add Task</Button>
+                </div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-400">Progress</span>
                   <span className="text-sm text-white font-medium">{wedding.progress || 0}%</span>
                 </div>
                 <div className="w-full bg-white/10 rounded-full h-3">
-                  <div className="bg-gradient-to-r from-purple-500 to-violet-500 h-3 rounded-full transition-all" style={{ width: `${wedding.progress || 0}%` }} />
+                  <div className="bg-linear-to-r from-purple-500 to-violet-500 h-3 rounded-full transition-all" style={{ width: `${wedding.progress || 0}%` }} />
                 </div>
                 <div className="flex gap-4 mt-2 text-sm text-gray-500">
                   <span>{wedding.taskStats?.completed || 0} completed</span>
@@ -798,9 +706,9 @@ export default function WeddingDetail() {
                   {Object.entries(tasksByCategory).map(([category, categoryTasks]) => {
                     const catInfo = categoryColors[category] || categoryColors.other;
                     const completed = categoryTasks.filter(t => t.status === 'done' || t.status === 'verified').length;
-                    
+
                     return (
-                      <div key={category} className="border border-white/[0.06] rounded-xl overflow-hidden">
+                      <div key={category} className="border border-white/6 rounded-xl overflow-hidden">
                         <button
                           onClick={() => setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }))}
                           className={`w-full p-4 flex items-center justify-between ${catInfo.bg} hover:opacity-90 transition-opacity`}
@@ -811,16 +719,16 @@ export default function WeddingDetail() {
                           </div>
                           <span className="text-sm text-gray-400">{completed}/{categoryTasks.length} done</span>
                         </button>
-                        
+
                         {expandedCategories[category] && (
-                          <div className="divide-y divide-white/[0.06]">
+                          <div className="divide-y divide-white/6">
                             {categoryTasks.map(task => {
                               const info = getCompletionInfo(task);
                               const isExpanded = expandedTasks[task._id];
 
                               return (
                                 <div key={task._id}>
-                                  <div className="p-4 flex items-center gap-4 hover:bg-white/[0.02] transition-colors">
+                                  <div className="p-4 flex items-center gap-4 hover:bg-white/2 transition-colors">
                                     <button
                                       onClick={() => {
                                         if (task.status === 'pending') {
@@ -835,11 +743,11 @@ export default function WeddingDetail() {
                                           handleTaskStatusChange(task._id, 'pending');
                                         }
                                       }}
-                                      className="flex-shrink-0"
+                                      className="shrink-0"
                                     >
                                       {getStatusIcon(task.status)}
                                     </button>
-                                    
+
                                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleTaskExpand(task._id)}>
                                       <div className="flex items-center gap-2">
                                         <p className={`font-medium ${task.status === 'done' || task.status === 'verified' ? 'text-gray-500 line-through' : 'text-white'}`}>
@@ -897,7 +805,7 @@ export default function WeddingDetail() {
                                         <div className="space-y-1">
                                           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Subtasks</p>
                                           {task.subtasks.map(sub => (
-                                            <div key={sub._id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white/[0.03] group">
+                                            <div key={sub._id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white/3 group">
                                               <button
                                                 onClick={() => handleToggleSubtask(task._id, sub._id)}
                                                 className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${sub.completed ? 'bg-green-500 border-green-500' : 'border-gray-600 hover:border-purple-500'}`}
@@ -922,7 +830,7 @@ export default function WeddingDetail() {
                                         <div className="space-y-1">
                                           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-3">Vendors</p>
                                           {task.taskVendors.map(tv => (
-                                            <div key={tv._id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white/[0.03] group">
+                                            <div key={tv._id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white/3 group">
                                               <button
                                                 onClick={() => handleUpdateVendorStatus(task._id, tv._id, tv.status === 'completed' ? 'pending' : 'completed')}
                                                 className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${tv.status === 'completed' ? 'bg-green-500 border-green-500' : 'border-gray-600 hover:border-purple-500'}`}
@@ -976,16 +884,14 @@ export default function WeddingDetail() {
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-500/10 mb-3">
                   <Avatar name={wedding.relationshipManager.name} size="md" />
                   <div>
-                    <p className="font-medium text-gray-900">{weddingVendor.vendor.name}</p>
-                    <p className="text-xs text-gray-400">
-                      {weddingVendor.category} {weddingVendor.amount ? `• ${formatCurrency(weddingVendor.amount)}` : ''}
-                    </p>
+                    <p className="text-white font-medium">{wedding.relationshipManager.name}</p>
+                    <p className="text-xs text-purple-400">Relationship Manager</p>
                   </div>
                 </div>
               )}
               <div className="space-y-2">
                 {wedding.assignedTeam?.map((member, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02]">
+                  <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-white/2">
                     <Avatar name={member.user?.name} size="sm" />
                     <div>
                       <p className="text-white text-sm">{member.user?.name}</p>
@@ -1008,7 +914,7 @@ export default function WeddingDetail() {
             <CardContent>
               <div className="space-y-2">
                 {wedding.vendors?.map((v, idx) => (
-                  <div key={idx} className="p-3 rounded-xl bg-white/[0.02]">
+                  <div key={idx} className="p-3 rounded-xl bg-white/2">
                     <div className="flex items-center justify-between">
                       <p className="text-white font-medium">{v.vendor?.name}</p>
                       {v.confirmed && <Badge variant="success" size="sm">Confirmed</Badge>}
@@ -1039,13 +945,13 @@ export default function WeddingDetail() {
             <Select label="Assign To" value={taskForm.assignedTo} onChange={(e) => setTaskForm({ ...taskForm, assignedTo: e.target.value })} options={users.map(u => ({ value: u._id, label: u.name }))} placeholder="Select..." />
             <Input label="Due Date" type="date" value={taskForm.dueDate} onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })} />
           </div>
-          
-          <Select 
-            label="Belongs to Event (Optional)" 
-            value={taskForm.event} 
-            onChange={(e) => setTaskForm({ ...taskForm, event: e.target.value })} 
-            options={events.map(ev => ({ value: ev._id, label: `${ev.name} (${formatDate(ev.eventDate)})` }))} 
-            placeholder="Select Event..." 
+
+          <Select
+            label="Belongs to Event (Optional)"
+            value={taskForm.event}
+            onChange={(e) => setTaskForm({ ...taskForm, event: e.target.value })}
+            options={events.map(ev => ({ value: ev._id, label: `${ev.name} (${formatDate(ev.eventDate)})` }))}
+            placeholder="Select Event..."
           />
 
           {/* Subtasks */}
@@ -1053,7 +959,7 @@ export default function WeddingDetail() {
             <label className="block text-sm font-medium text-gray-400">Subtasks</label>
             <div className="space-y-1.5">
               {taskForm.subtasks.map((sub, idx) => (
-                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] rounded-lg">
+                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/3 rounded-lg">
                   <div className={`w-3.5 h-3.5 rounded border ${sub.completed ? 'bg-green-500 border-green-500' : 'border-gray-600'}`} />
                   <span className={`text-sm flex-1 ${sub.completed ? 'text-gray-500 line-through' : 'text-gray-300'}`}>{sub.title}</span>
                   {sub.amount !== 0 && (
@@ -1077,7 +983,7 @@ export default function WeddingDetail() {
             <label className="block text-sm font-medium text-gray-400">Vendors</label>
             <div className="space-y-1.5">
               {taskForm.taskVendors.map((tv, idx) => (
-                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] rounded-lg">
+                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/3 rounded-lg">
                   <Store className="w-3.5 h-3.5 text-gray-500" />
                   <span className="text-sm text-gray-300 flex-1">{getVendorDisplayName(tv)}</span>
                   {getVendorDisplayPhone(tv) && <span className="text-xs text-gray-500"><Phone className="w-2.5 h-2.5 inline mr-0.5" />{getVendorDisplayPhone(tv)}</span>}
@@ -1091,7 +997,7 @@ export default function WeddingDetail() {
                 </div>
               ))}
             </div>
-            
+
             {/* Select existing vendor */}
             <Select
               placeholder="Select existing vendor..."
@@ -1101,7 +1007,7 @@ export default function WeddingDetail() {
             />
 
             {/* Or add new vendor with full details */}
-            <div className="border border-white/[0.06] rounded-lg p-3 space-y-2">
+            <div className="border border-white/6 rounded-lg p-3 space-y-2">
               <p className="text-xs text-gray-400 font-medium">Or add new vendor</p>
               <div className="grid grid-cols-2 gap-2">
                 <input type="text" placeholder="Vendor name *" value={newVendor.name} onChange={(e) => setNewVendor({ ...newVendor, name: e.target.value })} className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50" />
@@ -1131,13 +1037,6 @@ export default function WeddingDetail() {
             <Button type="button" variant="secondary" onClick={closeTaskModal}>Cancel</Button>
             <Button type="submit" className="flex-1">{editingTask ? 'Update' : 'Create'} Task</Button>
           </div>
-
-          <ModalFooter>
-            <Button type="button" variant="secondary" onClick={() => setShowTaskModal(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">Add Task</Button>
-          </ModalFooter>
         </form>
       </Modal>
 
@@ -1176,7 +1075,7 @@ export default function WeddingDetail() {
             </div>
           </div>
           <Textarea label="Notes" value={eventForm.notes} onChange={(e) => setEventForm({ ...eventForm, notes: e.target.value })} rows={2} />
-          
+
           {/* For new events, we can optionally assign team immediately if desired, but we'll stick to basic fields for simplicity, and allow team adding via the event card later */}
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="secondary" onClick={closeEventModal}>Cancel</Button>
@@ -1188,12 +1087,12 @@ export default function WeddingDetail() {
       {/* Event Team Modal */}
       <Modal isOpen={showEventTeamModal} onClose={() => setShowEventTeamModal(false)} title="Add Team Member to Event" size="sm">
         <form onSubmit={handleAddEventTeam} className="space-y-4">
-          <Select 
-            label="Team Member" 
-            value={eventTeamForm.userId} 
-            onChange={(e) => setEventTeamForm({ ...eventTeamForm, userId: e.target.value })} 
-            options={(wedding.assignedTeam || []).map(member => ({ value: member.user?._id, label: `${member.user?.name} (${member.role || 'Member'})` }))} 
-            required 
+          <Select
+            label="Team Member"
+            value={eventTeamForm.userId}
+            onChange={(e) => setEventTeamForm({ ...eventTeamForm, userId: e.target.value })}
+            options={(wedding.assignedTeam || []).map(member => ({ value: member.user?._id, label: `${member.user?.name} (${member.role || 'Member'})` }))}
+            required
             placeholder="Select from wedding team..."
           />
           <Input label="Event Specific Role (Optional)" value={eventTeamForm.role} onChange={(e) => setEventTeamForm({ ...eventTeamForm, role: e.target.value })} placeholder="e.g., Stage Manager, Guest Greeter" />
