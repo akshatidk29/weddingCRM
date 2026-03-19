@@ -6,16 +6,111 @@ import {
   ChevronDown, ChevronRight, Trash2, Phone, X, AlertCircle, Mail,
   PartyPopper, Target
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { Modal } from '../components/ui/Modal';
-import { Input, Select, Textarea } from '../components/ui/Input';
-import { PageLoader } from '../components/ui/Loader';
-import { Avatar } from '../components/ui/Avatar';
+import { PageContainer, PageHeader, PageSection, SectionCard, StatCard, EmptyState } from '../components/layout/PageContainer';
 import { formatDate, formatCurrency, categoryColors, taskCategories, vendorCategories, daysUntil, isOverdue } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
+
+// Local design components matching the design system
+const Button = ({ children, variant = 'primary', size = 'md', className = '', icon: Icon, ...props }) => {
+  const baseClasses = 'inline-flex items-center justify-center gap-2 font-medium transition-all duration-200';
+  const sizeClasses = { sm: 'px-3 py-1.5 text-xs rounded-lg', md: 'px-5 py-2.5 text-sm rounded-full' };
+  const variants = {
+    primary: 'bg-stone-900 text-white hover:bg-stone-800 shadow-sm',
+    secondary: 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50',
+    ghost: 'text-stone-500 hover:bg-stone-100 hover:text-stone-700',
+    danger: 'bg-rose-500 text-white hover:bg-rose-600',
+    outline: 'border border-stone-200 text-stone-700 hover:bg-stone-50',
+  };
+  return (
+    <button className={`${baseClasses} ${sizeClasses[size]} ${variants[variant]} ${className}`} {...props}>
+      {Icon && <Icon className="w-4 h-4" />}
+      {children}
+    </button>
+  );
+};
+
+const Input = ({ label, className = '', ...props }) => (
+  <div className={className}>
+    {label && <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase mb-2">{label}</label>}
+    <input
+      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 outline-none transition-all"
+      {...props}
+    />
+  </div>
+);
+
+const Textarea = ({ label, className = '', ...props }) => (
+  <div className={className}>
+    {label && <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase mb-2">{label}</label>}
+    <textarea
+      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 outline-none transition-all resize-none"
+      {...props}
+    />
+  </div>
+);
+
+const Select = ({ label, options = [], placeholder, className = '', ...props }) => (
+  <div className={className}>
+    {label && <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase mb-2">{label}</label>}
+    <select
+      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-900 focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 outline-none transition-all appearance-none cursor-pointer"
+      {...props}
+    >
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map(opt => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  </div>
+);
+
+const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
+  if (!isOpen) return null;
+  const sizes = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} max-h-[85vh] overflow-y-auto`}>
+        <div className="flex items-center justify-between p-5 border-b border-stone-100">
+          <h2 className="text-lg font-semibold text-stone-900">{title}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-xl transition-colors">
+            <X className="w-5 h-5 text-stone-400" />
+          </button>
+        </div>
+        <div className="p-5">{children}</div>
+      </div>
+    </div>
+  );
+};
+
+const Avatar = ({ name, size = 'md' }) => {
+  const sizes = { xs: 'w-6 h-6 text-[10px]', sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-12 h-12 text-base' };
+  const initials = name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??';
+  return (
+    <div className={`${sizes[size]} rounded-full bg-stone-200 flex items-center justify-center font-semibold text-stone-600`}>
+      {initials}
+    </div>
+  );
+};
+
+const Badge = ({ children, variant = 'default', size = 'md', className = '' }) => {
+  const baseClasses = 'inline-flex items-center justify-center font-semibold uppercase tracking-wide rounded-full';
+  const sizeClasses = { sm: 'px-2 py-0.5 text-[9px]', md: 'px-2.5 py-1 text-[10px]' };
+  const variants = {
+    default: 'bg-stone-100 text-stone-600',
+    success: 'bg-emerald-50 text-emerald-600',
+    warning: 'bg-amber-50 text-amber-600',
+    danger: 'bg-rose-50 text-rose-600',
+    secondary: 'bg-stone-100 text-stone-500',
+    outline: 'border border-stone-200 text-stone-600 bg-transparent',
+  };
+  return (
+    <span className={`${baseClasses} ${sizeClasses[size]} ${variants[variant]} ${className}`}>
+      {children}
+    </span>
+  );
+};
 
 export default function WeddingDetail() {
   const { id } = useParams();
@@ -380,16 +475,31 @@ export default function WeddingDetail() {
     setExpandedTasks(prev => ({ ...prev, [taskId]: !prev[taskId] }));
   };
 
-  if (loading) return <PageLoader />;
-  if (!wedding) return <div className="text-center py-12 text-gray-400">Wedding not found</div>;
+  if (loading) {
+    return (
+      <PageContainer>
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin h-8 w-8 border-2 border-stone-900 border-t-transparent rounded-full" />
+        </div>
+      </PageContainer>
+    );
+  }
+  
+  if (!wedding) {
+    return (
+      <PageContainer>
+        <div className="text-center py-12 text-stone-500">Wedding not found</div>
+      </PageContainer>
+    );
+  }
 
   const days = daysUntil(wedding.weddingDate);
 
   const getStatusIcon = (status) => {
-    if (status === 'verified') return <CheckCircle className="w-5 h-5 text-green-400" />;
-    if (status === 'done') return <Check className="w-5 h-5 text-blue-400" />;
-    if (status === 'not_needed') return <Circle className="w-5 h-5 text-gray-500" />;
-    return <Circle className="w-5 h-5 text-gray-600" />;
+    if (status === 'verified') return <CheckCircle className="w-5 h-5 text-emerald-500" />;
+    if (status === 'done') return <Check className="w-5 h-5 text-blue-500" />;
+    if (status === 'not_needed') return <Circle className="w-5 h-5 text-stone-400" />;
+    return <Circle className="w-5 h-5 text-stone-300" />;
   };
 
   const getCompletionInfo = (task) => {
@@ -411,524 +521,530 @@ export default function WeddingDetail() {
   };
 
   return (
-    <div className="space-y-6">
-      <Link to="/weddings" className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+    <PageContainer>
+      {/* Back Link */}
+      <Link to="/weddings" className="inline-flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors mb-6">
         <ArrowLeft className="w-4 h-4" />
         Back to Weddings
       </Link>
 
+      {/* Wedding Header */}
+      <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-6 mb-6">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-display font-bold text-stone-900 mb-1">{wedding.name}</h1>
+            <p className="text-stone-500">{wedding.clientName}</p>
+          </div>
+          <div className="text-right">
+            {days !== null && days >= 0 && (
+              <div className={`text-3xl font-bold ${days <= 7 ? 'text-amber-500' : 'text-stone-900'}`}>
+                {days === 0 ? 'Today!' : `${days} days`}
+              </div>
+            )}
+            <p className="text-sm text-stone-500">until the big day</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 rounded-xl bg-stone-50 border border-stone-100">
+            <Calendar className="w-5 h-5 text-stone-600 mb-2" />
+            <p className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Date</p>
+            <p className="text-stone-900 font-medium">{formatDate(wedding.weddingDate)}</p>
+          </div>
+          <div className="p-4 rounded-xl bg-stone-50 border border-stone-100">
+            <MapPin className="w-5 h-5 text-stone-600 mb-2" />
+            <p className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Venue</p>
+            <p className="text-stone-900 font-medium">{wedding.venue?.name || 'TBD'}</p>
+          </div>
+          <div className="p-4 rounded-xl bg-stone-50 border border-stone-100">
+            <Users className="w-5 h-5 text-stone-600 mb-2" />
+            <p className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Guests</p>
+            <p className="text-stone-900 font-medium">{wedding.guestCount || 0}</p>
+          </div>
+          <div className="p-4 rounded-xl bg-stone-50 border border-stone-100">
+            <DollarSign className="w-5 h-5 text-stone-600 mb-2" />
+            <p className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Budget</p>
+            <p className="text-stone-900 font-medium">{formatCurrency(wedding.budget?.estimated)}</p>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-stone-500">Overall Progress</span>
+            <span className="text-sm text-stone-900 font-medium">{wedding.progress || 0}%</span>
+          </div>
+          <div className="w-full bg-stone-100 rounded-full h-3">
+            <div 
+              className="bg-stone-900 h-3 rounded-full transition-all" 
+              style={{ width: `${wedding.progress || 0}%` }} 
+            />
+          </div>
+          <div className="flex gap-4 mt-2 text-sm text-stone-500">
+            <span>{wedding.taskStats?.completed || 0} completed</span>
+            <span>{wedding.taskStats?.pending || 0} pending</span>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-white mb-2">{wedding.name}</h1>
-                  <p className="text-gray-400">{wedding.clientName}</p>
-                </div>
-                <div className="text-right">
-                  {days !== null && days >= 0 && (
-                    <div className={`text-3xl font-bold ${days <= 7 ? 'text-yellow-400' : 'text-purple-400'}`}>
-                      {days === 0 ? 'Today!' : `${days} days`}
-                    </div>
-                  )}
-                  <p className="text-sm text-gray-500">until the big day</p>
-                </div>
+          {/* EVENTS SECTION */}
+          <SectionCard>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
+                <PartyPopper className="h-5 w-5 text-indigo-500" />
+                Wedding Events
+              </h2>
+              {(isAdmin || isManager) && (
+                <Button onClick={() => setShowEventModal(true)} size="sm">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Event
+                </Button>
+              )}
+            </div>
+
+            {events.length === 0 ? (
+              <div className="bg-stone-50 border border-stone-100 rounded-xl p-8 text-center">
+                <PartyPopper className="h-12 w-12 mx-auto mb-3 text-stone-300" />
+                <p className="text-stone-500">No events planned yet.</p>
+                {(isAdmin || isManager) && (
+                  <Button variant="outline" className="mt-4" onClick={() => setShowEventModal(true)}>
+                    Create First Event
+                  </Button>
+                )}
               </div>
+            ) : (
+              <div className="space-y-4">
+                {events.map((event) => (
+                  <div key={event._id} className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden">
+                    <div
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-stone-50 border-b border-stone-100 cursor-pointer hover:bg-stone-100 transition-colors"
+                      onClick={() => setExpandedEvents({ ...expandedEvents, [event._id]: !expandedEvents[event._id] })}
+                    >
+                      <div className="flex items-center flex-1">
+                        {expandedEvents[event._id] ? (
+                          <ChevronDown className="h-5 w-5 text-stone-400 mr-2" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 text-stone-400 mr-2" />
+                        )}
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-semibold text-stone-900">{event.name}</h3>
+                            <Badge variant={
+                              event.status === 'completed' ? 'success' :
+                                event.status === 'in_progress' ? 'warning' : 'secondary'
+                            }>
+                              {event.status === 'completed' ? 'Completed' :
+                                event.status === 'in_progress' ? 'In Progress' : 'Pending'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 mt-1 text-sm text-stone-500">
+                            <span className="flex items-center"><Calendar className="h-3.5 w-3.5 mr-1" /> {formatDate(event.eventDate)}</span>
+                            {event.venue?.name && <span className="flex items-center"><MapPin className="h-3.5 w-3.5 mr-1" /> {event.venue.name}</span>}
+                          </div>
+                        </div>
+                      </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-white/2">
-                  <Calendar className="w-5 h-5 text-purple-400 mb-2" />
-                  <p className="text-sm text-gray-500">Date</p>
-                  <p className="text-white font-medium">{formatDate(wedding.weddingDate)}</p>
-                </div>
-                <div className="p-4 rounded-xl bg-white/2">
-                  <MapPin className="w-5 h-5 text-purple-400 mb-2" />
-                  <p className="text-sm text-gray-500">Venue</p>
-                  <p className="text-white font-medium">{wedding.venue?.name || 'TBD'}</p>
-                </div>
-                <div className="p-4 rounded-xl bg-white/2">
-                  <Users className="w-5 h-5 text-purple-400 mb-2" />
-                  <p className="text-sm text-gray-500">Guests</p>
-                  <p className="text-white font-medium">{wedding.guestCount || 0}</p>
-                </div>
-                <div className="p-4 rounded-xl bg-white/2">
-                  <DollarSign className="w-5 h-5 text-purple-400 mb-2" />
-                  <p className="text-sm text-gray-500">Budget</p>
-                  <p className="text-white font-medium">{formatCurrency(wedding.budget?.estimated)}</p>
-                </div>
-              </div>
-
-              <div className="mt-6">
-                {/* EVENTS SECTION */}
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold flex items-center">
-                      <PartyPopper className="h-5 w-5 mr-2 text-indigo-500" />
-                      Wedding Events
-                    </h2>
-                    {(isAdmin || isManager) && (
-                      <Button onClick={() => setShowEventModal(true)} size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Event
-                      </Button>
-                    )}
-                  </div>
-
-                  {events.length === 0 ? (
-                    <div className="bg-white border rounded-lg p-8 text-center text-gray-500">
-                      <PartyPopper className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                      <p>No events planned yet.</p>
-                      {(isAdmin || isManager) && (
-                        <Button variant="outline" className="mt-4" onClick={() => setShowEventModal(true)}>
-                          Create First Event
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {events.map((event) => (
-                        <div key={event._id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                          <div
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-b cursor-pointer hover:bg-gray-100 transition-colors"
-                            onClick={() => setExpandedEvents({ ...expandedEvents, [event._id]: !expandedEvents[event._id] })}
-                          >
-                            <div className="flex items-center flex-1">
-                              {expandedEvents[event._id] ? (
-                                <ChevronDown className="h-5 w-5 text-gray-400 mr-2" />
-                              ) : (
-                                <ChevronRight className="h-5 w-5 text-gray-400 mr-2" />
-                              )}
-                              <div>
-                                <div className="flex items-center gap-3">
-                                  <h3 className="font-semibold text-lg text-gray-900">{event.name}</h3>
-                                  <Badge variant={
-                                    event.status === 'completed' ? 'success' :
-                                      event.status === 'in_progress' ? 'warning' : 'secondary'
-                                  }>
-                                    {event.status === 'completed' ? 'Completed' :
-                                      event.status === 'in_progress' ? 'In Progress' : 'Pending'}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                                  <span className="flex items-center"><Calendar className="h-3.5 w-3.5 mr-1" /> {formatDate(event.eventDate)}</span>
-                                  {event.venue?.name && <span className="flex items-center"><MapPin className="h-3.5 w-3.5 mr-1" /> {event.venue.name}</span>}
-                                </div>
-                              </div>
+                      <div className="mt-4 sm:mt-0 flex items-center justify-between sm:justify-end gap-6 sm:w-1/3">
+                        <div className="text-right">
+                          <div className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase mb-1">Progress</div>
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-24 h-2 bg-stone-200 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${event.progress === 100 ? 'bg-emerald-500' : 'bg-stone-700'}`}
+                                style={{ width: `${event.progress || 0}%` }}
+                              />
                             </div>
+                            <span className="text-sm font-medium text-stone-900">{event.progress || 0}%</span>
+                          </div>
+                        </div>
 
-                            <div className="mt-4 sm:mt-0 flex items-center justify-between sm:justify-end gap-6 sm:w-1/3">
-                              <div className="text-right">
-                                <div className="text-xs text-gray-500 mb-1">Task Progress</div>
-                                <div className="flex items-center justify-end gap-2">
-                                  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                    <div
-                                      className={`h-full ${event.progress === 100 ? 'bg-green-500' : 'bg-indigo-500'}`}
-                                      style={{ width: `${event.progress || 0}%` }}
-                                    />
-                                  </div>
-                                  <span className="text-sm font-medium">{event.progress || 0}%</span>
+                        <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                          {(isAdmin || isManager) && (
+                            <>
+                              <button className="p-2 hover:bg-stone-200 rounded-lg transition-colors" onClick={() => openEditEvent(event)}>
+                                <Edit className="h-4 w-4 text-stone-500" />
+                              </button>
+                              <button className="p-2 hover:bg-rose-100 rounded-lg transition-colors" onClick={() => handleDeleteEvent(event._id)}>
+                                <Trash2 className="h-4 w-4 text-rose-500" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {expandedEvents[event._id] && (
+                      <div className="p-4 bg-white">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="md:col-span-2">
+                            {event.description && (
+                              <div className="mb-4">
+                                <h4 className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase mb-1">Details</h4>
+                                <p className="text-sm text-stone-600">{event.description}</p>
+                              </div>
+                            )}
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase flex items-center">
+                                  <Target className="h-4 w-4 mr-1" /> Event Tasks
+                                </h4>
+                                <Button variant="outline" size="sm" onClick={() => openAddTaskToEvent(event._id)}>
+                                  <Plus className="h-3 w-3 mr-1" /> Add Task
+                                </Button>
+                              </div>
+
+                              {tasks.filter(t => t.event?._id === event._id || t.event === event._id).length === 0 ? (
+                                <div className="text-sm text-stone-400 italic py-2">No tasks assigned to this event yet.</div>
+                              ) : (
+                                <div className="space-y-2">
+                                  {tasks.filter(t => t.event?._id === event._id || t.event === event._id).map(task => (
+                                    <div key={task._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border border-stone-100 rounded-xl hover:bg-stone-50 transition-colors">
+                                      <div className="flex items-center gap-3">
+                                        <div onClick={() => toggleTaskStatus(task._id, task.status)} className="cursor-pointer">
+                                          {task.status === 'done' || task.status === 'verified' ? (
+                                            <CheckCircle className="h-5 w-5 text-emerald-500" />
+                                          ) : task.status === 'in_progress' ? (
+                                            <Clock className="h-5 w-5 text-amber-500" />
+                                          ) : (
+                                            <Circle className="h-5 w-5 text-stone-300" />
+                                          )}
+                                        </div>
+                                        <div className="cursor-pointer" onClick={() => toggleTaskExpand(task._id)}>
+                                          <div className={`font-medium ${task.status === 'done' || task.status === 'verified' ? 'line-through text-stone-400' : 'text-stone-900'}`}>
+                                            {task.title}
+                                          </div>
+                                          {task.dueDate && (
+                                            <div className={`text-xs ${isOverdue(task.dueDate) && task.status !== 'done' && task.status !== 'verified' ? 'text-rose-500 font-medium flex items-center' : 'text-stone-500'}`}>
+                                              {isOverdue(task.dueDate) && task.status !== 'done' && task.status !== 'verified' && <AlertCircle className="h-3 w-3 mr-1 inline" />}
+                                              Due: {formatDate(task.dueDate)}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-3 mt-2 sm:mt-0">
+                                        {task.assignedTo && (
+                                          <div className="flex items-center" title={`Assigned to ${task.assignedTo.name}`}>
+                                            <Avatar name={task.assignedTo.name} size="xs" />
+                                          </div>
+                                        )}
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-600 uppercase">
+                                          {categoryColors[task.category]?.icon} {task.category}
+                                        </span>
+                                        {(isAdmin || isManager) && (
+                                          <button className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors" onClick={() => openEditTask(task)}>
+                                            <Edit className="h-4 w-4 text-stone-400" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
-                              </div>
-
-                              <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                                {(isAdmin || isManager) && (
-                                  <>
-                                    <Button variant="ghost" size="sm" onClick={() => openEditEvent(event)}>
-                                      <Edit className="h-4 w-4 text-gray-500" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteEvent(event._id)}>
-                                      <Trash2 className="h-4 w-4 text-red-500" />
-                                    </Button>
-                                  </>
-                                )}
-                              </div>
+                              )}
                             </div>
                           </div>
 
-                          {expandedEvents[event._id] && (
-                            <div className="p-4 border-b bg-white">
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="md:col-span-2">
-                                  {event.description && (
-                                    <div className="mb-4">
-                                      <h4 className="text-sm font-semibold text-gray-700 mb-1">Details</h4>
-                                      <p className="text-sm text-gray-600">{event.description}</p>
-                                    </div>
-                                  )}
-                                  <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                      <h4 className="text-sm font-semibold text-gray-700 flex items-center">
-                                        <Target className="h-4 w-4 mr-1 text-gray-400" /> Event Tasks
-                                      </h4>
-                                      <Button variant="outline" size="sm" onClick={() => openAddTaskToEvent(event._id)} className="h-7 text-xs">
-                                        <Plus className="h-3 w-3 mr-1" /> Add Task
-                                      </Button>
-                                    </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase flex items-center">
+                                <Users className="h-4 w-4 mr-1" /> Event Team
+                              </h4>
+                              {(isAdmin || isManager) && (
+                                <button
+                                  onClick={() => { setSelectedEventForTeam(event._id); setShowEventTeamModal(true); }}
+                                  className="p-1.5 rounded-full bg-stone-100 hover:bg-stone-200 transition-colors"
+                                >
+                                  <Plus className="h-3 w-3 text-stone-600" />
+                                </button>
+                              )}
+                            </div>
 
-                                    {tasks.filter(t => t.event?._id === event._id || t.event === event._id).length === 0 ? (
-                                      <div className="text-sm text-gray-500 italic py-2">No tasks assigned to this event yet.</div>
-                                    ) : (
+                            {(!event.assignedTeam || event.assignedTeam.length === 0) ? (
+                              <div className="text-sm text-stone-400 italic">No specific team assigned.</div>
+                            ) : (
+                              <div className="space-y-2">
+                                {event.assignedTeam.map((member, index) => (
+                                  <div key={index} className="flex items-center justify-between bg-stone-50 p-2 rounded-xl border border-stone-100">
+                                    <div className="flex items-center gap-2">
+                                      <Avatar name={member.user?.name} size="sm" />
+                                      <div>
+                                        <p className="text-sm font-medium text-stone-800">{member.user?.name}</p>
+                                        <p className="text-xs text-stone-500 capitalize">{member.role || 'Member'}</p>
+                                      </div>
+                                    </div>
+                                    {(isAdmin || isManager) && (
+                                      <button
+                                        onClick={() => handleRemoveEventTeam(event._id, member.user?._id)}
+                                        className="text-stone-400 hover:text-rose-500 transition-colors"
+                                        title="Remove from event"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* General Tasks Section */}
+          <SectionCard>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-stone-600" />
+                Tasks & Checklist
+              </h2>
+              <Button icon={Plus} size="sm" onClick={() => setShowTaskModal(true)}>Add Task</Button>
+            </div>
+
+            {Object.keys(tasksByCategory).length === 0 ? (
+              <div className="text-center py-8 text-stone-500">No tasks yet. Add your first task to get started.</div>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(tasksByCategory).map(([category, categoryTasks]) => {
+                  const catInfo = categoryColors[category] || categoryColors.other;
+                  const completed = categoryTasks.filter(t => t.status === 'done' || t.status === 'verified').length;
+
+                  return (
+                    <div key={category} className="border border-stone-200 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }))}
+                        className="w-full p-4 flex items-center justify-between bg-stone-50 hover:bg-stone-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{catInfo.icon}</span>
+                          <span className="font-medium text-stone-900 capitalize">{category.replace('_', ' ')}</span>
+                        </div>
+                        <span className="text-sm text-stone-500">{completed}/{categoryTasks.length} done</span>
+                      </button>
+
+                      {expandedCategories[category] && (
+                        <div className="divide-y divide-stone-100">
+                          {categoryTasks.map(task => {
+                            const info = getCompletionInfo(task);
+                            const isExpanded = expandedTasks[task._id];
+
+                            return (
+                              <div key={task._id}>
+                                <div className="p-4 flex items-center gap-4 hover:bg-stone-50 transition-colors">
+                                  <button
+                                    onClick={() => {
+                                      if (task.status === 'pending') {
+                                        if ((info.hasSubtasks || info.hasVendors) && !info.canAutoComplete) {
+                                          setExpandedTasks(prev => ({ ...prev, [task._id]: true }));
+                                        } else {
+                                          handleTaskStatusChange(task._id, 'done');
+                                        }
+                                      } else if (task.status === 'done' && (isAdmin || isManager)) {
+                                        handleTaskStatusChange(task._id, 'verified');
+                                      } else if (task.status === 'verified' || task.status === 'done') {
+                                        handleTaskStatusChange(task._id, 'pending');
+                                      }
+                                    }}
+                                    className="shrink-0"
+                                  >
+                                    {getStatusIcon(task.status)}
+                                  </button>
+
+                                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleTaskExpand(task._id)}>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <p className={`font-medium ${task.status === 'done' || task.status === 'verified' ? 'text-stone-400 line-through' : 'text-stone-900'}`}>
+                                        {task.title}
+                                      </p>
+                                      {task.priority === 'high' && <Badge variant="danger" size="sm">High</Badge>}
+                                      {task.priority === 'urgent' && <Badge variant="danger" size="sm">Urgent</Badge>}
+                                      {task.status === 'verified' && <Badge variant="success" size="sm">Verified ✓</Badge>}
+                                    </div>
+                                    <div className="flex items-center gap-4 mt-1 text-sm text-stone-500 flex-wrap">
+                                      {task.dueDate && (
+                                        <span className={isOverdue(task.dueDate) && task.status === 'pending' ? 'text-rose-500' : ''}>
+                                          <Clock className="w-3 h-3 inline mr-1" />{formatDate(task.dueDate)}
+                                        </span>
+                                      )}
+                                      {task.assignedTo && <span>{task.assignedTo.name}</span>}
+                                      {info.hasSubtasks && (
+                                        <span className={info.allSubtasksDone ? 'text-emerald-600' : 'text-amber-600'}>
+                                          {info.subtasksDone}/{info.subtasksTotal} subtasks
+                                        </span>
+                                      )}
+                                      {info.hasVendors && (
+                                        <span className={info.allVendorsDone ? 'text-emerald-600' : 'text-orange-600'}>
+                                          {info.vendorsDone}/{info.vendorsTotal} vendors
+                                        </span>
+                                      )}
+                                    </div>
+                                    {task.status === 'pending' && !info.canAutoComplete && (info.hasSubtasks || info.hasVendors) && (
+                                      <div className="flex items-center gap-1 mt-1 text-xs text-amber-600">
+                                        <AlertCircle className="w-3 h-3" />
+                                        <span>
+                                          {info.pendingSubtasks > 0 && `${info.pendingSubtasks} subtask(s)`}
+                                          {info.pendingSubtasks > 0 && info.pendingVendors > 0 && ' & '}
+                                          {info.pendingVendors > 0 && `${info.pendingVendors} vendor(s)`} remaining
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-1">
+                                    {(info.hasSubtasks || info.hasVendors) && (
+                                      <button onClick={() => toggleTaskExpand(task._id)} className="p-2 hover:bg-stone-100 rounded-lg text-stone-400 hover:text-stone-700 transition-colors">
+                                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                      </button>
+                                    )}
+                                    <button onClick={() => openEditTask(task)} className="p-2 hover:bg-stone-100 rounded-lg text-stone-400 hover:text-stone-700 transition-colors">
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {isExpanded && (
+                                  <div className="px-4 pb-4 ml-14 space-y-3 bg-stone-50/50">
+                                    {info.hasSubtasks && (
                                       <div className="space-y-2">
-                                        {tasks.filter(t => t.event?._id === event._id || t.event === event._id).map(task => (
-                                          <div key={task._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-md hover:bg-gray-50">
-                                            <div className="flex items-center gap-3">
-                                              <div onClick={() => toggleTaskStatus(task._id, task.status)} className="cursor-pointer">
-                                                {task.status === 'done' || task.status === 'verified' ? (
-                                                  <CheckCircle className="h-5 w-5 text-green-500" />
-                                                ) : task.status === 'in_progress' ? (
-                                                  <Clock className="h-5 w-5 text-yellow-500" />
-                                                ) : (
-                                                  <Circle className="h-5 w-5 text-gray-300" />
-                                                )}
-                                              </div>
-                                              <div className="cursor-pointer" onClick={() => toggleTaskExpand(task._id)}>
-                                                <div className={`font-medium ${task.status === 'done' || task.status === 'verified' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-                                                  {task.title}
-                                                </div>
-                                                {task.dueDate && (
-                                                  <div className={`text-xs ${isOverdue(task.dueDate) && task.status !== 'done' && task.status !== 'verified' ? 'text-red-500 font-medium flex items-center' : 'text-gray-500'}`}>
-                                                    {isOverdue(task.dueDate) && task.status !== 'done' && task.status !== 'verified' && <AlertCircle className="h-3 w-3 mr-1 inline" />}
-                                                    Due: {formatDate(task.dueDate)}
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </div>
+                                        <p className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Subtasks</p>
+                                        {task.subtasks.map(sub => (
+                                          <div key={sub._id} className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white border border-stone-100 hover:border-stone-200 group transition-colors">
+                                            <button
+                                              onClick={() => handleToggleSubtask(task._id, sub._id)}
+                                              className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${sub.completed ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300 hover:border-stone-500'}`}
+                                            >
+                                              {sub.completed && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                            </button>
+                                            <span className={`text-sm flex-1 ${sub.completed ? 'text-stone-400 line-through' : 'text-stone-700'}`}>{sub.title}</span>
+                                            {sub.amount !== 0 && (
+                                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${sub.paymentStatus === 'completed' ? 'bg-emerald-50 text-emerald-600' : sub.paymentStatus === 'partial' ? 'bg-amber-50 text-amber-600' : 'bg-stone-100 text-stone-600'}`}>
+                                                ${Math.abs(sub.amount)} {sub.amount < 0 ? 'Receivable' : 'Payable'}
+                                              </span>
+                                            )}
+                                            <button onClick={() => handleDeleteSubtask(task._id, sub._id)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-100 rounded text-stone-400 hover:text-rose-500 transition-all">
+                                              <Trash2 className="w-3 h-3" />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
 
-                                            <div className="flex items-center gap-3 mt-2 sm:mt-0">
-                                              {task.assignedTo && (
-                                                <div className="flex items-center" title={`Assigned to ${task.assignedTo.name}`}>
-                                                  <Avatar name={task.assignedTo.name} size="xs" />
-                                                </div>
-                                              )}
-                                              <Badge variant="outline" className={categoryColors[task.category]?.text || 'text-gray-500'}>
-                                                {categoryColors[task.category]?.icon} {taskCategories.find(c => c.value === task.category)?.label || task.category}
-                                              </Badge>
-                                              {(isAdmin || isManager) && (
-                                                <Button variant="ghost" size="sm" onClick={() => openEditTask(task)} className="h-8 w-8 p-0">
-                                                  <Edit className="h-4 w-4 text-gray-400" />
-                                                </Button>
+                                    {info.hasVendors && (
+                                      <div className="space-y-2 mt-3">
+                                        <p className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Vendors</p>
+                                        {task.taskVendors.map(tv => (
+                                          <div key={tv._id} className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white border border-stone-100 hover:border-stone-200 group transition-colors">
+                                            <button
+                                              onClick={() => handleUpdateVendorStatus(task._id, tv._id, tv.status === 'completed' ? 'pending' : 'completed')}
+                                              className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${tv.status === 'completed' ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300 hover:border-stone-500'}`}
+                                            >
+                                              {tv.status === 'completed' && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                            </button>
+                                            <div className="flex-1">
+                                              <span className={`text-sm ${tv.status === 'completed' ? 'text-stone-400 line-through' : 'text-stone-700'}`}>
+                                                {tv.vendor?.name || 'Unknown'}
+                                              </span>
+                                              {tv.vendor?.phone && <span className="text-xs text-stone-400 ml-2"><Phone className="w-2.5 h-2.5 inline mr-0.5" />{tv.vendor.phone}</span>}
+                                              {tv.vendor?.email && <span className="text-xs text-stone-400 ml-2"><Mail className="w-2.5 h-2.5 inline mr-0.5" />{tv.vendor.email}</span>}
+                                              {tv.amount !== 0 && (
+                                                <span className="text-xs ml-2 text-blue-600">
+                                                  Pay: ${Math.abs(tv.amount)} ({tv.paymentStatus || 'pending'})
+                                                </span>
                                               )}
                                             </div>
+                                            <Badge size="sm" variant={tv.status === 'completed' ? 'success' : 'warning'}>{tv.status}</Badge>
+                                            <button onClick={() => handleDeleteTaskVendor(task._id, tv._id)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-100 rounded text-stone-400 hover:text-rose-500 transition-all">
+                                              <Trash2 className="w-3 h-3" />
+                                            </button>
                                           </div>
                                         ))}
                                       </div>
                                     )}
                                   </div>
-                                </div>
-
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-sm font-semibold text-gray-700 flex items-center">
-                                      <Users className="h-4 w-4 mr-1 text-gray-400" /> Event Team
-                                    </h4>
-                                    {(isAdmin || isManager) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => { setSelectedEventForTeam(event._id); setShowEventTeamModal(true); }}
-                                        className="h-7 w-7 p-0 rounded-full bg-gray-100 hover:bg-gray-200"
-                                      >
-                                        <Plus className="h-3 w-3 text-gray-600" />
-                                      </Button>
-                                    )}
-                                  </div>
-
-                                  {(!event.assignedTeam || event.assignedTeam.length === 0) ? (
-                                    <div className="text-sm text-gray-500 italic">No specific team assigned.</div>
-                                  ) : (
-                                    <div className="space-y-3">
-                                      {event.assignedTeam.map((member, index) => (
-                                        <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
-                                          <div className="flex items-center gap-2">
-                                            <Avatar name={member.user?.name} size="sm" src={member.user?.avatar} />
-                                            <div>
-                                              <p className="text-sm font-medium text-gray-800">{member.user?.name}</p>
-                                              <p className="text-xs text-gray-500 capitalize">{member.role || 'Member'}</p>
-                                            </div>
-                                          </div>
-                                          {(isAdmin || isManager) && (
-                                            <button
-                                              onClick={() => handleRemoveEventTeam(event._id, member.user?._id)}
-                                              className="text-gray-400 hover:text-red-500 transition-colors"
-                                              title="Remove from event"
-                                            >
-                                              <X className="h-4 w-4" />
-                                            </button>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
+                                )}
                               </div>
-                            </div>
-                          )}
+                            );
+                          })}
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
-                </div>
-
-                {/* GENERAL TASKS SECTION */}
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold flex items-center">
-                    <CheckCircle className="h-5 w-5 mr-2 text-indigo-500" />
-                    General Tasks (Not in Events)
-                  </h2>
-                  <Button icon={Plus} size="sm" onClick={() => openAddTaskToEvent('')}>Add Task</Button>
-                </div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-400">Progress</span>
-                  <span className="text-sm text-white font-medium">{wedding.progress || 0}%</span>
-                </div>
-                <div className="w-full bg-white/10 rounded-full h-3">
-                  <div className="bg-linear-to-r from-purple-500 to-violet-500 h-3 rounded-full transition-all" style={{ width: `${wedding.progress || 0}%` }} />
-                </div>
-                <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                  <span>{wedding.taskStats?.completed || 0} completed</span>
-                  <span>{wedding.taskStats?.pending || 0} pending</span>
-                </div>
+                  );
+                })}
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Tasks & Checklist</CardTitle>
-              <Button icon={Plus} size="sm" onClick={() => setShowTaskModal(true)}>Add Task</Button>
-            </CardHeader>
-            <CardContent>
-              {Object.keys(tasksByCategory).length === 0 ? (
-                <div className="text-center py-8 text-gray-500">No tasks yet. Add your first task to get started.</div>
-              ) : (
-                <div className="space-y-4">
-                  {Object.entries(tasksByCategory).map(([category, categoryTasks]) => {
-                    const catInfo = categoryColors[category] || categoryColors.other;
-                    const completed = categoryTasks.filter(t => t.status === 'done' || t.status === 'verified').length;
-
-                    return (
-                      <div key={category} className="border border-white/6 rounded-xl overflow-hidden">
-                        <button
-                          onClick={() => setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }))}
-                          className={`w-full p-4 flex items-center justify-between ${catInfo.bg} hover:opacity-90 transition-opacity`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-xl">{catInfo.icon}</span>
-                            <span className={`font-medium ${catInfo.text} capitalize`}>{category.replace('_', ' ')}</span>
-                          </div>
-                          <span className="text-sm text-gray-400">{completed}/{categoryTasks.length} done</span>
-                        </button>
-
-                        {expandedCategories[category] && (
-                          <div className="divide-y divide-white/6">
-                            {categoryTasks.map(task => {
-                              const info = getCompletionInfo(task);
-                              const isExpanded = expandedTasks[task._id];
-
-                              return (
-                                <div key={task._id}>
-                                  <div className="p-4 flex items-center gap-4 hover:bg-white/2 transition-colors">
-                                    <button
-                                      onClick={() => {
-                                        if (task.status === 'pending') {
-                                          if ((info.hasSubtasks || info.hasVendors) && !info.canAutoComplete) {
-                                            setExpandedTasks(prev => ({ ...prev, [task._id]: true }));
-                                          } else {
-                                            handleTaskStatusChange(task._id, 'done');
-                                          }
-                                        } else if (task.status === 'done' && (isAdmin || isManager)) {
-                                          handleTaskStatusChange(task._id, 'verified');
-                                        } else if (task.status === 'verified' || task.status === 'done') {
-                                          handleTaskStatusChange(task._id, 'pending');
-                                        }
-                                      }}
-                                      className="shrink-0"
-                                    >
-                                      {getStatusIcon(task.status)}
-                                    </button>
-
-                                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleTaskExpand(task._id)}>
-                                      <div className="flex items-center gap-2">
-                                        <p className={`font-medium ${task.status === 'done' || task.status === 'verified' ? 'text-gray-500 line-through' : 'text-white'}`}>
-                                          {task.title}
-                                        </p>
-                                        {task.priority === 'high' && <Badge variant="danger" size="sm">High</Badge>}
-                                        {task.priority === 'urgent' && <Badge variant="danger" size="sm">Urgent</Badge>}
-                                        {task.status === 'verified' && <Badge variant="success" size="sm">Verified ✓</Badge>}
-                                      </div>
-                                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                                        {task.dueDate && (
-                                          <span className={isOverdue(task.dueDate) && task.status === 'pending' ? 'text-red-400' : ''}>
-                                            <Clock className="w-3 h-3 inline mr-1" />{formatDate(task.dueDate)}
-                                          </span>
-                                        )}
-                                        {task.assignedTo && <span>{task.assignedTo.name}</span>}
-                                        {info.hasSubtasks && (
-                                          <span className={info.allSubtasksDone ? 'text-green-400' : 'text-yellow-400'}>
-                                            {info.subtasksDone}/{info.subtasksTotal} subtasks
-                                          </span>
-                                        )}
-                                        {info.hasVendors && (
-                                          <span className={info.allVendorsDone ? 'text-green-400' : 'text-orange-400'}>
-                                            {info.vendorsDone}/{info.vendorsTotal} vendors
-                                          </span>
-                                        )}
-                                      </div>
-                                      {task.status === 'pending' && !info.canAutoComplete && (info.hasSubtasks || info.hasVendors) && (
-                                        <div className="flex items-center gap-1 mt-1 text-xs text-amber-400">
-                                          <AlertCircle className="w-3 h-3" />
-                                          <span>
-                                            {info.pendingSubtasks > 0 && `${info.pendingSubtasks} subtask(s)`}
-                                            {info.pendingSubtasks > 0 && info.pendingVendors > 0 && ' & '}
-                                            {info.pendingVendors > 0 && `${info.pendingVendors} vendor(s)`} remaining
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                      {(info.hasSubtasks || info.hasVendors) && (
-                                        <button onClick={() => toggleTaskExpand(task._id)} className="p-2 hover:bg-white/10 rounded-lg text-gray-500 hover:text-white transition-colors">
-                                          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                        </button>
-                                      )}
-                                      <button onClick={() => openEditTask(task)} className="p-2 hover:bg-white/10 rounded-lg text-gray-500 hover:text-white transition-colors">
-                                        <Edit className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  </div>
-
-                                  {isExpanded && (
-                                    <div className="px-4 pb-4 ml-14 space-y-3">
-                                      {info.hasSubtasks && (
-                                        <div className="space-y-1">
-                                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Subtasks</p>
-                                          {task.subtasks.map(sub => (
-                                            <div key={sub._id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white/3 group">
-                                              <button
-                                                onClick={() => handleToggleSubtask(task._id, sub._id)}
-                                                className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${sub.completed ? 'bg-green-500 border-green-500' : 'border-gray-600 hover:border-purple-500'}`}
-                                              >
-                                                {sub.completed && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                              </button>
-                                              <span className={`text-sm flex-1 ${sub.completed ? 'text-gray-500 line-through' : 'text-gray-300'}`}>{sub.title}</span>
-                                              {sub.amount !== 0 && (
-                                                <Badge size="sm" variant={sub.paymentStatus === 'completed' ? 'success' : sub.paymentStatus === 'partial' ? 'warning' : 'secondary'}>
-                                                  ${Math.abs(sub.amount)} {sub.amount < 0 ? 'Receivable' : 'Payable'}
-                                                </Badge>
-                                              )}
-                                              <button onClick={() => handleDeleteSubtask(task._id, sub._id)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded text-gray-500 hover:text-red-400 transition-all">
-                                                <Trash2 className="w-3 h-3" />
-                                              </button>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-
-                                      {info.hasVendors && (
-                                        <div className="space-y-1">
-                                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-3">Vendors</p>
-                                          {task.taskVendors.map(tv => (
-                                            <div key={tv._id} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white/3 group">
-                                              <button
-                                                onClick={() => handleUpdateVendorStatus(task._id, tv._id, tv.status === 'completed' ? 'pending' : 'completed')}
-                                                className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${tv.status === 'completed' ? 'bg-green-500 border-green-500' : 'border-gray-600 hover:border-purple-500'}`}
-                                              >
-                                                {tv.status === 'completed' && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                              </button>
-                                              <div className="flex-1">
-                                                <span className={`text-sm ${tv.status === 'completed' ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
-                                                  {tv.vendor?.name || 'Unknown'}
-                                                </span>
-                                                {tv.vendor?.phone && <span className="text-xs text-gray-500 ml-2"><Phone className="w-2.5 h-2.5 inline mr-0.5" />{tv.vendor.phone}</span>}
-                                                {tv.vendor?.email && <span className="text-xs text-gray-500 ml-2"><Mail className="w-2.5 h-2.5 inline mr-0.5" />{tv.vendor.email}</span>}
-                                                {tv.amount !== 0 && (
-                                                  <span className="text-xs ml-2 text-blue-400">
-                                                    Pay: ${Math.abs(tv.amount)} ({tv.paymentStatus || 'pending'})
-                                                  </span>
-                                                )}
-                                              </div>
-                                              <Badge size="sm" variant={tv.status === 'completed' ? 'success' : 'warning'}>{tv.status}</Badge>
-                                              <button onClick={() => handleDeleteTaskVendor(task._id, tv._id)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded text-gray-500 hover:text-red-400 transition-all">
-                                                <Trash2 className="w-3 h-3" />
-                                              </button>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </SectionCard>
         </div>
 
+        {/* Sidebar */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Team</CardTitle>
-              {isManager && <Button icon={UserPlus} size="sm" variant="ghost" onClick={() => setShowTeamModal(true)} />}
-            </CardHeader>
-            <CardContent>
-              {wedding.relationshipManager && (
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-500/10 mb-3">
-                  <Avatar name={wedding.relationshipManager.name} size="md" />
+          {/* Team Section */}
+          <SectionCard>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Team</h3>
+              {isManager && (
+                <button onClick={() => setShowTeamModal(true)} className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors">
+                  <UserPlus className="w-4 h-4 text-stone-500" />
+                </button>
+              )}
+            </div>
+            
+            {wedding.relationshipManager && (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-indigo-50 border border-indigo-100 mb-3">
+                <Avatar name={wedding.relationshipManager.name} size="md" />
+                <div>
+                  <p className="text-stone-900 font-medium">{wedding.relationshipManager.name}</p>
+                  <p className="text-xs text-indigo-600">Relationship Manager</p>
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              {wedding.assignedTeam?.map((member, idx) => (
+                <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 border border-stone-100">
+                  <Avatar name={member.user?.name} size="sm" />
                   <div>
-                    <p className="text-white font-medium">{wedding.relationshipManager.name}</p>
-                    <p className="text-xs text-purple-400">Relationship Manager</p>
+                    <p className="text-stone-900 text-sm font-medium">{member.user?.name}</p>
+                    <p className="text-xs text-stone-500">{member.role || 'Team Member'}</p>
                   </div>
                 </div>
-              )}
-              <div className="space-y-2">
-                {wedding.assignedTeam?.map((member, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-white/2">
-                    <Avatar name={member.user?.name} size="sm" />
-                    <div>
-                      <p className="text-white text-sm">{member.user?.name}</p>
-                      <p className="text-xs text-gray-500">{member.role || 'Team Member'}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {!wedding.assignedTeam?.length && !wedding.relationshipManager && (
-                <p className="text-sm text-gray-500 text-center py-4">No team assigned</p>
-              )}
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+            {!wedding.assignedTeam?.length && !wedding.relationshipManager && (
+              <p className="text-sm text-stone-400 text-center py-4">No team assigned</p>
+            )}
+          </SectionCard>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Vendors</CardTitle>
-              {isManager && <Button icon={Store} size="sm" variant="ghost" onClick={() => setShowVendorModal(true)} />}
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {wedding.vendors?.map((v, idx) => (
-                  <div key={idx} className="p-3 rounded-xl bg-white/2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-white font-medium">{v.vendor?.name}</p>
-                      {v.confirmed && <Badge variant="success" size="sm">Confirmed</Badge>}
-                    </div>
-                    <p className="text-sm text-gray-500 capitalize">{v.category}</p>
-                    {v.amount > 0 && <p className="text-sm text-green-400 mt-1">{formatCurrency(v.amount)}</p>}
-                  </div>
-                ))}
-              </div>
-              {!wedding.vendors?.length && (
-                <p className="text-sm text-gray-500 text-center py-4">No vendors assigned</p>
+          {/* Vendors Section */}
+          <SectionCard>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Vendors</h3>
+              {isManager && (
+                <button onClick={() => setShowVendorModal(true)} className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors">
+                  <Store className="w-4 h-4 text-stone-500" />
+                </button>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            <div className="space-y-2">
+              {wedding.vendors?.map((v, idx) => (
+                <div key={idx} className="p-3 rounded-xl bg-stone-50 border border-stone-100">
+                  <div className="flex items-center justify-between">
+                    <p className="text-stone-900 font-medium">{v.vendor?.name}</p>
+                    {v.confirmed && <Badge variant="success" size="sm">Confirmed</Badge>}
+                  </div>
+                  <p className="text-sm text-stone-500 capitalize">{v.category}</p>
+                  {v.amount > 0 && <p className="text-sm text-emerald-600 mt-1">{formatCurrency(v.amount)}</p>}
+                </div>
+              ))}
+            </div>
+            {!wedding.vendors?.length && (
+              <p className="text-sm text-stone-400 text-center py-4">No vendors assigned</p>
+            )}
+          </SectionCard>
         </div>
       </div>
 
@@ -956,42 +1072,42 @@ export default function WeddingDetail() {
 
           {/* Subtasks */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-400">Subtasks</label>
-            <div className="space-y-1.5">
+            <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Subtasks</label>
+            <div className="space-y-2">
               {taskForm.subtasks.map((sub, idx) => (
-                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/3 rounded-lg">
-                  <div className={`w-3.5 h-3.5 rounded border ${sub.completed ? 'bg-green-500 border-green-500' : 'border-gray-600'}`} />
-                  <span className={`text-sm flex-1 ${sub.completed ? 'text-gray-500 line-through' : 'text-gray-300'}`}>{sub.title}</span>
+                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-stone-50 border border-stone-100 rounded-xl">
+                  <div className={`w-3.5 h-3.5 rounded border ${sub.completed ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300'}`} />
+                  <span className={`text-sm flex-1 ${sub.completed ? 'text-stone-400 line-through' : 'text-stone-700'}`}>{sub.title}</span>
                   {sub.amount !== 0 && (
-                    <span className="text-xs text-blue-400 mr-2">${Math.abs(sub.amount)}</span>
+                    <span className="text-xs text-emerald-600 mr-2">${Math.abs(sub.amount)}</span>
                   )}
-                  <button type="button" onClick={() => removeSubtaskFromForm(idx)} className="p-1 hover:bg-red-500/20 rounded text-gray-500 hover:text-red-400 transition-colors">
+                  <button type="button" onClick={() => removeSubtaskFromForm(idx)} className="p-1 hover:bg-rose-100 rounded text-stone-400 hover:text-rose-500 transition-colors">
                     <X className="w-3 h-3" />
                   </button>
                 </div>
               ))}
             </div>
             <div className="flex gap-2">
-              <input type="text" placeholder="Add a subtask..." value={newSubtaskTitle} onChange={(e) => setNewSubtaskTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSubtaskToForm(); } }} className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50" />
-              <input type="number" placeholder="Amt (optional)" value={newSubtaskAmount} onChange={(e) => setNewSubtaskAmount(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSubtaskToForm(); } }} className="w-32 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50" />
-              <button type="button" onClick={addSubtaskToForm} className="px-3 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm hover:bg-purple-500/30 transition-colors"><Plus className="w-4 h-4" /></button>
+              <input type="text" placeholder="Add a subtask..." value={newSubtaskTitle} onChange={(e) => setNewSubtaskTitle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSubtaskToForm(); } }} className="flex-1 px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5" />
+              <input type="number" placeholder="Amt" value={newSubtaskAmount} onChange={(e) => setNewSubtaskAmount(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSubtaskToForm(); } }} className="w-24 px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5" />
+              <button type="button" onClick={addSubtaskToForm} className="px-3 py-2 bg-stone-100 text-stone-600 rounded-xl text-sm hover:bg-stone-200 transition-colors"><Plus className="w-4 h-4" /></button>
             </div>
           </div>
 
           {/* Vendors */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-400">Vendors</label>
-            <div className="space-y-1.5">
+            <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Vendors</label>
+            <div className="space-y-2">
               {taskForm.taskVendors.map((tv, idx) => (
-                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/3 rounded-lg">
-                  <Store className="w-3.5 h-3.5 text-gray-500" />
-                  <span className="text-sm text-gray-300 flex-1">{getVendorDisplayName(tv)}</span>
-                  {getVendorDisplayPhone(tv) && <span className="text-xs text-gray-500"><Phone className="w-2.5 h-2.5 inline mr-0.5" />{getVendorDisplayPhone(tv)}</span>}
-                  {getVendorDisplayEmail(tv) && <span className="text-xs text-gray-500"><Mail className="w-2.5 h-2.5 inline mr-0.5" />{getVendorDisplayEmail(tv)}</span>}
+                <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-stone-50 border border-stone-100 rounded-xl">
+                  <Store className="w-3.5 h-3.5 text-stone-500" />
+                  <span className="text-sm text-stone-700 flex-1">{getVendorDisplayName(tv)}</span>
+                  {getVendorDisplayPhone(tv) && <span className="text-xs text-stone-500"><Phone className="w-2.5 h-2.5 inline mr-0.5" />{getVendorDisplayPhone(tv)}</span>}
+                  {getVendorDisplayEmail(tv) && <span className="text-xs text-stone-500"><Mail className="w-2.5 h-2.5 inline mr-0.5" />{getVendorDisplayEmail(tv)}</span>}
                   {tv.amount !== 0 && (
-                    <span className="text-xs text-blue-400 mr-2">${Math.abs(tv.amount)}</span>
+                    <span className="text-xs text-emerald-600 mr-2">${Math.abs(tv.amount)}</span>
                   )}
-                  <button type="button" onClick={() => removeVendorFromForm(idx)} className="p-1 hover:bg-red-500/20 rounded text-gray-500 hover:text-red-400 transition-colors">
+                  <button type="button" onClick={() => removeVendorFromForm(idx)} className="p-1 hover:bg-rose-100 rounded text-stone-400 hover:text-rose-500 transition-colors">
                     <X className="w-3 h-3" />
                   </button>
                 </div>
@@ -1007,26 +1123,26 @@ export default function WeddingDetail() {
             />
 
             {/* Or add new vendor with full details */}
-            <div className="border border-white/6 rounded-lg p-3 space-y-2">
-              <p className="text-xs text-gray-400 font-medium">Or add new vendor</p>
+            <div className="border border-stone-200 rounded-xl p-3 space-y-2">
+              <p className="text-xs text-stone-500 font-medium">Or add new vendor</p>
               <div className="grid grid-cols-2 gap-2">
-                <input type="text" placeholder="Vendor name *" value={newVendor.name} onChange={(e) => setNewVendor({ ...newVendor, name: e.target.value })} className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50" />
-                <input type="text" placeholder="Phone" value={newVendor.phone} onChange={(e) => setNewVendor({ ...newVendor, phone: e.target.value })} className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50" />
+                <input type="text" placeholder="Vendor name *" value={newVendor.name} onChange={(e) => setNewVendor({ ...newVendor, name: e.target.value })} className="px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5" />
+                <input type="text" placeholder="Phone" value={newVendor.phone} onChange={(e) => setNewVendor({ ...newVendor, phone: e.target.value })} className="px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5" />
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <input type="email" placeholder="Email" value={newVendor.email} onChange={(e) => setNewVendor({ ...newVendor, email: e.target.value })} className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50" />
-                <select value={newVendor.category} onChange={(e) => setNewVendor({ ...newVendor, category: e.target.value })} className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-purple-500/50">
-                  {vendorCategories.map(c => <option key={c.value} value={c.value} className="bg-gray-900">{c.label}</option>)}
+                <input type="email" placeholder="Email" value={newVendor.email} onChange={(e) => setNewVendor({ ...newVendor, email: e.target.value })} className="px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5" />
+                <select value={newVendor.category} onChange={(e) => setNewVendor({ ...newVendor, category: e.target.value })} className="px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5">
+                  {vendorCategories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <input type="text" placeholder="Address" value={newVendor.address} onChange={(e) => setNewVendor({ ...newVendor, address: e.target.value })} className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50" />
-                <input type="text" placeholder="City" value={newVendor.city} onChange={(e) => setNewVendor({ ...newVendor, city: e.target.value })} className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50" />
+                <input type="text" placeholder="Address" value={newVendor.address} onChange={(e) => setNewVendor({ ...newVendor, address: e.target.value })} className="px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5" />
+                <input type="text" placeholder="City" value={newVendor.city} onChange={(e) => setNewVendor({ ...newVendor, city: e.target.value })} className="px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5" />
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <input type="number" placeholder="Budget Amount (Optional)" value={newVendor.amount} onChange={(e) => setNewVendor({ ...newVendor, amount: e.target.value })} className="col-span-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50" />
+                <input type="number" placeholder="Budget Amount (Optional)" value={newVendor.amount} onChange={(e) => setNewVendor({ ...newVendor, amount: e.target.value })} className="col-span-2 px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5" />
               </div>
-              <button type="button" onClick={addVendorToForm} className="w-full px-3 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm hover:bg-purple-500/30 transition-colors flex items-center justify-center gap-1">
+              <button type="button" onClick={addVendorToForm} className="w-full px-3 py-2 bg-stone-100 text-stone-600 rounded-xl text-sm hover:bg-stone-200 transition-colors flex items-center justify-center gap-1">
                 <Plus className="w-4 h-4" /> Add Vendor
               </button>
             </div>
@@ -1066,8 +1182,8 @@ export default function WeddingDetail() {
             <Input label="Start Date/Time" type="datetime-local" value={eventForm.eventDate} onChange={(e) => setEventForm({ ...eventForm, eventDate: e.target.value })} required />
             <Input label="End Date/Time (Optional)" type="datetime-local" value={eventForm.endDate} onChange={(e) => setEventForm({ ...eventForm, endDate: e.target.value })} />
           </div>
-          <div className="space-y-2 border border-gray-100 rounded-lg p-3 bg-gray-50/50">
-            <label className="text-sm font-medium text-gray-700">Venue Info</label>
+          <div className="space-y-2 border border-stone-200 rounded-xl p-3 bg-stone-50/50">
+            <label className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Venue Info</label>
             <Input placeholder="Venue Name" value={eventForm.venue.name} onChange={(e) => setEventForm({ ...eventForm, venue: { ...eventForm.venue, name: e.target.value } })} />
             <div className="grid grid-cols-2 gap-2 mt-2">
               <Input placeholder="Address" value={eventForm.venue.address} onChange={(e) => setEventForm({ ...eventForm, venue: { ...eventForm.venue, address: e.target.value } })} />
@@ -1099,6 +1215,6 @@ export default function WeddingDetail() {
           <Button type="submit" className="w-full">Assign to Event</Button>
         </form>
       </Modal>
-    </div>
+    </PageContainer>
   );
 }

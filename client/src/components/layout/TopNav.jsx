@@ -10,17 +10,20 @@ import {
   User,
   ChevronDown,
   Menu,
-  X
+  X,
+  DollarSign,
+  Settings
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/leads',      label: 'Leads',     icon: Users },
-  { to: '/weddings',   label: 'Weddings',  icon: Heart },
-  { to: '/tasks',      label: 'Tasks',     icon: CheckSquare },
-  { to: '/vendors',    label: 'Vendors',   icon: Building2 },
+  { to: '/leads', label: 'Leads', icon: Users },
+  { to: '/weddings', label: 'Weddings', icon: Heart },
+  { to: '/tasks', label: 'Tasks', icon: CheckSquare },
+  { to: '/vendors', label: 'Vendors', icon: Building2 },
+  { to: '/budget', label: 'Budget', icon: DollarSign },
 ];
 
 function NavItem({ to, label, icon: Icon, onClick }) {
@@ -85,8 +88,8 @@ export default function TopNav() {
       <header
         className={clsx(
           'nav-font-body sticky top-0 z-50 transition-all duration-500',
-          scrolled 
-            ? 'bg-[#faf9f7]/70 backdrop-blur-lg border-b border-stone-200/40 py-2 shadow-sm' 
+          scrolled
+            ? 'bg-[#faf9f7]/70 backdrop-blur-lg border-b border-stone-200/40 py-2 shadow-sm'
             : 'bg-transparent border-b border-transparent py-4'
         )}
       >

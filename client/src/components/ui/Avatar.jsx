@@ -25,7 +25,7 @@ export function Avatar({ name, src, size = 'md', className = '' }) {
 
   return (
     <div className={clsx(
-      'rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center font-semibold text-white',
+      'rounded-full bg-linear-to-br from-purple-500 to-violet-600 flex items-center justify-center font-semibold text-white',
       sizes[size],
       className
     )}>
