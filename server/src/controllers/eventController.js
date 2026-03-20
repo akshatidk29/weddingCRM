@@ -44,6 +44,12 @@ export const checkEventAutoComplete = async (eventId) => {
 // @route   GET /api/events/wedding/:weddingId
 export const getEventsByWedding = async (req, res) => {
   try {
+    const weddingAuth = await Wedding.findById(req.params.weddingId);
+    if (!weddingAuth) return res.status(404).json({ message: 'Wedding not found' });
+    if (req.user.role === 'client' && weddingAuth.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
     const events = await Event.find({ wedding: req.params.weddingId })
       .populate('assignedTeam.user', 'name email avatar')
       .populate('createdBy', 'name')
@@ -79,11 +85,15 @@ export const getEvent = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
       .populate('assignedTeam.user', 'name email avatar')
-      .populate('wedding', 'name weddingDate clientName')
+      .populate('wedding', 'name weddingDate clientName clientId')
       .populate('createdBy', 'name');
 
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
+    }
+
+    if (req.user.role === 'client' && event.wedding?.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
     }
 
     const tasks = await Task.find({ event: event._id })
@@ -120,6 +130,10 @@ export const createEvent = async (req, res) => {
       return res.status(404).json({ message: 'Wedding not found' });
     }
 
+    if (req.user.role === 'client' && wedding.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
     const event = await Event.create({
       ...req.body,
       createdBy: req.user._id
@@ -143,10 +157,15 @@ export const updateEvent = async (req, res) => {
       req.body,
       { new: true, runValidators: true }
     )
+      .populate('wedding')
       .populate('assignedTeam.user', 'name email avatar');
 
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
+    }
+
+    if (req.user.role === 'client' && event.wedding?.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
     }
 
     res.json({ event });
@@ -160,10 +179,16 @@ export const updateEvent = async (req, res) => {
 // @route   DELETE /api/events/:id
 export const deleteEvent = async (req, res) => {
   try {
-    const event = await Event.findByIdAndDelete(req.params.id);
+    const event = await Event.findById(req.params.id).populate('wedding');
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
+
+    if (req.user.role === 'client' && event.wedding?.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    await Event.findByIdAndDelete(req.params.id);
 
     // Cascade delete all tasks under this event
     await Task.deleteMany({ event: req.params.id });

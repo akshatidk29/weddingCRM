@@ -44,3 +44,10 @@ export const isAdminOrManager = (req, res, next) => {
   }
   next();
 };
+
+export const isAdminManagerOrClient = (req, res, next) => {
+  if (!['admin', 'relationship_manager', 'client'].includes(req.user.role)) {
+    return res.status(403).json({ message: 'Not authorized' });
+  }
+  next();
+};

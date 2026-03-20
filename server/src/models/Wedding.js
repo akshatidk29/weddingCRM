@@ -11,6 +11,10 @@ const weddingSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  clientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   clientEmail: {
     type: String,
     lowercase: true,

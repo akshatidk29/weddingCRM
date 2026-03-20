@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import useAuthStore from '../../stores/authStore';
 import { 
   LayoutDashboard, 
   Users, 
@@ -28,12 +29,21 @@ const navigation = [
 
 export function Sidebar() {
   const location = useLocation();
+  const user = useAuthStore((s) => s.user);
+
+  const filteredNavigation = navigation.filter(item => {
+    if (user?.role === 'client') {
+      return !['Templates', 'Leads'].includes(item.name);
+    }
+    return true;
+  });
 
   return (
-    <aside className="hidden lg:flex flex-col w-60 bg-[#faf9f7] border-r border-stone-200/60 fixed left-0 top-14 h-[calc(100vh-56px)] z-30">
+    // Add rounded-tr-lg and change border-r to border
+    <aside className="hidden lg:flex flex-col w-60 bg-[#faf9f7] border-r border-stone-200/60 fixed left-0 top-14 h-[calc(100vh-56px)] z-30 rounded-tr-[20px]">
       {/* Brand */}
       <div className="px-5 pt-5 pb-3">
-        <h2 className="font-display text-lg text-stone-900 tracking-tight">Lagna</h2>
+        <h2 className="font-display text-lg text-stone-900 tracking-tight">Aayojan</h2>
         <p className="text-[9px] uppercase tracking-[0.18em] text-stone-400 font-medium mt-0.5">
           Wedding CRM
         </p>
@@ -41,7 +51,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 overflow-y-auto">
-        {navigation.map((item) => {
+        {filteredNavigation.map((item) => {
           const isActive = location.pathname === item.href || 
             (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
           
@@ -64,13 +74,15 @@ export function Sidebar() {
 
       {/* Bottom */}
       <div className="px-3 pb-4 mt-auto space-y-2">
-        <NavLink
-          to="/leads"
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-stone-900 text-[#faf9f7] rounded-lg text-sm font-medium hover:bg-stone-800 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New Lead
-        </NavLink>
+        {user?.role !== 'client' && (
+          <NavLink
+            to="/leads"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-stone-900 text-[#faf9f7] rounded-lg text-sm font-medium hover:bg-stone-800 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New Lead
+          </NavLink>
+        )}
         <div className="pt-3 border-t border-stone-200/60 space-y-0.5">
           <NavLink 
             to="/profile" 

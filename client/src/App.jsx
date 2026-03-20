@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import useAuthStore from './stores/authStore';
 import { Layout } from './components/layout/Layout';
 import ToastContainer from './components/ui/Toast';
@@ -19,6 +19,19 @@ import Templates from './pages/Templates';
 import MoodBoard from './pages/MoodBoard';
 import Footer from "./components/layout/Footer";
 import TopNav from "./components/layout/TopNav";
+
+
+import ChatBot from './components/chat/ChatBot';
+import { useWeddingPoller } from './hooks/useWeddingPoller';
+
+// Scroll to top on route change
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 
 // Initialize auth state from localStorage on app mount
 function AuthInit() {
@@ -48,8 +61,10 @@ function PublicRoute({ children }) {
 }
 
 function App() {
+  useWeddingPoller();
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthInit />
       <ToastContainer />
       <TopNav />
@@ -95,6 +110,7 @@ function App() {
         <Route path="*" element={<Navigate to="/landing" replace />} />
       </Routes>
       <Footer />
+      <ChatBot />
     </BrowserRouter>
   );
 }

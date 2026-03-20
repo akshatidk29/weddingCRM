@@ -464,26 +464,27 @@ export default function Leads() {
       `}</style>
 
       <div className="font-body bg-[#faf9f7] text-stone-900 selection:bg-stone-200 min-h-[calc(100vh-56px)] pb-8">
-        <div className="px-5 sm:px-8 lg:px-10 py-8">
 
-          {/* ── Page header ── */}
-          <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 border-b border-stone-200/60 pb-6">
+        {/* ── Hero Header ── */}
+        <div className="bg-stone-900 py-12 sm:py-16 px-5 sm:px-8 lg:px-10">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Lead Management</p>
-              <h1 className="font-display text-3xl sm:text-4xl font-medium text-stone-900">Leads</h1>
-              <p className="text-stone-400 text-sm mt-2 italic">
-                {allLeads.length} total inquiries
-              </p>
+              <p className="text-[11px] font-bold tracking-[0.2em] text-[#b07d46] uppercase mb-2">Lead Management</p>
+              <h1 className="font-display text-4xl sm:text-5xl font-medium text-white">Leads</h1>
+              <p className="text-stone-400 text-sm mt-2">{allLeads.length} total inquiries</p>
             </div>
             {isManager && (
               <button
                 onClick={openCreate}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-[#faf9f7] rounded-lg text-sm font-medium hover:bg-stone-800 transition-all self-start sm:self-auto flex-shrink-0"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#faf9f7] text-stone-900 rounded-lg text-sm font-medium hover:bg-white transition-all self-start sm:self-auto flex-shrink-0"
               >
                 <Plus className="h-4 w-4" /> New Lead
               </button>
             )}
-          </header>
+          </div>
+        </div>
+
+        <div className="px-5 sm:px-8 lg:px-10 py-8">
 
           {loading ? (
             <div className="space-y-4">

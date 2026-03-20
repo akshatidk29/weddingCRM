@@ -22,7 +22,7 @@ export default function Footer() {
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
               <NavLink to="/" className="font-display text-xl font-medium text-white tracking-tight block mb-3 italic">
-                Lagna
+                Aayojan
               </NavLink>
               <p className="text-sm text-stone-500 leading-relaxed max-w-xs">
                 The modern CRM for wedding planners. Manage leads, plan weddings, and grow your business.
@@ -102,7 +102,7 @@ export default function Footer() {
           {/* Bottom bar */}
           <div className="pt-6 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs text-stone-600">
-              {currentYear} Lagna. All rights reserved.
+              {currentYear} Aayojan. All rights reserved.
             </p>
             <div className="flex items-center gap-5 text-xs text-stone-600">
               <a href="#" className="hover:text-stone-400 transition-colors">Privacy</a>

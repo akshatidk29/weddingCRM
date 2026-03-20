@@ -6,13 +6,20 @@ import Wedding from '../models/Wedding.js';
 // @access  Private
 export const getBudget = async (req, res) => {
   try {
-    // Find all tasks that define an amount in either subtasks or taskVendors
-    const tasks = await Task.find({
+    let taskQuery = {
       $or: [
         { 'subtasks.amount': { $ne: 0 } },
         { 'taskVendors.amount': { $ne: 0 } }
       ]
-    })
+    };
+
+    if (req.user.role === 'client') {
+      const userWeddings = await Wedding.find({ clientId: req.user._id }).select('_id');
+      taskQuery.wedding = { $in: userWeddings.map(w => w._id) };
+    }
+
+    // Find all tasks that define an amount in either subtasks or taskVendors
+    const tasks = await Task.find(taskQuery)
     .populate('wedding', 'name weddingDate budget')
     .populate('taskVendors.vendor', 'name email phone category');
 
@@ -62,9 +69,14 @@ export const getBudget = async (req, res) => {
     });
 
     // Get all weddings with budget info
-    const weddings = await Wedding.find({
-      'budget.estimated': { $gt: 0 }
-    }).select('name weddingDate budget').sort({ weddingDate: 1 });
+    let weddingQuery = { 'budget.estimated': { $gt: 0 } };
+    if (req.user.role === 'client') {
+      weddingQuery.clientId = req.user._id;
+    }
+
+    const weddings = await Wedding.find(weddingQuery)
+      .select('name weddingDate budget')
+      .sort({ weddingDate: 1 });
 
     // Calculate per-wedding spend from budget items
     const weddingBudgets = weddings.map(w => {

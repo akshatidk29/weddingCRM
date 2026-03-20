@@ -1,6 +1,7 @@
 import Task from '../models/Task.js';
 import Vendor from '../models/Vendor.js';
 import Notification from '../models/Notification.js';
+import Wedding from '../models/Wedding.js';
 import { checkEventAutoComplete } from './eventController.js';
 
 // Helper: check if task should auto-complete based on subtasks + vendors
@@ -39,6 +40,13 @@ export const getTasks = async (req, res) => {
 
     if (req.user.role === 'team_member') {
       query.assignedTo = req.user._id;
+    } else if (req.user.role === 'client') {
+      const userWeddings = await Wedding.find({ clientId: req.user._id }).select('_id');
+      const allowedWeddings = userWeddings.map(w => w._id.toString());
+      if (query.wedding && !allowedWeddings.includes(query.wedding.toString())) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+      if (!query.wedding) query.wedding = { $in: allowedWeddings };
     }
 
     const tasks = await Task.find(query)
@@ -59,7 +67,7 @@ export const getTasks = async (req, res) => {
 export const getTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id)
-      .populate('wedding', 'name weddingDate clientName')
+      .populate('wedding', 'name weddingDate clientName clientId')
       .populate('event', 'name eventDate')
       .populate('assignedTo', 'name email')
       .populate('completedBy', 'name')
@@ -69,6 +77,10 @@ export const getTask = async (req, res) => {
 
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
+    }
+
+    if (req.user.role === 'client' && task.wedding?.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
     }
 
     res.json({ task });
@@ -141,6 +153,13 @@ export const createTask = async (req, res) => {
       });
     }
 
+    if (taskData.wedding) {
+      const weddingCheck = await Wedding.findById(taskData.wedding);
+      if (req.user.role === 'client' && weddingCheck?.clientId?.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+    }
+
     res.status(201).json({ task });
   } catch (error) {
     res.status(500).json({ message: 'Operation failed. Please try again.' });
@@ -150,6 +169,11 @@ export const createTask = async (req, res) => {
 export const createBulkTasks = async (req, res) => {
   try {
     const { tasks, wedding } = req.body;
+
+    const weddingCheck = await Wedding.findById(wedding);
+    if (req.user.role === 'client' && weddingCheck?.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
 
     const createdTasks = await Task.insertMany(
       tasks.map(t => ({
@@ -214,11 +238,15 @@ export const updateTask = async (req, res) => {
       { new: true, runValidators: true }
     )
       .populate('assignedTo', 'name email')
-      .populate('wedding', 'name')
+      .populate('wedding', 'name clientId')
       .populate('taskVendors.vendor', 'name phone email address city category');
 
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
+    }
+
+    if (req.user.role === 'client' && task.wedding?.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
     }
 
     res.json({ task });
@@ -234,6 +262,11 @@ export const updateTaskStatus = async (req, res) => {
 
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
+    }
+
+    const weddingCheck = await Wedding.findById(task.wedding);
+    if (req.user.role === 'client' && weddingCheck?.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
     }
 
     if (status === 'verified') {
@@ -299,6 +332,14 @@ export const updateTaskStatus = async (req, res) => {
 
 export const deleteTask = async (req, res) => {
   try {
+    const taskCheck = await Task.findById(req.params.id);
+    if (!taskCheck) return res.status(404).json({ message: 'Task not found' });
+
+    const weddingCheck = await Wedding.findById(taskCheck.wedding);
+    if (req.user.role === 'client' && weddingCheck?.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
     const task = await Task.findByIdAndDelete(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
@@ -311,6 +352,11 @@ export const deleteTask = async (req, res) => {
 
 export const getTasksByWedding = async (req, res) => {
   try {
+    const weddingCheck = await Wedding.findById(req.params.weddingId);
+    if (req.user.role === 'client' && weddingCheck?.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
     const tasks = await Task.find({ wedding: req.params.weddingId })
       .populate('assignedTo', 'name email')
       .populate('completedBy', 'name')

@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, ChevronDown, X, Plus, ArrowRight, Layers, CheckSquare } from 'lucide-react';
+import { ChevronRight, ChevronDown, X, Plus, ArrowRight, CheckSquare } from 'lucide-react';
 import api from '../utils/api';
 import useAuthStore from '../stores/authStore';
 
 /* ─────────────────────────────────────────
    SHARED PRIMITIVES
 ───────────────────────────────────────── */
-const inputCls = "w-full px-4 py-3 bg-white border border-stone-200/60 shadow-sm rounded-xl text-sm font-body text-stone-900 placeholder-stone-300 focus:outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400 transition-all duration-300";
-const labelCls = "block text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2 font-body";
+const inputCls = "w-full px-4 py-3 bg-white border border-stone-200/60 shadow-sm rounded-lg text-sm text-stone-900 placeholder-stone-300 focus:outline-none focus:border-stone-400 transition-all";
+const labelCls = "block text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2";
 
 function Field({ label, children }) {
   return (
@@ -22,40 +22,33 @@ function Field({ label, children }) {
 function Modal({ isOpen, onClose, title, children }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-300">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-stone-900/20 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#faf9f7] rounded-t-2xl sm:rounded-2xl shadow-sm border border-stone-200/60 w-full sm:max-w-2xl max-h-[92vh] flex flex-col overflow-hidden transition-all duration-300">
+      <div className="relative bg-[#faf9f7] rounded-t-lg sm:rounded-lg shadow-sm border border-stone-200/60 w-full sm:max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-6 py-5 border-b border-stone-200/60 flex-shrink-0">
           <h2 className="font-display text-2xl font-medium tracking-tight text-stone-900">{title}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-stone-200/50 text-stone-400 hover:text-stone-900 transition-all duration-300">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-stone-200/50 text-stone-400 hover:text-stone-900 transition-all">
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="overflow-y-auto flex-1 px-6 py-5 font-body">{children}</div>
+        <div className="overflow-y-auto flex-1 px-6 py-5">{children}</div>
       </div>
     </div>
   );
 }
 
 function Sk({ className = '' }) {
-  return <div className={`bg-stone-200/50 animate-pulse rounded-2xl ${className}`} />;
+  return <div className={`bg-stone-200/50 animate-pulse rounded-lg ${className}`} />;
 }
 
 /* ─────────────────────────────────────────
-   CATEGORY & PRIORITY styling
+   PRIORITY STYLING
 ───────────────────────────────────────── */
-const PRIORITY_COLORS = {
-  urgent: 'text-[#c0604a]',
-  high:   'text-amber-700',
-  medium: 'text-stone-500',
-  low:    'text-stone-400',
-};
-
-const TYPE_COLORS = {
-  destination: { bg: 'bg-sky-50',    border: 'border-sky-200/60', accent: 'bg-sky-700',    text: 'text-sky-800' },
-  local:       { bg: 'bg-emerald-50', border: 'border-emerald-200/60', accent: 'bg-emerald-700', text: 'text-emerald-800' },
-  luxury:      { bg: 'bg-amber-50',   border: 'border-amber-200/60', accent: 'bg-amber-700',  text: 'text-amber-800' },
-  intimate:    { bg: 'bg-rose-50',    border: 'border-rose-200/60', accent: 'bg-rose-700',   text: 'text-rose-800' },
+const PRIORITY_DOT = {
+  urgent: 'bg-[#c0604a]',
+  high:   'bg-amber-600',
+  medium: 'bg-stone-400',
+  low:    'bg-stone-300',
 };
 
 /* ═══════════════════════════════════════
@@ -63,11 +56,13 @@ const TYPE_COLORS = {
 ═══════════════════════════════════════ */
 export default function Templates() {
   const navigate = useNavigate();
-  const isManager = useAuthStore(s => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
+  const userRole = useAuthStore(s => s.user?.role);
+  const isAdmin = userRole === 'admin';
+  const isManager = userRole === 'relationship_manager' || isAdmin;
 
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [expanded, setExpanded]   = useState({});
+  const [expanded, setExpanded]   = useState(null); // single expanded template type
   const [expandedEvents, setExpandedEvents] = useState({});
 
   // Convert Modal
@@ -116,7 +111,8 @@ export default function Templates() {
   };
 
   const toggleTemplate = (type) => {
-    setExpanded(p => ({ ...p, [type]: !p[type] }));
+    setExpanded(prev => prev === type ? null : type);
+    setExpandedEvents({});
   };
 
   const toggleEvent = (key) => {
@@ -135,184 +131,85 @@ export default function Templates() {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&display=swap');
         .font-display { font-family: 'Cormorant Garamond', serif; letter-spacing: -0.02em; }
         .font-body    { font-family: 'Inter', sans-serif; }
+        @keyframes rowSlideIn {
+          from { opacity: 0; transform: translateX(12px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        .row-slide-in { animation: rowSlideIn 0.35s ease-out both; }
       `}</style>
 
-      <div className="font-body min-h-screen bg-[#faf9f7] text-stone-900 selection:bg-stone-200">
+      <div className="font-body min-h-screen bg-[#faf9f7] text-stone-900">
+
+        {/* ── Hero Header ── */}
+        <div className="bg-stone-900 py-12 sm:py-16 px-5 sm:px-8 lg:px-10">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-bold tracking-[0.2em] text-[#b07d46] uppercase mb-2">Quick Start</p>
+              <h1 className="font-display text-4xl sm:text-5xl font-medium text-white">Wedding Templates</h1>
+              <p className="text-stone-400 text-sm mt-2">Choose a template and instantly create a full wedding with events & tasks.</p>
+            </div>
+            {isAdmin && (
+              <button
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#faf9f7] text-stone-900 rounded-lg text-sm font-medium hover:bg-white transition-all shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                Add Template
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-8 sm:py-12">
 
-          {/* ── Header ── */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 mb-8 border-b border-stone-200/60 pb-6 sm:pb-8">
-            <div>
-              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Quick Start</p>
-              <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-medium text-stone-900">Wedding Templates</h1>
-              <p className="text-stone-400 text-sm mt-2 italic">
-                Choose a template type and instantly generate a full wedding with events & tasks.
-              </p>
-            </div>
-          </div>
-
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[...Array(4)].map((_, i) => <Sk key={i} className="h-64" />)}
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => <Sk key={i} className="h-16" />)}
             </div>
           ) : (
             <>
-              {/* ── Summary Cards ── */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-                {templates.map(tpl => {
-                  const c = TYPE_COLORS[tpl.type] || TYPE_COLORS.local;
-                  return (
-                    <button key={tpl.type} onClick={() => toggleTemplate(tpl.type)}
-                      className={`${c.bg} p-5 sm:p-6 rounded-2xl shadow-sm border ${c.border} text-left transition-all duration-300 hover:-translate-y-0.5 group`}>
-                      <div className={`h-[1px] w-6 ${c.accent} mb-4 transition-all duration-500 group-hover:w-12`} />
-                      <p className="text-2xl mb-1">{tpl.emoji}</p>
-                      <p className="font-display text-lg font-medium text-stone-900 leading-tight">{tpl.label}</p>
-                      <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mt-2">
-                        {tpl.events.length} events · {totalTasks(tpl)} tasks
-                      </p>
-                    </button>
-                  );
-                })}
+              {/* ── Stats row ── */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+                {templates.map(tpl => (
+                  <div key={tpl.type} className="bg-white border border-stone-200/60 rounded-lg p-4">
+                    <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">{tpl.label}</p>
+                    <p className="font-display text-2xl font-medium text-stone-900 mt-1">{tpl.events.length}</p>
+                    <p className="text-[10px] text-stone-400 mt-0.5">events · {totalTasks(tpl)} tasks</p>
+                  </div>
+                ))}
               </div>
 
-              {/* ── Template Detail Sections ── */}
-              <div className="space-y-6">
-                {templates.map(tpl => {
-                  const c = TYPE_COLORS[tpl.type] || TYPE_COLORS.local;
-                  const isExp = expanded[tpl.type];
-
-                  return (
-                    <div key={tpl.type} className="bg-white rounded-2xl border border-stone-200/60 shadow-sm overflow-hidden">
-                      {/* Template Header */}
-                      <div
-                        className="flex items-center gap-4 px-6 py-5 cursor-pointer hover:bg-[#faf9f7] transition-colors group"
-                        onClick={() => toggleTemplate(tpl.type)}
-                      >
-                        <div className={`w-10 h-10 rounded-xl ${c.bg} border ${c.border} flex items-center justify-center flex-shrink-0`}>
-                          <span className="text-lg">{tpl.emoji}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-display text-xl font-medium text-stone-900">{tpl.label}</p>
-                          <p className="text-xs text-stone-400 mt-0.5 italic truncate">{tpl.description}</p>
-                        </div>
-                        <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                          {isManager && (
-                            <button
-                              onClick={() => openConvert(tpl)}
-                              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-[#faf9f7] rounded-full text-[11px] font-semibold hover:bg-stone-800 transition-all"
-                            >
-                              <ArrowRight className="w-3.5 h-3.5" /> Convert to Wedding
-                            </button>
-                          )}
-                          <ChevronRight className={`w-4 h-4 text-stone-300 transition-transform duration-200 ${isExp ? 'rotate-90' : ''}`} />
-                        </div>
-                      </div>
-
-                      {/* Expanded Content */}
-                      {isExp && (
-                        <div className="border-t border-stone-100/60 px-6 py-5 space-y-5">
-                          {/* Mobile convert button */}
-                          {isManager && (
-                            <button
-                              onClick={() => openConvert(tpl)}
-                              className="sm:hidden w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-900 text-[#faf9f7] rounded-full text-[11px] font-semibold hover:bg-stone-800 transition-all mb-4"
-                            >
-                              <ArrowRight className="w-3.5 h-3.5" /> Convert to Wedding
-                            </button>
-                          )}
-
-                          {/* Vendor Notes */}
-                          <div className="bg-stone-50/50 rounded-xl border border-stone-100 p-4">
-                            <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Vendor Notes</p>
-                            <p className="text-xs text-stone-600 leading-relaxed">{tpl.vendorNotes}</p>
-                          </div>
-
-                          {/* Events */}
-                          <div>
-                            <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-3">
-                              Events <span className="text-stone-300 ml-1">{tpl.events.length}</span>
-                            </p>
-                            <div className="space-y-2">
-                              {tpl.events.map((ev, idx) => {
-                                const evKey = `${tpl.type}-${idx}`;
-                                const evExp = expandedEvents[evKey];
-                                return (
-                                  <div key={idx} className="bg-stone-50/40 rounded-xl border border-stone-200/60 overflow-hidden">
-                                    <div
-                                      className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/60 transition-colors"
-                                      onClick={() => toggleEvent(evKey)}
-                                    >
-                                      <div className={`w-[2px] h-6 rounded-full flex-shrink-0 ${c.accent}`} />
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-stone-900">{ev.name}</p>
-                                        <p className="text-[10px] text-stone-400">{ev.tasks.length} tasks</p>
-                                      </div>
-                                      <ChevronDown className={`w-3.5 h-3.5 text-stone-300 transition-transform duration-200 ${evExp ? 'rotate-180' : ''}`} />
-                                    </div>
-
-                                    {evExp && (
-                                      <div className="border-t border-stone-100/60 px-4 py-3 space-y-2">
-                                        {ev.tasks.map((task, tidx) => (
-                                          <div key={tidx} className="flex items-start gap-2.5 py-1.5">
-                                            <CheckSquare className="w-3.5 h-3.5 text-stone-300 mt-0.5 flex-shrink-0" />
-                                            <div className="flex-1 min-w-0">
-                                              <p className="text-[13px] text-stone-700">{task.title}</p>
-                                              <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-stone-400">{task.category}</span>
-                                                <span className={`text-[9px] font-bold tracking-[0.15em] uppercase ${PRIORITY_COLORS[task.priority]}`}>{task.priority}</span>
-                                              </div>
-                                              {task.subtasks && task.subtasks.length > 0 && (
-                                                <div className="mt-1.5 pl-3 border-l border-stone-100 space-y-0.5">
-                                                  {task.subtasks.map((st, si) => (
-                                                    <p key={si} className="text-[11px] text-stone-400">• {st}</p>
-                                                  ))}
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Global Tasks */}
-                          {tpl.globalTasks && tpl.globalTasks.length > 0 && (
-                            <div>
-                              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-3">
-                                General Tasks <span className="text-stone-300 ml-1">{tpl.globalTasks.length}</span>
-                              </p>
-                              <div className="bg-stone-50/40 rounded-xl border border-stone-200/60 divide-y divide-stone-100/60">
-                                {tpl.globalTasks.map((task, tidx) => (
-                                  <div key={tidx} className="flex items-start gap-2.5 px-4 py-3">
-                                    <CheckSquare className="w-3.5 h-3.5 text-stone-300 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-[13px] text-stone-700">{task.title}</p>
-                                      <div className="flex items-center gap-2 mt-0.5">
-                                        <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-stone-400">{task.category}</span>
-                                        <span className={`text-[9px] font-bold tracking-[0.15em] uppercase ${PRIORITY_COLORS[task.priority]}`}>{task.priority}</span>
-                                      </div>
-                                      {task.subtasks && task.subtasks.length > 0 && (
-                                        <div className="mt-1.5 pl-3 border-l border-stone-100 space-y-0.5">
-                                          {task.subtasks.map((st, si) => (
-                                            <p key={si} className="text-[11px] text-stone-400">• {st}</p>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              {/* ── Templates Table ── */}
+              <div className="bg-white border border-stone-200/60 rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-stone-200/60">
+                      <th className="text-left px-5 py-3 text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">Template</th>
+                      <th className="text-left px-5 py-3 text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase hidden sm:table-cell">Description</th>
+                      <th className="text-center px-5 py-3 text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase hidden md:table-cell">Events</th>
+                      <th className="text-center px-5 py-3 text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase hidden md:table-cell">Tasks</th>
+                      <th className="px-5 py-3 text-right text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {templates.map((tpl, tplIdx) => {
+                      const isExp = expanded === tpl.type;
+                      return (
+                        <TemplateRow
+                          key={tpl.type}
+                          tpl={tpl}
+                          isExp={isExp}
+                          tplIdx={tplIdx}
+                          isManager={isManager}
+                          expandedEvents={expandedEvents}
+                          onToggle={() => toggleTemplate(tpl.type)}
+                          onToggleEvent={toggleEvent}
+                          onConvert={() => openConvert(tpl)}
+                          totalTasks={totalTasks(tpl)}
+                        />
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </>
           )}
@@ -324,9 +221,8 @@ export default function Templates() {
       ════════════════════ */}
       <Modal isOpen={showConvert} onClose={() => setShowConvert(false)} title={`Create from ${convertType?.label || 'Template'}`}>
         <form onSubmit={handleConvert} className="space-y-5">
-          <div className="bg-stone-50/50 rounded-xl border border-stone-100 p-4 mb-2">
+          <div className="bg-stone-50/50 rounded-lg border border-stone-100 p-4 mb-2">
             <p className="text-xs text-stone-600 leading-relaxed">
-              <span className="text-lg mr-1">{convertType?.emoji}</span>
               This will create a new wedding with <strong>{convertType?.events?.length} events</strong> and <strong>{convertType ? totalTasks(convertType) : 0} tasks</strong> pre-configured.
             </p>
           </div>
@@ -358,18 +254,208 @@ export default function Templates() {
               onChange={e => setConvertForm(f => ({ ...f, weddingDate: e.target.value }))} className={inputCls} />
           </Field>
 
-          <div className="flex items-center justify-end gap-4 pt-6 border-t border-stone-200/60 mt-4">
+          <div className="flex items-center justify-end gap-3 pt-5 border-t border-stone-200/60 mt-4">
             <button type="button" onClick={() => setShowConvert(false)}
-              className="px-5 py-2.5 rounded-lg text-sm font-medium text-stone-500 hover:text-stone-900 border border-stone-200/60 hover:border-stone-400 transition-all duration-300">
+              className="px-5 py-2.5 rounded-lg text-sm font-medium text-stone-500 hover:text-stone-900 border border-stone-200/60 hover:border-stone-400 transition-all">
               Cancel
             </button>
             <button type="submit" disabled={converting}
-              className="px-7 py-2.5 rounded-lg text-sm font-medium bg-stone-900 text-[#faf9f7] hover:bg-stone-800 transition-all duration-300 hover:shadow-md disabled:opacity-50">
+              className="px-6 py-2.5 rounded-lg text-sm font-medium bg-stone-900 text-[#faf9f7] hover:bg-stone-800 transition-all disabled:opacity-50">
               {converting ? 'Creating...' : 'Create Wedding'}
             </button>
           </div>
         </form>
       </Modal>
     </>
+  );
+}
+
+
+/* ─────────────────────────────────────────
+   TEMPLATE ROW (with nested animated table)
+───────────────────────────────────────── */
+function TemplateRow({ tpl, isExp, tplIdx, isManager, expandedEvents, onToggle, onToggleEvent, onConvert, totalTasks }) {
+  return (
+    <>
+      {/* Main row */}
+      <tr
+        className={`border-b border-stone-100/60 cursor-pointer transition-colors hover:bg-stone-50/50 ${isExp ? 'bg-stone-50/30' : ''}`}
+        onClick={onToggle}
+      >
+        <td className="px-5 py-4">
+          <div className="flex items-center gap-3">
+            <span className="font-display text-lg font-medium text-stone-900">{tpl.label}</span>
+          </div>
+        </td>
+        <td className="px-5 py-4 hidden sm:table-cell">
+          <p className="text-sm text-stone-400 truncate max-w-xs">{tpl.description}</p>
+        </td>
+        <td className="px-5 py-4 text-center hidden md:table-cell">
+          <span className="text-sm text-stone-600">{tpl.events.length}</span>
+        </td>
+        <td className="px-5 py-4 text-center hidden md:table-cell">
+          <span className="text-sm text-stone-600">{totalTasks}</span>
+        </td>
+        <td className="px-5 py-4 text-right" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-end gap-2">
+            {isManager && (
+              <button
+                onClick={onConvert}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 text-[#faf9f7] rounded-lg text-[11px] font-medium hover:bg-stone-800 transition-all"
+              >
+                <ArrowRight className="w-3 h-3" /> Convert
+              </button>
+            )}
+            <ChevronRight className={`w-4 h-4 text-stone-300 transition-transform duration-200 ${isExp ? 'rotate-90' : ''}`} />
+          </div>
+        </td>
+      </tr>
+
+      {/* Expanded: animated sub-table */}
+      {isExp && (
+        <tr>
+          <td colSpan="5" className="bg-stone-50/30 px-0">
+            <div className="px-5 py-5 space-y-5">
+
+              {/* Mobile convert */}
+              {isManager && (
+                <button
+                  onClick={onConvert}
+                  className="sm:hidden w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-900 text-[#faf9f7] rounded-lg text-xs font-medium hover:bg-stone-800 transition-all"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" /> Convert to Wedding
+                </button>
+              )}
+
+              {/* Vendor notes */}
+              {tpl.vendorNotes && (
+                <div className="bg-white rounded-lg border border-stone-200/60 p-4 row-slide-in">
+                  <p className={labelCls}>Vendor Notes</p>
+                  <p className="text-xs text-stone-600 leading-relaxed">{tpl.vendorNotes}</p>
+                </div>
+              )}
+
+              {/* Events sub-table */}
+              <div className="bg-white rounded-lg border border-stone-200/60 overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-stone-200/60">
+                      <th className="text-left px-4 py-2.5 text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">Event</th>
+                      <th className="text-center px-4 py-2.5 text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase hidden sm:table-cell">Tasks</th>
+                      <th className="w-8 px-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tpl.events.map((ev, idx) => {
+                      const evKey = `${tpl.type}-${idx}`;
+                      const evExp = expandedEvents[evKey];
+                      return (
+                        <EventRow
+                          key={idx}
+                          ev={ev}
+                          evKey={evKey}
+                          idx={idx}
+                          evExp={evExp}
+                          onToggle={() => onToggleEvent(evKey)}
+                        />
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Global tasks */}
+              {tpl.globalTasks && tpl.globalTasks.length > 0 && (
+                <div className="bg-white rounded-lg border border-stone-200/60 overflow-hidden row-slide-in"
+                  style={{ animationDelay: `${tpl.events.length * 50 + 100}ms` }}>
+                  <div className="px-4 py-3 border-b border-stone-200/60">
+                    <p className={labelCls + ' mb-0'}>General Tasks <span className="text-stone-300 ml-1">{tpl.globalTasks.length}</span></p>
+                  </div>
+                  <div className="divide-y divide-stone-100/60">
+                    {tpl.globalTasks.map((task, tidx) => (
+                      <TaskItem key={tidx} task={task} delay={tidx * 40} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+
+/* ─────────────────────────────────────────
+   EVENT ROW (nested inside template)
+───────────────────────────────────────── */
+function EventRow({ ev, evKey, idx, evExp, onToggle }) {
+  return (
+    <>
+      <tr
+        className="border-b border-stone-100/60 last:border-0 cursor-pointer hover:bg-stone-50/40 transition-colors row-slide-in"
+        style={{ animationDelay: `${idx * 50}ms` }}
+        onClick={onToggle}
+      >
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-[3px] h-5 rounded-full bg-stone-900/15 flex-shrink-0" />
+            <span className="text-sm font-medium text-stone-800">{ev.name}</span>
+          </div>
+        </td>
+        <td className="px-4 py-3 text-center hidden sm:table-cell">
+          <span className="text-xs text-stone-400">{ev.tasks.length}</span>
+        </td>
+        <td className="px-2 py-3 text-center">
+          <ChevronDown className={`w-3.5 h-3.5 text-stone-300 transition-transform duration-200 mx-auto ${evExp ? 'rotate-180' : ''}`} />
+        </td>
+      </tr>
+
+      {/* Expanded tasks */}
+      {evExp && (
+        <tr>
+          <td colSpan="3" className="bg-stone-50/30 px-0">
+            <div className="divide-y divide-stone-100/60">
+              {ev.tasks.map((task, tidx) => (
+                <TaskItem key={tidx} task={task} delay={tidx * 30} />
+              ))}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+
+/* ─────────────────────────────────────────
+   TASK ITEM
+───────────────────────────────────────── */
+function TaskItem({ task, delay = 0 }) {
+  return (
+    <div
+      className="flex items-start gap-2.5 px-5 py-3 row-slide-in"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <CheckSquare className="w-3.5 h-3.5 text-stone-300 mt-0.5 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] text-stone-700">{task.title}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-stone-400">{task.category}</span>
+          <div className="flex items-center gap-1">
+            <div className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT[task.priority] || 'bg-stone-300'}`} />
+            <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-stone-400">{task.priority}</span>
+          </div>
+        </div>
+        {task.subtasks && task.subtasks.length > 0 && (
+          <div className="mt-1.5 pl-3 border-l border-stone-200/60 space-y-0.5">
+            {task.subtasks.map((st, si) => (
+              <p key={si} className="text-[11px] text-stone-400">• {st}</p>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

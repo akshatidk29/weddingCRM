@@ -352,17 +352,21 @@ function TeamMemberDashboard({ user, myTasks }) {
 
   return (
     <div className="font-body bg-[#faf9f7] text-stone-900 min-h-[calc(100vh-56px)] pb-20 lg:pb-8">
-      <main className="px-5 sm:px-8 lg:px-10 py-8">
-        {/* Header */}
-        <header className="mb-8 border-b border-stone-200/60 pb-6">
-          <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">My Workspace</p>
-          <h1 className="font-display text-3xl sm:text-4xl font-medium text-stone-900">
+
+      {/* ── Hero Header ── */}
+      <div className="bg-stone-900 py-12 sm:py-16 px-5 sm:px-8 lg:px-10">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-[11px] font-bold tracking-[0.2em] text-[#b07d46] uppercase mb-2">My Workspace</p>
+          <h1 className="font-display text-4xl sm:text-5xl font-medium text-white">
             Welcome, {user?.name?.split(' ')[0]}
           </h1>
-          <p className="text-stone-400 text-sm mt-2 italic">
+          <p className="text-stone-400 text-sm mt-2">
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-        </header>
+        </div>
+      </div>
+
+      <main className="px-5 sm:px-8 lg:px-10 py-8">
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
@@ -443,25 +447,29 @@ function ManagerDashboard({ user, stats, activity }) {
 
   return (
     <div className="font-body bg-[#faf9f7] text-stone-900 selection:bg-stone-200 min-h-[calc(100vh-56px)] pb-20 lg:pb-8">
-      <main className="px-5 sm:px-8 lg:px-10 py-8">
-        {/* Header */}
-        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 border-b border-stone-200/60 pb-6">
+
+      {/* ── Hero Header ── */}
+      <div className="bg-stone-900 py-12 sm:py-16 px-5 sm:px-8 lg:px-10">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Dashboard</p>
-            <h1 className="font-display text-3xl sm:text-4xl font-medium text-stone-900">
+            <p className="text-[11px] font-bold tracking-[0.2em] text-[#b07d46] uppercase mb-2">Dashboard</p>
+            <h1 className="font-display text-4xl sm:text-5xl font-medium text-white">
               Welcome, {user?.name?.split(' ')[0]}
             </h1>
-            <p className="text-stone-400 text-sm mt-2 italic">
+            <p className="text-stone-400 text-sm mt-2">
               {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
           </div>
           <Link 
             to="/leads" 
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-[#faf9f7] rounded-lg text-sm font-medium hover:bg-stone-800 transition-all self-start sm:self-auto flex-shrink-0"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#faf9f7] text-stone-900 rounded-lg text-sm font-medium hover:bg-white transition-all self-start sm:self-auto flex-shrink-0"
           >
             <Plus className="h-4 w-4" /> New Lead
           </Link>
-        </header>
+        </div>
+      </div>
+
+      <main className="px-5 sm:px-8 lg:px-10 py-8">
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

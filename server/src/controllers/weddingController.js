@@ -22,6 +22,8 @@ export const getWeddings = async (req, res) => {
 
     if (req.user.role === 'team_member') {
       query['assignedTeam.user'] = req.user._id;
+    } else if (req.user.role === 'client') {
+      query.clientId = req.user._id;
     }
 
     const weddings = await Wedding.find(query)
@@ -68,6 +70,10 @@ export const getWedding = async (req, res) => {
         return userId.toString() === req.user._id.toString();
       });
       if (!isAssigned) return res.status(403).json({ message: 'You are not assigned to this wedding' });
+    } else if (req.user.role === 'client') {
+      if (wedding.clientId?.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'You are not authorized to view this wedding' });
+      }
     }
 
     const tasks = await Task.find({ wedding: wedding._id })
@@ -148,8 +154,11 @@ export const createWedding = async (req, res) => {
 
 export const updateWedding = async (req, res) => {
   try {
-    const wedding = await Wedding.findByIdAndUpdate(
-      req.params.id,
+    const query = { _id: req.params.id };
+    if (req.user.role === 'client') query.clientId = req.user._id;
+
+    const wedding = await Wedding.findOneAndUpdate(
+      query,
       req.body,
       { new: true, runValidators: true }
     )
@@ -172,7 +181,10 @@ export const updateWedding = async (req, res) => {
 
 export const deleteWedding = async (req, res) => {
   try {
-    const wedding = await Wedding.findByIdAndDelete(req.params.id);
+    const query = { _id: req.params.id };
+    if (req.user.role === 'client') query.clientId = req.user._id;
+
+    const wedding = await Wedding.findOneAndDelete(query);
     if (!wedding) {
       return res.status(404).json({ message: 'Wedding not found' });
     }
@@ -195,7 +207,10 @@ export const addTeamMember = async (req, res) => {
       return res.status(400).json({ message: 'Please select a team member' });
     }
 
-    const wedding = await Wedding.findById(req.params.id);
+    const query = { _id: req.params.id };
+    if (req.user.role === 'client') query.clientId = req.user._id;
+
+    const wedding = await Wedding.findOne(query);
 
     if (!wedding) {
       return res.status(404).json({ message: 'Wedding not found' });
@@ -222,7 +237,10 @@ export const addTeamMember = async (req, res) => {
 
 export const removeTeamMember = async (req, res) => {
   try {
-    const wedding = await Wedding.findById(req.params.id);
+    const query = { _id: req.params.id };
+    if (req.user.role === 'client') query.clientId = req.user._id;
+
+    const wedding = await Wedding.findOne(query);
 
     if (!wedding) {
       return res.status(404).json({ message: 'Wedding not found' });
@@ -249,7 +267,10 @@ export const addVendorToWedding = async (req, res) => {
       return res.status(400).json({ message: 'Please select a vendor' });
     }
 
-    const wedding = await Wedding.findById(req.params.id);
+    const query = { _id: req.params.id };
+    if (req.user.role === 'client') query.clientId = req.user._id;
+
+    const wedding = await Wedding.findOne(query);
 
     if (!wedding) {
       return res.status(404).json({ message: 'Wedding not found' });
@@ -273,7 +294,10 @@ export const addVendorToWedding = async (req, res) => {
 
 export const removeVendorFromWedding = async (req, res) => {
   try {
-    const wedding = await Wedding.findById(req.params.id);
+    const query = { _id: req.params.id };
+    if (req.user.role === 'client') query.clientId = req.user._id;
+
+    const wedding = await Wedding.findOne(query);
 
     if (!wedding) {
       return res.status(404).json({ message: 'Wedding not found' });
@@ -296,10 +320,14 @@ export const getUpcomingWeddings = async (req, res) => {
     const today = new Date();
     const thirtyDaysLater = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    const weddings = await Wedding.find({
+    const query = {
       weddingDate: { $gte: today, $lte: thirtyDaysLater },
       status: { $in: ['planning', 'in_progress'] }
-    })
+    };
+
+    if (req.user.role === 'client') query.clientId = req.user._id;
+
+    const weddings = await Wedding.find(query)
       .populate('relationshipManager', 'name')
       .sort({ weddingDate: 1 })
       .limit(10);

@@ -11,7 +11,7 @@ import {
   removeVendorFromWedding,
   getUpcomingWeddings
 } from '../controllers/weddingController.js';
-import { protect, isAdminOrManager } from '../middleware/auth.js';
+import { protect, isAdminOrManager, isAdminManagerOrClient } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -25,13 +25,13 @@ router.route('/')
 
 router.route('/:id')
   .get(getWedding)
-  .put(isAdminOrManager, updateWedding)
-  .delete(isAdminOrManager, deleteWedding);
+  .put(isAdminManagerOrClient, updateWedding)
+  .delete(isAdminManagerOrClient, deleteWedding);
 
-router.post('/:id/team', isAdminOrManager, addTeamMember);
-router.delete('/:id/team/:userId', isAdminOrManager, removeTeamMember);
+router.post('/:id/team', isAdminManagerOrClient, addTeamMember);
+router.delete('/:id/team/:userId', isAdminManagerOrClient, removeTeamMember);
 
-router.post('/:id/vendors', isAdminOrManager, addVendorToWedding);
-router.delete('/:id/vendors/:vendorId', isAdminOrManager, removeVendorFromWedding);
+router.post('/:id/vendors', isAdminManagerOrClient, addVendorToWedding);
+router.delete('/:id/vendors/:vendorId', isAdminManagerOrClient, removeVendorFromWedding);
 
 export default router;
