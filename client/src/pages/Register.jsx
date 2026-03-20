@@ -64,7 +64,9 @@ export default function Register() {
     }
   };
 
-  const FormFields = () => (
+  // FIX: Storing the form as a JSX variable instead of an inner component function.
+  // This prevents React from destroying and recreating the inputs on every keystroke.
+  const formJSX = (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className={labelCls}>Full Name</label>
@@ -172,7 +174,8 @@ export default function Register() {
               {error && (
                 <div className="mb-5 px-4 py-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-sm">{error}</div>
               )}
-              <FormFields />
+              {/* FIX: Render the JSX variable directly here */}
+              {formJSX}
               <p className="mt-6 text-center text-stone-400 text-sm">
                 Already have an account?{' '}
                 <Link to="/login" className="text-stone-900 font-semibold hover:underline underline-offset-2">Sign in</Link>
@@ -221,7 +224,8 @@ export default function Register() {
               {error && (
                 <div className="mb-5 px-4 py-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-sm">{error}</div>
               )}
-              <FormFields />
+              {/* FIX: Render the JSX variable directly here */}
+              {formJSX}
               <p className="mt-7 text-center text-stone-400 text-sm">
                 Already have an account?{' '}
                 <Link to="/login" className="text-stone-900 font-semibold hover:underline underline-offset-2">Sign in</Link>

@@ -1,161 +1,161 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, LayoutGrid, List, Phone, Mail, Calendar, MapPin, Users as UsersIcon, ChevronRight, X } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import {
+  Plus, Search, LayoutGrid, List,
+  Phone, Mail, Calendar, X, ChevronRight, ArrowRight, Heart
+} from 'lucide-react';
+import {
+  DndContext, closestCenter, KeyboardSensor,
+  PointerSensor, useSensor, useSensors
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy, useSortable
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { PageContainer, PageHeader, PageSection, SectionCard, EmptyState } from '../components/layout/PageContainer';
 import { formatDate, formatCurrency, leadSources } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
-// Design system components
-function Button({ children, variant = 'primary', icon: Icon, onClick, type = 'button', disabled, className = '' }) {
-  const variants = {
-    primary: 'bg-stone-900 text-white hover:bg-stone-800 shadow-sm',
-    secondary: 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50',
-    success: 'bg-emerald-600 text-white hover:bg-emerald-700'
-  };
+/* ─────────────────────────────────────────
+   SHARED PRIMITIVES
+───────────────────────────────────────── */
+const inputCls = "w-full px-4 py-3 bg-white border border-stone-200/60 rounded-xl text-sm font-body text-stone-900 placeholder-stone-300 focus:outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400 transition-all duration-300";
+const labelCls = "block text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2 font-body";
+
+function Field({ label, hint, children }) {
   return (
-    <button 
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all disabled:opacity-50 ${variants[variant]} ${className}`}
-    >
-      {Icon && <Icon className="h-4 w-4" />}
+    <div>
+      {label && <label className={labelCls}>{label}</label>}
       {children}
-    </button>
-  );
-}
-
-function Input({ label, className = '', ...props }) {
-  return (
-    <div className={className}>
-      {label && <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase mb-2">{label}</label>}
-      <input {...props} className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-300 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 transition-all" />
+      {hint && <p className="text-xs text-stone-400 mt-1.5 font-body">{hint}</p>}
     </div>
   );
 }
 
-function Select({ label, options, className = '', ...props }) {
+function TextInput({ ...props }) {
+  return <input {...props} className={inputCls} />;
+}
+
+function SelectInput({ options, ...props }) {
   return (
-    <div className={className}>
-      {label && <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase mb-2">{label}</label>}
-      <select {...props} className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 transition-all appearance-none">
-        {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-      </select>
-    </div>
+    <select {...props} className={`${inputCls} appearance-none`}>
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
   );
 }
 
-function Textarea({ label, className = '', ...props }) {
+function TextareaInput({ ...props }) {
+  return <textarea {...props} className={`${inputCls} resize-none`} />;
+}
+
+/* ─────────────────────────────────────────
+   STAGE CONFIG
+───────────────────────────────────────── */
+const stages = [
+  { id: 'inquiry',     label: 'Inquiry' },
+  { id: 'proposal',    label: 'Proposal' },
+  { id: 'negotiation', label: 'Negotiation' },
+  { id: 'booked',      label: 'Booked' },
+];
+
+const stageMeta = {
+  inquiry:     { bar: 'bg-stone-300',  dot: 'bg-stone-300',  text: 'text-stone-500',  faint: 'bg-stone-50' },
+  proposal:    { bar: 'bg-amber-700',  dot: 'bg-amber-700',  text: 'text-amber-700',  faint: 'bg-amber-50/40' },
+  negotiation: { bar: 'bg-stone-900',  dot: 'bg-stone-900',  text: 'text-stone-900',  faint: 'bg-stone-100/40' },
+  booked:      { bar: 'bg-teal-700',   dot: 'bg-teal-700',   text: 'text-teal-700',   faint: 'bg-teal-50/40' },
+  lost:        { bar: 'bg-rose-800',   dot: 'bg-rose-800',   text: 'text-rose-800',   faint: 'bg-rose-50/40' },
+};
+
+function StageDot({ stage }) {
+  const m = stageMeta[stage] || stageMeta.inquiry;
+  return <span className={`inline-block w-1.5 h-1.5 rounded-full ${m.dot} flex-shrink-0`} />;
+}
+
+function StagePill({ stage }) {
+  const m = stageMeta[stage] || stageMeta.inquiry;
   return (
-    <div className={className}>
-      {label && <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase mb-2">{label}</label>}
-      <textarea {...props} className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-300 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 transition-all resize-none" />
-    </div>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] bg-white border border-stone-200/60 ${m.text} shadow-sm`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
+      {stage}
+    </span>
   );
 }
 
-function Modal({ isOpen, onClose, title, size = 'md', children }) {
+/* ─────────────────────────────────────────
+   MODAL
+───────────────────────────────────────── */
+function Modal({ isOpen, onClose, title, children }) {
   if (!isOpen) return null;
-  const sizes = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl' };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} max-h-[90vh] overflow-hidden`}>
-        <div className="flex items-center justify-between p-5 border-b border-stone-100">
-          <h2 className="font-display text-xl font-bold text-stone-900">{title}</h2>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors">
-            <X className="h-5 w-5" />
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-300">
+      <div className="absolute inset-0 bg-stone-900/20 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#faf9f7] rounded-t-2xl sm:rounded-2xl shadow-sm border border-stone-200/60 w-full sm:max-w-lg max-h-[92vh] overflow-hidden flex flex-col transition-all duration-300">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-stone-200/60 flex-shrink-0">
+          <h2 className="font-display text-2xl font-medium tracking-tight text-stone-900">{title}</h2>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-stone-200/50 text-stone-400 hover:text-stone-900 transition-all duration-300">
+            <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="p-5 overflow-y-auto max-h-[calc(90vh-140px)]">{children}</div>
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-6 py-5 font-body">
+          {children}
+        </div>
       </div>
     </div>
   );
 }
 
-function ModalFooter({ children }) {
-  return <div className="flex items-center justify-end gap-3 pt-5 mt-5 border-t border-stone-100">{children}</div>;
-}
-
-function StatusBadge({ status }) {
-  const config = {
-    inquiry: { bg: 'bg-stone-100', text: 'text-stone-600' },
-    proposal: { bg: 'bg-amber-50', text: 'text-amber-600' },
-    negotiation: { bg: 'bg-blue-50', text: 'text-blue-600' },
-    booked: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
-    lost: { bg: 'bg-rose-50', text: 'text-rose-600' }
-  };
-  const { bg, text } = config[status] || config.inquiry;
-  return <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${bg} ${text}`}>{status}</span>;
-}
-
-const stages = [
-  { id: 'inquiry', label: 'Inquiry' },
-  { id: 'proposal', label: 'Proposal' },
-  { id: 'negotiation', label: 'Negotiation' },
-  { id: 'booked', label: 'Booked' }
-];
-
-const stageConfig = {
-  inquiry: { color: 'bg-stone-50 border-stone-200' },
-  proposal: { color: 'bg-amber-50/50 border-amber-200' },
-  negotiation: { color: 'bg-blue-50/50 border-blue-200' },
-  booked: { color: 'bg-emerald-50/50 border-emerald-200' },
-  lost: { color: 'bg-rose-50/50 border-rose-200' }
-};
-
-function LeadCard({ lead, onClick }) {
+/* ─────────────────────────────────────────
+   KANBAN LEAD CARD
+───────────────────────────────────────── */
+function KanbanCard({ lead, onClick }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lead._id });
-  
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  const m = stageMeta[lead.stage] || stageMeta.inquiry;
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
+      ref={setNodeRef} style={style} {...attributes} {...listeners}
       onClick={() => onClick(lead)}
-      className="p-4 bg-white border border-stone-200/60 rounded-xl cursor-pointer hover:border-stone-300 hover:shadow-md transition-all"
+      className="group bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4 cursor-pointer hover:border-stone-300 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
     >
-      <div className="flex items-start justify-between mb-3">
-        <h4 className="font-semibold text-stone-900">{lead.name}</h4>
+      {/* Accent bar */}
+      <div className={`h-[1px] w-6 ${m.bar} mb-4 group-hover:w-10 transition-all duration-300`} />
+
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <p className="font-medium font-body text-stone-900 text-sm leading-tight flex items-center gap-2">
+          {lead.name}
+          {lead.isPriority && <Heart className="w-3 h-3 text-rose-800 fill-rose-800" />}
+        </p>
         {lead.estimatedBudget > 0 && (
-          <span className="text-sm font-semibold text-emerald-600">{formatCurrency(lead.estimatedBudget)}</span>
+          <span className="text-xs font-medium font-body text-teal-700 flex-shrink-0">{formatCurrency(lead.estimatedBudget)}</span>
         )}
       </div>
-      
-      <div className="space-y-2 text-sm text-stone-500">
+
+      <div className="space-y-1.5 text-xs text-stone-400 font-body">
         {lead.phone && (
           <div className="flex items-center gap-2">
-            <Phone className="w-3.5 h-3.5 text-stone-400" />
-            <span>{lead.phone}</span>
+            <Phone className="w-3 h-3 flex-shrink-0 text-stone-300" />
+            <span className="text-stone-600">{lead.phone}</span>
           </div>
         )}
         {lead.weddingDate && (
           <div className="flex items-center gap-2">
-            <Calendar className="w-3.5 h-3.5 text-stone-400" />
-            <span>{formatDate(lead.weddingDate)}</span>
+            <Calendar className="w-3 h-3 flex-shrink-0 text-stone-300" />
+            <span className="text-stone-600 italic">{formatDate(lead.weddingDate)}</span>
           </div>
         )}
       </div>
 
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone-100">
-        <span className="text-xs text-stone-400">
+      <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone-100/60 font-body">
+        <span className="text-[10px] font-bold tracking-[0.2em] text-stone-300 uppercase">
           {leadSources.find(s => s.value === lead.source)?.label || lead.source}
         </span>
         {lead.assignedTo && (
-          <div className="w-7 h-7 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center">
-            <span className="text-xs font-bold text-rose-600">
-              {lead.assignedTo.name?.charAt(0)}
+          <div className="w-6 h-6 rounded-full bg-[#faf9f7] border border-stone-200/60 flex items-center justify-center">
+            <span className="text-[10px] font-medium text-stone-600">
+              {lead.assignedTo.name?.charAt(0)?.toUpperCase()}
             </span>
           </div>
         )}
@@ -164,28 +164,42 @@ function LeadCard({ lead, onClick }) {
   );
 }
 
+/* ─────────────────────────────────────────
+   KANBAN COLUMN
+───────────────────────────────────────── */
 function KanbanColumn({ stage, leads, onLeadClick }) {
   const { setNodeRef } = useSortable({ id: stage.id });
-  const config = stageConfig[stage.id];
+  const m = stageMeta[stage.id];
+  const totalBudget = leads.reduce((s, l) => s + (l.estimatedBudget || 0), 0);
 
   return (
-    <div className="flex-1 min-w-75">
-      <div className={`mb-4 p-4 rounded-xl border ${config.color}`}>
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-stone-900">{stage.label}</h3>
-          <span className="text-sm font-medium text-stone-400 bg-white/60 px-2 py-0.5 rounded-full">{leads.length}</span>
+    <div className="flex-shrink-0 w-72 flex flex-col">
+      {/* Column header */}
+      <div className="mb-4 px-1">
+        <div className="flex items-center justify-between font-body">
+          <div className="flex items-center gap-2">
+            <div className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
+            <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-stone-900">{stage.label}</span>
+            <span className="text-xs text-stone-400">{leads.length}</span>
+          </div>
+          {totalBudget > 0 && (
+            <span className="text-[10px] text-stone-400">{formatCurrency(totalBudget)}</span>
+          )}
         </div>
+        {/* Stage bar */}
+        <div className={`h-[1px] w-full ${m.bar} opacity-20 mt-3`} />
       </div>
-      
-      <div ref={setNodeRef} className="space-y-3 min-h-100">
+
+      {/* Cards */}
+      <div ref={setNodeRef} className="flex-1 space-y-3 min-h-32">
         <SortableContext items={leads.map(l => l._id)} strategy={verticalListSortingStrategy}>
           {leads.map(lead => (
-            <LeadCard key={lead._id} lead={lead} onClick={onLeadClick} />
+            <KanbanCard key={lead._id} lead={lead} onClick={onLeadClick} />
           ))}
         </SortableContext>
         {leads.length === 0 && (
-          <div className="text-center py-12 text-sm text-stone-400 bg-stone-50/50 rounded-xl border border-dashed border-stone-200">
-            No leads in this stage
+          <div className="text-center py-10 text-xs font-body italic text-stone-400 bg-white shadow-sm rounded-2xl border border-stone-200/60">
+            No active inquiries
           </div>
         )}
       </div>
@@ -193,436 +207,431 @@ function KanbanColumn({ stage, leads, onLeadClick }) {
   );
 }
 
+/* ─────────────────────────────────────────
+   SKELETON
+───────────────────────────────────────── */
+function Sk({ className = '' }) {
+  return <div className={`bg-stone-200/50 animate-pulse rounded-2xl ${className}`} />;
+}
+
+/* ═══════════════════════════════════════
+   MAIN PAGE
+═══════════════════════════════════════ */
 export default function Leads() {
-  const navigate = useNavigate();
   const { isManager } = useAuth();
-  const [leads, setLeads] = useState({});
-  const [allLeads, setAllLeads] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [view, setView] = useState('table');
-  const [showModal, setShowModal] = useState(false);
+  const [leads, setLeads]           = useState({});
+  const [allLeads, setAllLeads]     = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [view, setView]             = useState('table');
+  const [showModal, setShowModal]   = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [users, setUsers]           = useState([]);
+  const [search, setSearch]         = useState('');
   const [stageFilter, setStageFilter] = useState('');
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    source: 'other',
-    estimatedBudget: '',
-    weddingDate: '',
-    venue: '',
-    guestCount: '',
-    notes: '',
-    assignedTo: ''
-  });
+
+  const emptyForm = {
+    name: '', email: '', phone: '', source: 'other',
+    estimatedBudget: '', weddingDate: '', venue: '',
+    guestCount: '', notes: '', assignedTo: ''
+  };
+  const [form, setForm] = useState(emptyForm);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor)
   );
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     try {
-      const [pipelineRes, leadsRes, usersRes] = await Promise.all([
+      const [pipe, all, usrs] = await Promise.all([
         api.get('/leads/pipeline'),
         api.get('/leads'),
-        api.get('/auth/users')
+        api.get('/auth/users'),
       ]);
-      setLeads(pipelineRes.data.leads);
-      setAllLeads(leadsRes.data.leads);
-      setUsers(usersRes.data.users);
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    } finally {
-      setLoading(false);
-    }
+      setLeads(pipe.data.leads);
+      setAllLeads(all.data.leads);
+      setUsers(usrs.data.users);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
-  const handleDragEnd = async (event) => {
-    const { active, over } = event;
+  const handleDragEnd = async ({ active, over }) => {
     if (!over || active.id === over.id) return;
-
-    const leadId = active.id;
     const newStage = over.id;
-
     if (!stages.find(s => s.id === newStage)) return;
-
-    const pipelineLeads = [...(leads.inquiry || []), ...(leads.proposal || []), ...(leads.negotiation || []), ...(leads.booked || [])];
-    const lead = pipelineLeads.find(l => l._id === leadId);
+    const all = [...(leads.inquiry||[]),...(leads.proposal||[]),...(leads.negotiation||[]),...(leads.booked||[])];
+    const lead = all.find(l => l._id === active.id);
     if (!lead || lead.stage === newStage) return;
-
-    const oldStage = lead.stage;
-    setLeads(prev => ({
-      ...prev,
-      [oldStage]: prev[oldStage].filter(l => l._id !== leadId),
-      [newStage]: [...(prev[newStage] || []), { ...lead, stage: newStage }]
-    }));
-
-    try {
-      await api.put(`/leads/${leadId}/stage`, { stage: newStage });
-    } catch (error) {
-      setLeads(prev => ({
-        ...prev,
-        [newStage]: prev[newStage].filter(l => l._id !== leadId),
-        [oldStage]: [...(prev[oldStage] || []), lead]
-      }));
-    }
+    const old = lead.stage;
+    setLeads(p => ({ ...p, [old]: p[old].filter(l => l._id !== active.id), [newStage]: [...(p[newStage]||[]), { ...lead, stage: newStage }] }));
+    try { await api.put(`/leads/${active.id}/stage`, { stage: newStage }); }
+    catch { setLeads(p => ({ ...p, [newStage]: p[newStage].filter(l => l._id !== active.id), [old]: [...(p[old]||[]), lead] })); }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (selectedLead) {
-        await api.put(`/leads/${selectedLead._id}`, formData);
-      } else {
-        await api.post('/leads', formData);
-      }
-      loadData();
-      closeModal();
-    } catch (error) {
-      console.error('Failed to save lead:', error);
-    }
-  };
+  const openCreate = () => { setSelectedLead(null); setForm(emptyForm); setShowModal(true); };
 
-  const handleLeadClick = (lead) => {
-    if (!isManager) return; // Team members can't edit
+  const openEdit = (lead) => {
+    if (!isManager) return;
     setSelectedLead(lead);
-    setFormData({
-      name: lead.name,
-      email: lead.email || '',
-      phone: lead.phone,
-      source: lead.source,
-      estimatedBudget: lead.estimatedBudget || '',
+    setForm({
+      name: lead.name, email: lead.email || '', phone: lead.phone,
+      source: lead.source, estimatedBudget: lead.estimatedBudget || '',
       weddingDate: lead.weddingDate ? lead.weddingDate.split('T')[0] : '',
-      venue: lead.venue || '',
-      guestCount: lead.guestCount || '',
-      notes: lead.notes || '',
-      assignedTo: lead.assignedTo?._id || ''
+      venue: lead.venue || '', guestCount: lead.guestCount || '',
+      notes: lead.notes || '', assignedTo: lead.assignedTo?._id || ''
     });
     setShowModal(true);
   };
 
+  const closeModal = () => { setShowModal(false); setSelectedLead(null); setForm(emptyForm); };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (selectedLead) await api.put(`/leads/${selectedLead._id}`, form);
+      else await api.post('/leads', form);
+      loadData(); closeModal();
+    } catch (e) { console.error(e); }
+  };
+
   const handleConvert = async () => {
     if (!selectedLead) return;
-    try {
-      await api.post(`/leads/${selectedLead._id}/convert`, {
-        weddingDate: formData.weddingDate
-      });
-      loadData();
-      closeModal();
-    } catch (error) {
-      console.error('Failed to convert lead:', error);
-    }
+    try { await api.post(`/leads/${selectedLead._id}/convert`, { weddingDate: form.weddingDate }); loadData(); closeModal(); }
+    catch (e) { console.error(e); }
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedLead(null);
-    setFormData({
-      name: '', email: '', phone: '', source: 'other',
-      estimatedBudget: '', weddingDate: '', venue: '', guestCount: '', notes: '', assignedTo: ''
-    });
-  };
-
-  const filteredLeads = allLeads.filter(lead => {
-    const matchesSearch = !searchQuery || 
-      lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.phone?.includes(searchQuery) ||
-      lead.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStage = !stageFilter || lead.stage === stageFilter;
-    return matchesSearch && matchesStage;
+  const filtered = allLeads.filter(l => {
+    const q = search.toLowerCase();
+    const matchQ = !q || l.name.toLowerCase().includes(q) || l.phone?.includes(q) || l.email?.toLowerCase().includes(q);
+    const matchS = !stageFilter || l.stage === stageFilter;
+    return matchQ && matchS;
   });
 
-  if (loading) {
-    return (
-      <PageContainer>
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin h-8 w-8 border-2 border-stone-900 border-t-transparent rounded-full" />
-        </div>
-      </PageContainer>
-    );
-  }
+  /* Derived pipeline totals */
+  const pipelineTotal = Object.values(leads).flat().reduce((s, l) => s + (l.estimatedBudget || 0), 0);
+  const bookedCount   = (leads.booked || []).length;
 
-  const sourceOptions = leadSources.map(s => ({ value: s.value, label: s.label }));
-  const stageOptions = stages.map(s => ({ value: s.id, label: s.label }));
-  const userOptions = users.map(u => ({ value: u._id, label: u.name }));
+  const sourceOpts = leadSources.map(s => ({ value: s.value, label: s.label }));
+  const stageOpts  = stages.map(s => ({ value: s.id, label: s.label }));
+  const userOpts   = users.map(u => ({ value: u._id, label: u.name }));
 
   return (
-    <PageContainer>
-      <PageHeader 
-        title="Leads"
-        subtitle="Track and manage your potential clients through the sales pipeline"
-        actions={
-          isManager && (
-            <Button icon={Plus} onClick={() => setShowModal(true)}>
-              Add Lead
-            </Button>
-          )
-        }
-      />
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&display=swap');
+        .font-display { font-family: 'Cormorant Garamond', serif; letter-spacing: -0.02em; }
+        .font-body    { font-family: 'Inter', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
 
-      {/* Filters & View Toggle */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-1 w-full sm:w-auto">
-          <div className="relative flex-1 w-full sm:max-w-sm">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-            <input
-              type="text"
-              placeholder="Search leads..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 text-sm rounded-xl bg-white border border-stone-200 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 transition-all"
-            />
+      <div className="font-body min-h-screen bg-[#faf9f7] text-stone-900 selection:bg-stone-200">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-12">
+
+          {/* ── Page header ── */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12 border-b border-stone-200/60 pb-8">
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-3">Pipeline Overview</p>
+              <h1 className="font-display text-4xl sm:text-5xl font-medium text-stone-900">Inquiries</h1>
+            </div>
+            {isManager && (
+              <button
+                onClick={openCreate}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-stone-900 text-[#faf9f7] rounded-full text-sm font-medium hover:bg-stone-800 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md self-start sm:self-auto flex-shrink-0"
+              >
+                <Plus className="h-4 w-4" /> Add Lead
+              </button>
+            )}
           </div>
-          <Select
-            value={stageFilter}
-            onChange={(e) => setStageFilter(e.target.value)}
-            options={[{ value: '', label: 'All Stages' }, ...stageOptions]}
-            className="w-full sm:w-44"
-          />
-        </div>
-        <div className="flex items-center gap-1 p-1.5 bg-stone-100 rounded-xl">
-          <button
-            onClick={() => setView('table')}
-            className={`p-2.5 rounded-lg transition-all ${
-              view === 'table' ? 'bg-white shadow-sm text-stone-900' : 'text-stone-400 hover:text-stone-600'
-            }`}
-          >
-            <List className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setView('pipeline')}
-            className={`p-2.5 rounded-lg transition-all ${
-              view === 'pipeline' ? 'bg-white shadow-sm text-stone-900' : 'text-stone-400 hover:text-stone-600'
-            }`}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
+
+          {loading ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{[...Array(4)].map((_,i)=><Sk key={i} className="h-28"/>)}</div>
+              <Sk className="h-16" />
+              <Sk className="h-[500px]" />
+            </div>
+          ) : (
+            <>
+              {/* ── Pipeline summary strip ── */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                {[
+                  { label: 'Total Inquiries',    value: allLeads.length,            bar: 'bg-stone-300' },
+                  { label: 'Pipeline Value', value: formatCurrency(pipelineTotal),  bar: 'bg-amber-700' },
+                  { label: 'Booked Weddings',        value: bookedCount,            bar: 'bg-teal-700' },
+                  { label: 'Conversion Rate',    value: allLeads.length ? `${Math.round((bookedCount / allLeads.length) * 100)}%` : '0%', bar: 'bg-stone-900' },
+                ].map(m => (
+                  <div key={m.label} className="bg-white rounded-2xl p-6 border border-stone-200/60 shadow-sm transition-all duration-300 hover:-translate-y-0.5">
+                    <div className={`h-[1px] w-8 ${m.bar} mb-4`} />
+                    <p className="font-display text-3xl font-medium text-stone-900 leading-none">{m.value}</p>
+                    <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mt-3">{m.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Filters + view toggle ── */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-8">
+                {/* Search */}
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-300 pointer-events-none" />
+                  <input
+                    type="text" placeholder="Search inquiries..."
+                    value={search} onChange={e => setSearch(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 text-sm rounded-full bg-white shadow-sm border border-stone-200/60 placeholder-stone-300 focus:outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400 transition-all duration-300"
+                  />
+                </div>
+
+                {/* Stage filter */}
+                <select
+                  value={stageFilter} onChange={e => setStageFilter(e.target.value)}
+                  className="py-3 px-4 text-sm rounded-full bg-white shadow-sm border border-stone-200/60 text-stone-700 focus:outline-none focus:border-stone-400 appearance-none transition-all duration-300 w-full sm:w-48"
+                >
+                  <option value="">All Stages</option>
+                  {stageOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+
+                {/* View toggle */}
+                <div className="flex items-center gap-1 p-1 bg-white border border-stone-200/60 rounded-full self-start sm:self-auto flex-shrink-0 shadow-sm">
+                  <button
+                    onClick={() => setView('table')}
+                    className={`p-2.5 rounded-full transition-all duration-300 ${view === 'table' ? 'bg-stone-900 text-[#faf9f7]' : 'text-stone-400 hover:text-stone-900'}`}
+                  >
+                    <List className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setView('pipeline')}
+                    className={`p-2.5 rounded-full transition-all duration-300 ${view === 'pipeline' ? 'bg-stone-900 text-[#faf9f7]' : 'text-stone-400 hover:text-stone-900'}`}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* ════════════════════════════════
+                  TABLE VIEW
+              ════════════════════════════════ */}
+              {view === 'table' && (
+                <div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-stone-100/60 bg-[#faf9f7]/50">
+                          {['Client Name', 'Contact Details', 'Target Date', 'Est. Budget', 'Stage', 'Origin', 'Planner', ''].map(h => (
+                            <th key={h} className={`text-left px-6 py-5 text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase whitespace-nowrap
+                              ${h === 'Target Date' ? 'hidden md:table-cell' : ''}
+                              ${h === 'Est. Budget' || h === 'Origin' ? 'hidden lg:table-cell' : ''}
+                              ${h === 'Planner' ? 'hidden md:table-cell' : ''}
+                            `}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100/60">
+                        {filtered.length > 0 ? filtered.map(lead => (
+                          <tr
+                            key={lead._id}
+                            onClick={() => openEdit(lead)}
+                            className="cursor-pointer hover:bg-[#faf9f7] transition-all duration-300 group"
+                          >
+                            {/* Name */}
+                            <td className="px-6 py-5">
+                              <div className="flex items-center gap-3">
+                                <span className="font-medium text-stone-900 text-sm flex items-center gap-2 group-hover:translate-x-1 transition-transform duration-300">
+                                  {lead.name}
+                                  {lead.isPriority && <Heart className="w-3.5 h-3.5 text-rose-800 fill-rose-800" />}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Contact */}
+                            <td className="px-6 py-5">
+                              <div className="space-y-1">
+                                {lead.phone && <p className="text-sm text-stone-600">{lead.phone}</p>}
+                                {lead.email && <p className="text-xs text-stone-400 italic">{lead.email}</p>}
+                              </div>
+                            </td>
+
+                            {/* Wedding Date */}
+                            <td className="px-6 py-5 text-sm text-stone-600 hidden md:table-cell whitespace-nowrap">
+                              {lead.weddingDate ? formatDate(lead.weddingDate) : <span className="text-stone-300">—</span>}
+                            </td>
+
+                            {/* Budget */}
+                            <td className="px-6 py-5 text-sm font-medium text-stone-900 hidden lg:table-cell whitespace-nowrap">
+                              {lead.estimatedBudget ? formatCurrency(lead.estimatedBudget) : <span className="text-stone-300">—</span>}
+                            </td>
+
+                            {/* Stage */}
+                            <td className="px-6 py-5">
+                              <StagePill stage={lead.stage} />
+                            </td>
+
+                            {/* Source */}
+                            <td className="px-6 py-5 text-[10px] font-bold tracking-[0.2em] uppercase text-stone-400 hidden lg:table-cell">
+                              {leadSources.find(s => s.value === lead.source)?.label || lead.source}
+                            </td>
+
+                            {/* Assigned */}
+                            <td className="px-6 py-5 hidden md:table-cell">
+                              {lead.assignedTo ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full border border-stone-200/60 bg-[#faf9f7] flex items-center justify-center flex-shrink-0">
+                                    <span className="text-[10px] font-medium text-stone-600">
+                                      {lead.assignedTo.name?.charAt(0)?.toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-stone-500">{lead.assignedTo.name}</span>
+                                </div>
+                              ) : <span className="text-stone-300 text-xs">—</span>}
+                            </td>
+
+                            {/* Arrow */}
+                            <td className="px-6 py-5 text-right">
+                              <ChevronRight className="h-4 w-4 text-stone-300 group-hover:text-stone-900 transition-colors inline-block" />
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan={8} className="px-6 py-20 text-center">
+                              <p className="text-stone-400 italic text-sm">No inquiries found matching your criteria.</p>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ════════════════════════════════
+                  PIPELINE / KANBAN VIEW
+              ════════════════════════════════ */}
+              {view === 'pipeline' && (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-5 px-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
+                    <SortableContext items={stages.map(s => s.id)}>
+                      {stages.map(stage => (
+                        <KanbanColumn
+                          key={stage.id}
+                          stage={stage}
+                          leads={leads[stage.id] || []}
+                          onLeadClick={openEdit}
+                        />
+                      ))}
+                    </SortableContext>
+                  </div>
+                </DndContext>
+              )}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Table View */}
-      {view === 'table' && (
-        <SectionCard padding="none">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-stone-100">
-                  <th className="text-left p-4 text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Name</th>
-                  <th className="text-left p-4 text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Contact</th>
-                  <th className="text-left p-4 text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase hidden md:table-cell">Wedding Date</th>
-                  <th className="text-left p-4 text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase hidden lg:table-cell">Budget</th>
-                  <th className="text-left p-4 text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Stage</th>
-                  <th className="text-left p-4 text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase hidden lg:table-cell">Source</th>
-                  <th className="text-left p-4 text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase hidden md:table-cell">Assigned</th>
-                  <th className="p-4"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-50">
-                {filteredLeads.length > 0 ? (
-                  filteredLeads.map((lead) => (
-                    <tr 
-                      key={lead._id} 
-                      onClick={() => handleLeadClick(lead)} 
-                      className="cursor-pointer hover:bg-stone-50 transition-colors"
-                    >
-                      <td className="p-4">
-                        <span className="font-semibold text-stone-900">{lead.name}</span>
-                      </td>
-                      <td className="p-4">
-                        <div className="space-y-1">
-                          {lead.phone && (
-                            <div className="flex items-center gap-2 text-sm text-stone-600">
-                              <Phone className="h-3.5 w-3.5 text-stone-400" />
-                              {lead.phone}
-                            </div>
-                          )}
-                          {lead.email && (
-                            <div className="flex items-center gap-2 text-sm text-stone-400">
-                              <Mail className="h-3.5 w-3.5" />
-                              {lead.email}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-4 text-sm text-stone-600 hidden md:table-cell">
-                        {lead.weddingDate ? formatDate(lead.weddingDate) : '-'}
-                      </td>
-                      <td className="p-4 text-sm font-medium text-stone-900 hidden lg:table-cell">
-                        {lead.estimatedBudget ? formatCurrency(lead.estimatedBudget) : '-'}
-                      </td>
-                      <td className="p-4">
-                        <StatusBadge status={lead.stage} />
-                      </td>
-                      <td className="p-4 text-sm text-stone-500 hidden lg:table-cell">
-                        {leadSources.find(s => s.value === lead.source)?.label || lead.source}
-                      </td>
-                      <td className="p-4 hidden md:table-cell">
-                        {lead.assignedTo ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center">
-                              <span className="text-xs font-bold text-rose-600">{lead.assignedTo.name?.charAt(0)}</span>
-                            </div>
-                            <span className="text-sm text-stone-600">{lead.assignedTo.name}</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-stone-300">-</span>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        <ChevronRight className="h-4 w-4 text-stone-300" />
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={8} className="p-12 text-center">
-                      <EmptyState 
-                        icon={UsersIcon}
-                        title="No leads found"
-                        description="Try adjusting your search or filters"
-                      />
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </SectionCard>
-      )}
-
-      {/* Pipeline View */}
-      {view === 'pipeline' && (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <div className="flex gap-5 overflow-x-auto pb-4 -mx-5 px-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
-            <SortableContext items={stages.map(s => s.id)}>
-              {stages.map(stage => (
-                <KanbanColumn
-                  key={stage.id}
-                  stage={stage}
-                  leads={leads[stage.id] || []}
-                  onLeadClick={handleLeadClick}
-                />
-              ))}
-            </SortableContext>
-          </div>
-        </DndContext>
-      )}
-
-      {/* Lead Modal */}
+      {/* ════════════════════════════════
+          LEAD MODAL (create / edit)
+      ════════════════════════════════ */}
       <Modal
         isOpen={showModal}
         onClose={closeModal}
-        title={selectedLead ? 'Edit Lead' : 'Add New Lead'}
-        size="lg"
+        title={selectedLead ? 'Edit Inquiry' : 'New Inquiry'}
       >
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Client name"
-                required
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid grid-cols-2 gap-5">
+            <Field label="Client Name">
+              <TextInput
+                type="text" value={form.name} placeholder="e.g. Eleanor & James" required
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               />
-              <Input
-                label="Phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+91 9876543210"
-                required
+            </Field>
+            <Field label="Contact Phone">
+              <TextInput
+                type="tel" value={form.phone} placeholder="+1 555 000 0000" required
+                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="email@example.com"
-              />
-              <Select
-                label="Source"
-                value={formData.source}
-                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                options={sourceOptions}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Estimated Budget"
-                type="number"
-                value={formData.estimatedBudget}
-                onChange={(e) => setFormData({ ...formData, estimatedBudget: e.target.value })}
-                placeholder="500000"
-              />
-              <Input
-                label="Wedding Date"
-                type="date"
-                value={formData.weddingDate}
-                onChange={(e) => setFormData({ ...formData, weddingDate: e.target.value })}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Venue"
-                value={formData.venue}
-                onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                placeholder="Wedding venue"
-              />
-              <Input
-                label="Guest Count"
-                type="number"
-                value={formData.guestCount}
-                onChange={(e) => setFormData({ ...formData, guestCount: e.target.value })}
-                placeholder="200"
-              />
-            </div>
-
-            {isManager && (
-              <Select
-                label="Assign To"
-                value={formData.assignedTo}
-                onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-                options={[{ value: '', label: 'Select team member' }, ...userOptions]}
-              />
-            )}
-
-            <Textarea
-              label="Notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Additional notes about the lead..."
-              rows={3}
-            />
+            </Field>
           </div>
 
-          <ModalFooter>
-            <Button type="button" variant="secondary" onClick={closeModal}>
+          <div className="grid grid-cols-2 gap-5">
+            <Field label="Email Address">
+              <TextInput
+                type="email" value={form.email} placeholder="client@example.com"
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              />
+            </Field>
+            <Field label="Discovery Source">
+              <SelectInput
+                value={form.source} options={sourceOpts}
+                onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-5 border-t border-stone-100/60 pt-5">
+            <Field label="Target Budget">
+              <TextInput
+                type="number" value={form.estimatedBudget} placeholder="100000"
+                onChange={e => setForm(f => ({ ...f, estimatedBudget: e.target.value }))}
+              />
+            </Field>
+            <Field label="Preferred Date">
+              <TextInput
+                type="date" value={form.weddingDate}
+                onChange={e => setForm(f => ({ ...f, weddingDate: e.target.value }))}
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-5">
+            <Field label="Venue Preference">
+              <TextInput
+                type="text" value={form.venue} placeholder="The Plaza Hotel"
+                onChange={e => setForm(f => ({ ...f, venue: e.target.value }))}
+              />
+            </Field>
+            <Field label="Estimated Guests">
+              <TextInput
+                type="number" value={form.guestCount} placeholder="150"
+                onChange={e => setForm(f => ({ ...f, guestCount: e.target.value }))}
+              />
+            </Field>
+          </div>
+
+          {isManager && (
+            <Field label="Assigned Planner">
+              <SelectInput
+                value={form.assignedTo}
+                options={[{ value: '', label: 'Select team member' }, ...userOpts]}
+                onChange={e => setForm(f => ({ ...f, assignedTo: e.target.value }))}
+              />
+            </Field>
+          )}
+
+          <Field label="Internal Notes">
+            <TextareaInput
+              value={form.notes} placeholder="Aesthetic preferences, priorities, etc..." rows={3}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+            />
+          </Field>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-3 pt-6 border-t border-stone-200/60 mt-4">
+            <button type="button" onClick={closeModal}
+              className="px-6 py-3 rounded-full text-sm font-medium text-stone-500 hover:text-stone-900 border border-stone-200/60 hover:border-stone-400 transition-all duration-300">
               Cancel
-            </Button>
+            </button>
             {selectedLead && selectedLead.stage !== 'booked' && isManager && (
-              <Button type="button" variant="success" onClick={handleConvert}>
-                Convert to Wedding
-              </Button>
+              <button type="button" onClick={handleConvert}
+                className="px-6 py-3 rounded-full text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 transition-all duration-300 border border-amber-200/60">
+                Book Wedding
+              </button>
             )}
-            <Button type="submit">
-              {selectedLead ? 'Update Lead' : 'Create Lead'}
-            </Button>
-          </ModalFooter>
+            <button type="submit"
+              className="px-8 py-3 rounded-full text-sm font-medium bg-stone-900 text-[#faf9f7] hover:bg-stone-800 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
+              {selectedLead ? 'Save Changes' : 'Create Inquiry'}
+            </button>
+          </div>
         </form>
       </Modal>
-    </PageContainer>
+    </>
   );
 }

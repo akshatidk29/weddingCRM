@@ -1,675 +1,565 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Phone, Mail, MapPin, Star, Edit, Trash, CheckSquare, ChevronDown, ChevronRight, Store, PartyPopper, X } from 'lucide-react';
-import { PageContainer, PageHeader, PageSection, SectionCard, EmptyState } from '../components/layout/PageContainer';
+import {
+  Plus, Search, Phone, Mail, MapPin, Star,
+  Edit, Trash, ChevronDown, ChevronRight, X, Check
+} from 'lucide-react';
 import { vendorCategories } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
-// Local design components matching the design system
-const Button = ({ children, variant = 'primary', className = '', icon: Icon, ...props }) => {
-  const baseClasses = 'inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 rounded-full px-5 py-2.5 text-sm';
-  const variants = {
-    primary: 'bg-stone-900 text-white hover:bg-stone-800 shadow-sm',
-    secondary: 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50',
-    danger: 'bg-rose-500 text-white hover:bg-rose-600',
-  };
-  return (
-    <button className={`${baseClasses} ${variants[variant]} ${className}`} {...props}>
-      {Icon && <Icon className="w-4 h-4" />}
-      {children}
-    </button>
-  );
+/* ─────────────────────────────────────────
+   PRIMITIVES
+───────────────────────────────────────── */
+const inputCls = "w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-300 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 transition-all";
+const labelCls = "block text-[10px] font-semibold tracking-[0.18em] text-stone-400 uppercase mb-2";
+
+function Field({ label, children }) {
+  return <div>{label && <label className={labelCls}>{label}</label>}{children}</div>;
+}
+
+/* ─────────────────────────────────────────
+   CATEGORY META
+───────────────────────────────────────── */
+const categoryMeta = {
+  catering:     { bar: 'bg-amber-400',   label: 'Catering' },
+  decor:        { bar: 'bg-rose-400',    label: 'Decor' },
+  photography:  { bar: 'bg-stone-600',   label: 'Photography' },
+  videography:  { bar: 'bg-stone-400',   label: 'Videography' },
+  music:        { bar: 'bg-violet-400',  label: 'Music' },
+  makeup:       { bar: 'bg-pink-400',    label: 'Makeup' },
+  venue:        { bar: 'bg-sky-400',     label: 'Venue' },
+  transport:    { bar: 'bg-emerald-400', label: 'Transport' },
+  invitation:   { bar: 'bg-orange-400',  label: 'Invitation' },
+  other:        { bar: 'bg-stone-300',   label: 'Other' },
 };
 
-const Input = ({ label, className = '', ...props }) => (
-  <div className={className}>
-    {label && <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase mb-2">{label}</label>}
-    <input
-      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 outline-none transition-all"
-      {...props}
-    />
-  </div>
-);
+const priceLabels = { budget: '₹', moderate: '₹₹', premium: '₹₹₹', luxury: '₹₹₹₹' };
+const priceColors = { budget: 'text-stone-400', moderate: 'text-amber-500', premium: 'text-orange-500', luxury: 'text-rose-500' };
 
-const Textarea = ({ label, className = '', ...props }) => (
-  <div className={className}>
-    {label && <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase mb-2">{label}</label>}
-    <textarea
-      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 outline-none transition-all resize-none"
-      {...props}
-    />
-  </div>
-);
-
-const Select = ({ label, options = [], placeholder, className = '', ...props }) => (
-  <div className={className}>
-    {label && <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase mb-2">{label}</label>}
-    <select
-      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-900 focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 outline-none transition-all appearance-none cursor-pointer"
-      {...props}
-    >
-      {placeholder && <option value="">{placeholder}</option>}
-      {options.map(opt => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
-      ))}
-    </select>
-  </div>
-);
-
-const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
-  if (!isOpen) return null;
-  const sizes = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
+/* ─────────────────────────────────────────
+   STAR DISPLAY
+───────────────────────────────────────── */
+function StarRating({ value }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} max-h-[85vh] overflow-y-auto`}>
-        <div className="flex items-center justify-between p-5 border-b border-stone-100">
-          <h2 className="text-lg font-semibold text-stone-900">{title}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-xl transition-colors">
-            <X className="w-5 h-5 text-stone-400" />
+    <div className="flex items-center gap-1">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < value ? 'bg-amber-400' : 'bg-stone-200'}`} />
+      ))}
+    </div>
+  );
+}
+
+function StarPicker({ value, onChange }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {[1,2,3,4,5].map(s => (
+        <button key={s} type="button" onClick={() => onChange(s)} className="p-0.5">
+          <Star className={`w-5 h-5 transition-colors ${s <= value ? 'text-amber-400 fill-amber-400' : 'text-stone-200 hover:text-stone-300'}`} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   MODAL
+───────────────────────────────────────── */
+function Modal({ isOpen, onClose, title, children }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-stone-950/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#faf9f7] rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 flex-shrink-0">
+          <h2 className="font-display text-xl font-bold text-stone-900">{title}</h2>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors">
+            <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="overflow-y-auto flex-1 px-6 py-5">{children}</div>
       </div>
     </div>
   );
-};
+}
 
-const StatusBadge = ({ status }) => {
-  const styles = {
-    pending: 'bg-amber-50 text-amber-600',
-    done: 'bg-emerald-50 text-emerald-600',
-    verified: 'bg-blue-50 text-blue-600',
-    completed: 'bg-emerald-50 text-emerald-600',
-    info: 'bg-blue-50 text-blue-600',
-    warning: 'bg-amber-50 text-amber-600',
+/* ─────────────────────────────────────────
+   VENDOR ROW (expanded detail)
+───────────────────────────────────────── */
+function VendorRow({ vendor, onEdit, onDelete, isManager }) {
+  const [expanded, setExpanded] = useState(false);
+  const [tasks, setTasks]       = useState(null); // null = not loaded
+  const [events, setEvents]     = useState([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+
+  const m = categoryMeta[vendor.category] || categoryMeta.other;
+
+  const loadTasks = async () => {
+    if (tasks !== null) return;
+    setLoadingTasks(true);
+    try {
+      const [tr, er] = await Promise.all([
+        api.get(`/tasks/by-vendor/${vendor._id}`),
+        api.get(`/vendors/${vendor._id}/linked-events`),
+      ]);
+      setTasks(tr.data.tasks || []);
+      setEvents(er.data.events || []);
+    } catch { setTasks([]); }
+    finally { setLoadingTasks(false); }
   };
-  return (
-    <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${styles[status] || 'bg-stone-100 text-stone-600'}`}>
-      {status}
-    </span>
-  );
-};
 
+  const toggleExpand = () => {
+    if (!expanded) loadTasks();
+    setExpanded(e => !e);
+  };
+
+  const totalAmt = (tasks || []).reduce((s, t) => s + Math.abs(t.taskVendors?.find(tv => tv.vendor?._id === vendor._id)?.amount || 0), 0);
+  const paidAmt  = (tasks || []).reduce((s, t) => s + Math.abs(t.taskVendors?.find(tv => tv.vendor?._id === vendor._id)?.paidAmount || 0), 0);
+
+  return (
+    <div className={`border-b border-stone-50 last:border-0 transition-colors ${expanded ? 'bg-stone-50/40' : 'hover:bg-stone-50/60'}`}>
+      {/* ── Main row ── */}
+      <div className="flex items-center gap-4 px-5 py-4 cursor-pointer" onClick={toggleExpand}>
+        {/* Expand toggle */}
+        <div className="flex-shrink-0 text-stone-300">
+          {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </div>
+
+        {/* Name + contact */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-semibold text-stone-900 text-sm">{vendor.name}</p>
+            {vendor.contactPerson && (
+              <span className="text-xs text-stone-400">· {vendor.contactPerson}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+            {vendor.phone && (
+              <span className="text-xs text-stone-400 flex items-center gap-1">
+                <Phone className="w-2.5 h-2.5" />{vendor.phone}
+              </span>
+            )}
+            {vendor.city && (
+              <span className="text-xs text-stone-400 flex items-center gap-1">
+                <MapPin className="w-2.5 h-2.5" />{vendor.city}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Rating */}
+        <div className="hidden sm:block flex-shrink-0">
+          <StarRating value={vendor.rating} />
+        </div>
+
+        {/* Price */}
+        <span className={`text-sm font-bold flex-shrink-0 hidden sm:block ${priceColors[vendor.priceRange] || 'text-stone-400'}`}>
+          {priceLabels[vendor.priceRange]}
+        </span>
+
+        {/* Payment pill (if has tasks) */}
+        {totalAmt > 0 && (
+          <div className="hidden md:flex items-center gap-1.5 flex-shrink-0">
+            <div className="w-12 h-0.5 bg-stone-100 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-400 rounded-full"
+                style={{ width: `${Math.min(100, totalAmt ? (paidAmt / totalAmt) * 100 : 0)}%` }} />
+            </div>
+            <span className="text-[10px] text-stone-400">₹{paidAmt.toLocaleString()}/₹{totalAmt.toLocaleString()}</span>
+          </div>
+        )}
+
+        {/* Actions */}
+        {isManager && (
+          <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100"
+            onClick={e => e.stopPropagation()}>
+            <button onClick={() => onEdit(vendor)}
+              className="p-1.5 rounded-lg text-stone-300 hover:text-stone-700 hover:bg-stone-100 transition-all">
+              <Edit className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => onDelete(vendor._id)}
+              className="p-1.5 rounded-lg text-stone-300 hover:text-rose-500 hover:bg-rose-50 transition-all">
+              <Trash className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Expanded detail ── */}
+      {expanded && (
+        <div className="px-5 pb-5 ml-8 space-y-4">
+          {/* Contact + events strip */}
+          <div className="flex flex-wrap gap-4">
+            {vendor.email && (
+              <span className="text-xs text-stone-500 flex items-center gap-1.5">
+                <Mail className="w-3 h-3 text-stone-300" />{vendor.email}
+              </span>
+            )}
+            {vendor.address && (
+              <span className="text-xs text-stone-500 flex items-center gap-1.5">
+                <MapPin className="w-3 h-3 text-stone-300" />{vendor.address}
+              </span>
+            )}
+            {events.map(ev => (
+              <span key={ev._id} className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-stone-100 text-stone-500">
+                {ev.name}
+              </span>
+            ))}
+          </div>
+
+          {/* Notes */}
+          {vendor.notes && (
+            <p className="text-xs text-stone-400 italic leading-relaxed">{vendor.notes}</p>
+          )}
+
+          {/* Tasks */}
+          {loadingTasks ? (
+            <div className="h-1 w-16 bg-stone-100 animate-pulse rounded-full" />
+          ) : tasks && tasks.length > 0 ? (
+            <div>
+              <p className={`${labelCls} mb-3`}>Linked Tasks</p>
+
+              {/* Payment summary */}
+              {totalAmt > 0 && (
+                <div className="flex items-center gap-4 mb-3 px-4 py-3 bg-white rounded-xl border border-stone-100 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-stone-400">Total</span>
+                    <span className="font-semibold text-stone-800">₹{totalAmt.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-stone-400">Paid</span>
+                    <span className="font-semibold text-emerald-600">₹{paidAmt.toLocaleString()}</span>
+                  </div>
+                  <div className="flex-1 h-0.5 bg-stone-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-400 rounded-full"
+                      style={{ width: `${Math.min(100, totalAmt ? (paidAmt / totalAmt) * 100 : 0)}%` }} />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                {tasks.map(task => {
+                  const ve = task.taskVendors?.find(tv => tv.vendor?._id === vendor._id);
+                  if (!ve) return null;
+                  const done = ve.status === 'completed';
+                  return (
+                    <div key={task._id} className="flex items-center gap-3 px-4 py-2.5 bg-white rounded-xl border border-stone-100">
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${done ? 'bg-emerald-400 border-emerald-400' : 'border-stone-300'}`}>
+                        {done && <Check className="w-2 h-2 text-white" />}
+                      </div>
+                      <span className={`text-xs flex-1 ${done ? 'text-stone-300 line-through' : 'text-stone-700'}`}>{task.title}</span>
+                      {task.wedding?.name && <span className="text-[10px] text-stone-400 truncate max-w-[100px]">{task.wedding.name}</span>}
+                      {ve.amount > 0 && (
+                        <span className={`text-[10px] font-semibold flex-shrink-0 ${
+                          ve.paymentStatus === 'completed' ? 'text-emerald-500' :
+                          ve.paymentStatus === 'partial' ? 'text-amber-500' : 'text-stone-400'
+                        }`}>₹{Math.abs(ve.amount).toLocaleString()}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : tasks && tasks.length === 0 ? (
+            <p className="text-xs text-stone-300">No tasks linked to this vendor</p>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   SKELETON
+───────────────────────────────────────── */
+function Sk({ className = '' }) {
+  return <div className={`bg-stone-100 animate-pulse rounded-xl ${className}`} />;
+}
+
+/* ═══════════════════════════════════════
+   MAIN PAGE
+═══════════════════════════════════════ */
 export default function Vendors() {
-  const { isManager } = useAuth();
-  const [vendors, setVendors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const { isManager }               = useAuth();
+  const [vendors, setVendors]       = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [showModal, setShowModal]   = useState(false);
   const [editingVendor, setEditingVendor] = useState(null);
-  const [filter, setFilter] = useState({ category: '', search: '', wedding: '', event: '' });
-  const [weddings, setWeddings] = useState([]);
-  const [filterEvents, setFilterEvents] = useState([]);
-  const [formData, setFormData] = useState({
+  const [search, setSearch]         = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  const emptyForm = {
     name: '', category: 'other', contactPerson: '', email: '', phone: '',
     address: '', city: '', rating: 3, priceRange: 'moderate', notes: ''
-  });
-  const [expandedVendor, setExpandedVendor] = useState(null);
-  const [linkedTasks, setLinkedTasks] = useState({});
-  const [linkedEvents, setLinkedEvents] = useState({});
-
-  useEffect(() => {
-    loadVendors();
-    loadWeddings();
-  }, []);
-
-  const loadWeddings = async () => {
-    try {
-      const res = await api.get('/weddings');
-      setWeddings(res.data.weddings);
-    } catch (error) {
-      console.error('Failed to load weddings:', error);
-    }
   };
+  const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => { loadVendors(); }, []);
 
   const loadVendors = async () => {
-    try {
-      const res = await api.get('/vendors');
-      setVendors(res.data.vendors);
-    } catch (error) {
-      console.error('Failed to load vendors:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadLinkedTasks = async (vendorId) => {
-    try {
-      const res = await api.get(`/tasks/by-vendor/${vendorId}`);
-      setLinkedTasks(prev => ({ ...prev, [vendorId]: res.data.tasks }));
-    } catch (error) {
-      console.error('Failed to load linked tasks:', error);
-    }
-  };
-
-  const loadLinkedEventsForVendor = async (vendorId) => {
-    try {
-      const res = await api.get(`/vendors/${vendorId}/linked-events`);
-      setLinkedEvents(prev => ({ ...prev, [vendorId]: res.data.events || [] }));
-    } catch (error) {
-      console.error('Failed to load linked events:', error);
-    }
-  };
-
-  const toggleVendorExpand = async (vendor) => {
-    if (expandedVendor === vendor._id) {
-      setExpandedVendor(null);
-    } else {
-      setExpandedVendor(vendor._id);
-      if (!linkedTasks[vendor._id]) {
-        await loadLinkedTasks(vendor._id);
-      }
-      if (!linkedEvents[vendor._id]) {
-        await loadLinkedEventsForVendor(vendor._id);
-      }
-    }
-  };
-
-  const handleToggleVendorAcrossTasks = async (vendorId, currentStatus) => {
-    // Determine target status. If currently any task has this vendor as pending, we probably want to mark all as completed.
-    // If all are completed, we mark all as pending. 
-    // We'll calculate current state from linkedTasks view.
-    const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-
-    try {
-      const res = await api.put(`/tasks/vendor-toggle/${vendorId}`, { status: newStatus });
-      setLinkedTasks(prev => ({ ...prev, [vendorId]: res.data.tasks }));
-    } catch (error) {
-      console.error('Failed to toggle vendor status across tasks', error);
-    }
-  };
-
-  const handleUpdateVendorTaskStatus = async (taskId, vendorId, status, vendorObjId) => {
-    try {
-      await api.put(`/tasks/${taskId}/vendors/${vendorId}`, { status });
-      await loadLinkedTasks(vendorObjId);
-    } catch (error) {
-      console.error('Failed to update vendor status:', error);
-    }
+    try { const r = await api.get('/vendors'); setVendors(r.data.vendors); }
+    catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingVendor) {
-        await api.put(`/vendors/${editingVendor._id}`, formData);
-      } else {
-        await api.post('/vendors', formData);
-      }
-      loadVendors();
-      closeModal();
-    } catch (error) {
-      console.error('Failed to save vendor:', error);
-    }
+      if (editingVendor) await api.put(`/vendors/${editingVendor._id}`, form);
+      else await api.post('/vendors', form);
+      loadVendors(); closeModal();
+    } catch (e) { console.error(e); }
   };
 
-  const handleEdit = (vendor) => {
+  const openEdit = (vendor) => {
     setEditingVendor(vendor);
-    setFormData({
-      name: vendor.name,
-      category: vendor.category,
-      contactPerson: vendor.contactPerson || '',
-      email: vendor.email || '',
-      phone: vendor.phone || '',
-      address: vendor.address || '',
-      city: vendor.city || '',
-      rating: vendor.rating || 3,
-      priceRange: vendor.priceRange || 'moderate',
-      notes: vendor.notes || ''
+    setForm({
+      name: vendor.name, category: vendor.category,
+      contactPerson: vendor.contactPerson || '', email: vendor.email || '',
+      phone: vendor.phone || '', address: vendor.address || '',
+      city: vendor.city || '', rating: vendor.rating || 3,
+      priceRange: vendor.priceRange || 'moderate', notes: vendor.notes || ''
     });
     setShowModal(true);
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this vendor?')) return;
-    try {
-      await api.delete(`/vendors/${id}`);
-      loadVendors();
-    } catch (error) {
-      console.error('Failed to delete vendor:', error);
-    }
+    if (!confirm('Delete this vendor?')) return;
+    try { await api.delete(`/vendors/${id}`); loadVendors(); } catch {}
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setEditingVendor(null);
-    setFormData({
-      name: '', category: 'other', contactPerson: '', email: '', phone: '',
-      address: '', city: '', rating: 3, priceRange: 'moderate', notes: ''
-    });
-  };
+  const closeModal = () => { setShowModal(false); setEditingVendor(null); setForm(emptyForm); };
 
-  // Filter wedding change handler
-  const handleFilterWeddingChange = async (weddingId) => {
-    setFilter({ ...filter, wedding: weddingId, event: '' });
-    if (weddingId) {
-      try {
-        const res = await api.get(`/events/wedding/${weddingId}`);
-        setFilterEvents(res.data.events || []);
-      } catch (error) {
-        setFilterEvents([]);
-      }
-    } else {
-      setFilterEvents([]);
-    }
-  };
+  /* ── Category counts ── */
+  const categoryCounts = vendors.reduce((acc, v) => {
+    acc[v.category] = (acc[v.category] || 0) + 1;
+    return acc;
+  }, {});
 
-  // Build a set of vendor IDs that match the wedding/event filter
-  const getFilteredVendorIds = () => {
-    if (!filter.wedding && !filter.event) return null; // no filtering
-    // We need to check linkedTasks across all vendors, but we may not have loaded them all.
-    // Instead, we'll do a lightweight check: if wedding/event filter is set, only show vendors
-    // whose linked tasks (if loaded) match. For vendors not yet expanded, we include them
-    // and filter will be refined when they expand.
-    return null; // We'll handle this client-side with available data
-  };
+  /* Active categories (ones that have vendors) */
+  const activeCategories = vendorCategories.filter(c => categoryCounts[c.value]);
 
-  const filteredVendors = vendors.filter(v => {
-    if (filter.category && v.category !== filter.category) return false;
-    if (filter.search) {
-      const search = filter.search.toLowerCase();
-      if (!v.name.toLowerCase().includes(search) && 
-          !v.contactPerson?.toLowerCase().includes(search) &&
-          !v.city?.toLowerCase().includes(search)) return false;
-    }
-    // Filter by wedding/event if linked tasks are loaded
-    if (filter.wedding || filter.event) {
-      const tasks = linkedTasks[v._id];
-      if (tasks) {
-        const hasMatch = tasks.some(t => {
-          if (filter.event) return (t.event?._id || t.event) === filter.event;
-          if (filter.wedding) return (t.wedding?._id || t.wedding) === filter.wedding;
-          return true;
-        });
-        if (!hasMatch) return false;
-      }
-      // If tasks not loaded yet, include the vendor (we can't filter what we haven't fetched)
-    }
-    return true;
+  /* Filtered vendors for selected category + search */
+  const filtered = vendors.filter(v => {
+    const matchCat = selectedCategory === 'all' || v.category === selectedCategory;
+    const matchSearch = !search ||
+      v.name.toLowerCase().includes(search.toLowerCase()) ||
+      v.contactPerson?.toLowerCase().includes(search.toLowerCase()) ||
+      v.city?.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
   });
 
-  const getCategoryIcon = (category) => {
-    const icons = {
-      catering: '🍽️', decor: '🎨', photography: '📷', videography: '🎥',
-      music: '🎵', makeup: '💄', venue: '🏰', transport: '🚗',
-      invitation: '💌', other: '📦'
-    };
-    return icons[category] || '📦';
-  };
-
-  const priceLabels = { budget: '$', moderate: '$$', premium: '$$$', luxury: '$$$$' };
-
-  if (loading) {
-    return (
-      <PageContainer>
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin h-8 w-8 border-2 border-stone-900 border-t-transparent rounded-full" />
-        </div>
-      </PageContainer>
-    );
-  }
+  const currentMeta = selectedCategory !== 'all' ? (categoryMeta[selectedCategory] || categoryMeta.other) : null;
 
   return (
-    <PageContainer>
-      <PageHeader 
-        title="Vendors"
-        subtitle="Manage your vendor directory"
-        actions={
-          isManager && (
-            <Button icon={Plus} onClick={() => setShowModal(true)}>
-              Add Vendor
-            </Button>
-          )
-        }
-      />
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400;1,700&family=Outfit:wght@300;400;500;600&display=swap');
+        .font-display { font-family: 'Playfair Display', Georgia, serif; }
+        .font-body    { font-family: 'Outfit', sans-serif; }
+      `}</style>
 
-      {/* Filters Section */}
-      <PageSection>
-        <SectionCard padding="md">
-          <div className="flex flex-wrap gap-4">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-              <input
-                type="text"
-                placeholder="Search vendors..."
-                value={filter.search}
-                onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                className="w-full pl-10 pr-4 py-2.5 border border-stone-200 rounded-xl text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 bg-white"
-              />
+      <div className="font-body min-h-screen bg-[#faf9f7]">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-10">
+
+          {/* ── Header ── */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
+            <div>
+              <p className="text-[10px] font-semibold tracking-[0.22em] text-rose-400 uppercase mb-2">Directory</p>
+              <h1 className="font-display text-4xl sm:text-5xl font-bold text-stone-900">Vendors</h1>
+              <p className="text-stone-400 text-sm mt-2">Manage your trusted vendor network.</p>
             </div>
-            <Select
-              value={filter.category}
-              onChange={(e) => setFilter({ ...filter, category: e.target.value })}
-              options={vendorCategories}
-              placeholder="All Categories"
-              className="w-48"
-            />
-            <Select
-              value={filter.wedding}
-              onChange={(e) => handleFilterWeddingChange(e.target.value)}
-              options={weddings.map(w => ({ value: w._id, label: w.name }))}
-              placeholder="All Weddings"
-              className="w-48"
-            />
-            {filter.wedding && filterEvents.length > 0 && (
-              <Select
-                value={filter.event}
-                onChange={(e) => setFilter({ ...filter, event: e.target.value })}
-                options={filterEvents.map(ev => ({ value: ev._id, label: ev.name }))}
-                placeholder="All Events"
-                className="w-48"
-              />
+            {isManager && (
+              <button onClick={() => setShowModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-stone-900 text-white rounded-full text-sm font-semibold hover:bg-stone-800 transition-all hover:shadow-lg hover:shadow-stone-900/20 self-start sm:self-auto flex-shrink-0">
+                <Plus className="h-4 w-4" /> Add Vendor
+              </button>
             )}
           </div>
-        </SectionCard>
-      </PageSection>
 
-      {/* Vendors Grid */}
-      <PageSection title="Vendor Directory" subtitle={`${filteredVendors.length} vendor${filteredVendors.length !== 1 ? 's' : ''} found`}>
-        {filteredVendors.length === 0 ? (
-          <SectionCard>
-            <EmptyState
-              icon={Store}
-              title="No vendors found"
-              description={filter.search || filter.category ? "Try adjusting your filters" : "Add your first vendor to get started"}
-            />
-            {isManager && !filter.search && !filter.category && (
-              <div className="flex justify-center pb-6">
-                <Button icon={Plus} onClick={() => setShowModal(true)}>Add Vendor</Button>
-              </div>
-            )}
-          </SectionCard>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredVendors.map(vendor => {
-              const isExpanded = expandedVendor === vendor._id;
-              const vendorTasks = linkedTasks[vendor._id] || [];
+          {loading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
+              <div className="space-y-2">{[...Array(7)].map((_,i)=><Sk key={i} className="h-12"/>)}</div>
+              <div className="space-y-3"><Sk className="h-14"/>{[...Array(5)].map((_,i)=><Sk key={i} className="h-16"/>)}</div>
+            </div>
+          ) : vendors.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-stone-100 py-20 text-center">
+              <p className="text-stone-300 text-sm">No vendors yet</p>
+              {isManager && (
+                <button onClick={() => setShowModal(true)}
+                  className="inline-flex items-center gap-1.5 mt-3 text-xs text-stone-400 hover:text-stone-700 transition-colors">
+                  <Plus className="h-3.5 w-3.5" /> Add your first vendor
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
 
-              return (
-                <div key={vendor._id} className="bg-white rounded-2xl border border-stone-200/60 shadow-sm hover:shadow-md transition-all group">
-                  <div className="p-5">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center text-2xl">
-                        {getCategoryIcon(vendor.category)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-stone-900">{vendor.name}</h3>
-                            <p className="text-sm text-stone-500 capitalize">{vendor.category}</p>
-                          </div>
-                          <span className="text-sm font-medium text-emerald-600">{priceLabels[vendor.priceRange]}</span>
-                        </div>
-                      </div>
-                    </div>
+              {/* ── LEFT: Category sidebar ── */}
+              <nav className="bg-white rounded-2xl border border-stone-100 overflow-hidden lg:sticky lg:top-6">
+                {/* All */}
+                <button
+                  onClick={() => setSelectedCategory('all')}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 text-sm transition-colors border-b border-stone-50 ${
+                    selectedCategory === 'all'
+                      ? 'bg-stone-900 text-white'
+                      : 'text-stone-500 hover:text-stone-900 hover:bg-stone-50'
+                  }`}
+                >
+                  <span className="font-medium">All Vendors</span>
+                  <span className={`text-xs font-semibold ${selectedCategory === 'all' ? 'text-white/60' : 'text-stone-400'}`}>
+                    {vendors.length}
+                  </span>
+                </button>
 
-                    {vendor.contactPerson && (
-                      <p className="mt-3 text-sm text-stone-600">{vendor.contactPerson}</p>
-                    )}
-
-                    <div className="mt-3 space-y-1.5 text-sm text-stone-500">
-                      {vendor.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-3.5 h-3.5 text-stone-400" />
-                          <span>{vendor.phone}</span>
-                        </div>
-                      )}
-                      {vendor.email && (
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-3.5 h-3.5 text-stone-400" />
-                          <span className="truncate">{vendor.email}</span>
-                        </div>
-                      )}
-                      {vendor.city && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-3.5 h-3.5 text-stone-400" />
-                          <span>{vendor.city}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Linked Events Tags */}
-                    {linkedEvents[vendor._id] && linkedEvents[vendor._id].length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {linkedEvents[vendor._id].map(ev => (
-                          <span key={ev._id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-xs font-medium">
-                            <PartyPopper className="w-3 h-3" />
-                            {ev.name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Linked Tasks Button */}
+                {/* Per category */}
+                {activeCategories.map(cat => {
+                  const m     = categoryMeta[cat.value] || categoryMeta.other;
+                  const count = categoryCounts[cat.value] || 0;
+                  const active = selectedCategory === cat.value;
+                  return (
                     <button
-                      onClick={() => toggleVendorExpand(vendor)}
-                      className="mt-4 w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-stone-50 hover:bg-stone-100 transition-colors text-sm border border-stone-100"
+                      key={cat.value}
+                      onClick={() => setSelectedCategory(cat.value)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors border-b border-stone-50 last:border-0 ${
+                        active
+                          ? 'bg-stone-50 text-stone-900'
+                          : 'text-stone-400 hover:text-stone-700 hover:bg-stone-50/60'
+                      }`}
                     >
-                      <span className="flex items-center gap-2 text-stone-600">
-                        <CheckSquare className="w-3.5 h-3.5" />
-                        Linked Tasks
-                      </span>
-                      {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-stone-400" /> : <ChevronRight className="w-3.5 h-3.5 text-stone-400" />}
+                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${m.bar}`} />
+                      <span className={`flex-1 text-left ${active ? 'font-semibold' : 'font-medium'}`}>{m.label}</span>
+                      <span className={`text-xs ${active ? 'text-stone-500 font-semibold' : 'text-stone-300'}`}>{count}</span>
                     </button>
+                  );
+                })}
+              </nav>
 
-                    {/* Expanded Linked Tasks */}
-                    {isExpanded && (
-                      <div className="mt-3 space-y-2 border-t border-stone-100 pt-3">
-                        {vendorTasks.length > 0 && (
-                          <>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Mark All</span>
-                              <button
-                                onClick={() => {
-                                  const allCompleted = vendorTasks.every(t => t.taskVendors.find(tv => tv.vendor._id === vendor._id)?.status === 'completed');
-                                  handleToggleVendorAcrossTasks(vendor._id, allCompleted ? 'completed' : 'pending');
-                                }}
-                                className="text-xs text-stone-600 hover:text-stone-900 transition-colors font-medium"
-                              >
-                                Toggle Across Tasks
-                              </button>
-                            </div>
-                            <div className="px-3 py-2 bg-blue-50 rounded-xl flex justify-between border border-blue-100">
-                              <span className="text-xs text-blue-700">Budget: ${vendorTasks.reduce((sum, t) => sum + Math.abs(t.taskVendors.find(tv => tv.vendor?._id === vendor._id)?.amount || 0), 0)}</span>
-                              <span className="text-xs text-emerald-700">Paid: ${vendorTasks.reduce((sum, t) => sum + Math.abs(t.taskVendors.find(tv => tv.vendor?._id === vendor._id)?.paidAmount || 0), 0)}</span>
-                            </div>
-                          </>
-                        )}
-                        
-                        {vendorTasks.length === 0 ? (
-                          <p className="text-xs text-stone-400 text-center py-3">No tasks linked to this vendor</p>
-                        ) : (
-                          vendorTasks.map(task => {
-                            const vendorEntry = task.taskVendors?.find(tv => tv.vendor?._id === vendor._id);
-                            if (!vendorEntry) return null;
-
-                            return (
-                              <div key={task._id} className="px-3 py-2.5 rounded-xl bg-stone-50 border border-stone-100">
-                                <div className="flex items-center gap-2">
-                                  <p className="text-sm text-stone-900 flex-1 font-medium">{task.title}</p>
-                                  <StatusBadge status={task.status} />
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  {task.wedding && <span className="text-xs text-stone-500">{task.wedding.name}</span>}
-                                  {task.event && (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-xs font-medium">
-                                      <PartyPopper className="w-2.5 h-2.5" />
-                                      {task.event.name}
-                                    </span>
-                                  )}
-                                </div>
-                                
-                                <div className="flex items-center gap-2 mt-2">
-                                  <button
-                                    onClick={() => handleUpdateVendorTaskStatus(task._id, vendorEntry._id, vendorEntry.status === 'completed' ? 'pending' : 'completed', vendor._id)}
-                                    className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
-                                      vendorEntry.status === 'completed' ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300 hover:border-stone-500'
-                                    }`}
-                                  >
-                                    {vendorEntry.status === 'completed' && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                  </button>
-                                  <span className={`text-xs flex-1 ${vendorEntry.status === 'completed' ? 'text-emerald-600' : 'text-stone-500'}`}>
-                                    {vendorEntry.status === 'completed' ? 'Completed' : 'Pending'}
-                                  </span>
-                                  {vendorEntry.amount !== 0 && (
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                      vendorEntry.paymentStatus === 'completed' ? 'bg-emerald-50 text-emerald-600' : 
-                                      vendorEntry.paymentStatus === 'partial' ? 'bg-amber-50 text-amber-600' : 
-                                      'bg-stone-100 text-stone-600'
-                                    }`}>
-                                      ${Math.abs(vendorEntry.amount)} / ${Math.abs(vendorEntry.paidAmount || 0)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    )}
-
-                    <div className="mt-4 flex items-center justify-between pt-3 border-t border-stone-100">
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${i < vendor.rating ? 'text-amber-400 fill-amber-400' : 'text-stone-200'}`}
-                          />
-                        ))}
-                      </div>
-                      
-                      {isManager && (
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => handleEdit(vendor)}
-                            className="p-2 hover:bg-stone-100 rounded-xl text-stone-400 hover:text-stone-700 transition-colors"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(vendor._id)}
-                            className="p-2 hover:bg-rose-50 rounded-xl text-stone-400 hover:text-rose-500 transition-colors"
-                          >
-                            <Trash className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
+              {/* ── RIGHT: Vendor list ── */}
+              <div>
+                {/* Search + heading */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-300 pointer-events-none" />
+                    <input
+                      type="text" placeholder="Search vendors..."
+                      value={search} onChange={e => setSearch(e.target.value)}
+                      className="w-full pl-11 pr-4 py-2.5 text-sm rounded-xl bg-white border border-stone-200 placeholder-stone-300 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 transition-all"
+                    />
                   </div>
+                  <p className="text-xs text-stone-400 flex-shrink-0">
+                    {filtered.length} vendor{filtered.length !== 1 ? 's' : ''}
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </PageSection>
 
-      <Modal
-        isOpen={showModal}
-        onClose={closeModal}
-        title={editingVendor ? 'Edit Vendor' : 'Add Vendor'}
-        size="lg"
-      >
+                {/* Category heading with accent bar */}
+                {currentMeta && (
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-stone-100">
+                    <div className={`h-0.5 w-8 rounded-full ${currentMeta.bar}`} />
+                    <span className="font-display text-2xl font-bold text-stone-900">{currentMeta.label}</span>
+                  </div>
+                )}
+
+                {/* Vendor rows */}
+                {filtered.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-stone-100 py-14 text-center">
+                    <p className="text-stone-300 text-sm">No vendors match your search</p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden group">
+                    {filtered.map(vendor => (
+                      <VendorRow
+                        key={vendor._id}
+                        vendor={vendor}
+                        onEdit={openEdit}
+                        onDelete={handleDelete}
+                        isManager={isManager}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ════════════ MODAL ════════════ */}
+      <Modal isOpen={showModal} onClose={closeModal} title={editingVendor ? 'Edit Vendor' : 'Add Vendor'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Vendor Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-            <Select
-              label="Category"
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              options={vendorCategories}
-              required
-            />
+            <Field label="Vendor Name">
+              <input type="text" value={form.name} required placeholder="e.g. Royal Caterers"
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} />
+            </Field>
+            <Field label="Category">
+              <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                className={`${inputCls} appearance-none`}>
+                {vendorCategories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Contact Person"
-              value={formData.contactPerson}
-              onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-            />
-            <Input
-              label="Phone"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            />
+            <Field label="Contact Person">
+              <input type="text" value={form.contactPerson} placeholder="Primary contact"
+                onChange={e => setForm(f => ({ ...f, contactPerson: e.target.value }))} className={inputCls} />
+            </Field>
+            <Field label="Phone">
+              <input type="tel" value={form.phone} placeholder="+91 98765 43210"
+                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className={inputCls} />
+            </Field>
           </div>
 
-          <Input
-            label="Email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          />
+          <Field label="Email">
+            <input type="email" value={form.email} placeholder="vendor@email.com"
+              onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className={inputCls} />
+          </Field>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            />
-            <Input
-              label="City"
-              value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            />
+            <Field label="Address">
+              <input type="text" value={form.address} placeholder="Street address"
+                onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className={inputCls} />
+            </Field>
+            <Field label="City">
+              <input type="text" value={form.city} placeholder="City"
+                onChange={e => setForm(f => ({ ...f, city: e.target.value }))} className={inputCls} />
+            </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="block text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Rating</label>
-              <div className="flex items-center gap-1 py-2">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, rating: star })}
-                    className="p-1"
-                  >
-                    <Star
-                      className={`w-6 h-6 transition-colors ${
-                        star <= formData.rating ? 'text-amber-400 fill-amber-400' : 'text-stone-200'
-                      }`}
-                    />
-                  </button>
-                ))}
+            <Field label="Rating">
+              <div className="py-2.5">
+                <StarPicker value={form.rating} onChange={r => setForm(f => ({ ...f, rating: r }))} />
               </div>
-            </div>
-            <Select
-              label="Price Range"
-              value={formData.priceRange}
-              onChange={(e) => setFormData({ ...formData, priceRange: e.target.value })}
-              options={[
-                { value: 'budget', label: 'Budget ($)' },
-                { value: 'moderate', label: 'Moderate ($$)' },
-                { value: 'premium', label: 'Premium ($$$)' },
-                { value: 'luxury', label: 'Luxury ($$$$)' }
-              ]}
-            />
+            </Field>
+            <Field label="Price Range">
+              <select value={form.priceRange} onChange={e => setForm(f => ({ ...f, priceRange: e.target.value }))}
+                className={`${inputCls} appearance-none`}>
+                <option value="budget">Budget (₹)</option>
+                <option value="moderate">Moderate (₹₹)</option>
+                <option value="premium">Premium (₹₹₹)</option>
+                <option value="luxury">Luxury (₹₹₹₹)</option>
+              </select>
+            </Field>
           </div>
 
-          <Textarea
-            label="Notes"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            rows={3}
-          />
+          <Field label="Notes">
+            <textarea value={form.notes} placeholder="Additional notes..." rows={3}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              className={`${inputCls} resize-none`} />
+          </Field>
 
-          <div className="flex gap-3 pt-4">
-            <Button type="button" variant="secondary" onClick={closeModal}>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-100">
+            <button type="button" onClick={closeModal}
+              className="px-5 py-2.5 rounded-full text-sm font-medium text-stone-500 hover:text-stone-900 border border-stone-200 hover:border-stone-400 transition-all">
               Cancel
-            </Button>
-            <Button type="submit" className="flex-1">
+            </button>
+            <button type="submit"
+              className="px-7 py-2.5 rounded-full text-sm font-semibold bg-stone-900 text-white hover:bg-stone-800 transition-all hover:shadow-md">
               {editingVendor ? 'Update Vendor' : 'Add Vendor'}
-            </Button>
+            </button>
           </div>
         </form>
       </Modal>
-    </PageContainer>
+    </>
   );
 }
