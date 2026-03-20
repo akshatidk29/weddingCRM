@@ -42,6 +42,10 @@ const vendorSchema = new mongoose.Schema({
     enum: ['budget', 'moderate', 'premium', 'luxury'],
     default: 'moderate'
   },
+  amount: {
+    type: Number,
+    default: 0
+  },
   notes: String,
   isActive: {
     type: Boolean,

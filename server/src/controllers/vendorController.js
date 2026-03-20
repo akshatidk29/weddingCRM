@@ -1,5 +1,6 @@
 import Vendor from '../models/Vendor.js';
 import Task from '../models/Task.js';
+import Wedding from '../models/Wedding.js';
 
 export const getVendors = async (req, res) => {
   try {
@@ -13,6 +14,24 @@ export const getVendors = async (req, res) => {
         { name: { $regex: search, $options: 'i' } },
         { contactPerson: { $regex: search, $options: 'i' } }
       ];
+    }
+
+    if (req.user.role === 'team_member') {
+      const assignedWeddings = await Wedding.find({ 'assignedTeam.user': req.user._id }).select('_id');
+      const weddingIds = assignedWeddings.map(w => w._id);
+      
+      const tasks = await Task.find({ wedding: { $in: weddingIds } }).select('taskVendors.vendor');
+      const vendorIds = new Set();
+      tasks.forEach(t => t.taskVendors.forEach(tv => {
+        if (tv.vendor) vendorIds.add(tv.vendor.toString());
+      }));
+      
+      const weddingsWithVendors = await Wedding.find({ _id: { $in: weddingIds } }).select('vendors.vendor');
+      weddingsWithVendors.forEach(w => w.vendors.forEach(v => {
+        if (v.vendor) vendorIds.add(v.vendor.toString());
+      }));
+      
+      query._id = { $in: Array.from(vendorIds) };
     }
 
     const vendors = await Vendor.find(query)
@@ -62,6 +81,20 @@ export const updateVendor = async (req, res) => {
 
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' });
+    }
+
+    // Cascade update amount if provided
+    if (req.body.amount !== undefined) {
+      await Task.updateMany(
+        { 'taskVendors.vendor': req.params.id },
+        { $set: { 'taskVendors.$[elem].amount': req.body.amount } },
+        { arrayFilters: [{ 'elem.vendor': req.params.id }] }
+      );
+      await Wedding.updateMany(
+        { 'vendors.vendor': req.params.id },
+        { $set: { 'vendors.$[elem].amount': req.body.amount } },
+        { arrayFilters: [{ 'elem.vendor': req.params.id }] }
+      );
     }
 
     res.json({ vendor });

@@ -32,32 +32,32 @@ router.get('/wedding/:weddingId', getTasksByWedding);
 
 router.route('/')
   .get(getTasks)
-  .post(createTask);
+  .post(isAdminOrManager, createTask);
 
 router.post('/bulk', isAdminOrManager, createBulkTasks);
 
 router.route('/:id')
   .get(getTask)
-  .put(updateTask)
+  .put(isAdminOrManager, updateTask)
   .delete(isAdminOrManager, deleteTask);
 
-router.put('/:id/status', updateTaskStatus);
+router.put('/:id/status', isAdminOrManager, updateTaskStatus);
 
 // Subtask routes
-router.post('/:id/subtasks', addSubtask);
-router.put('/:id/subtasks/:subId', toggleSubtask);
-router.delete('/:id/subtasks/:subId', deleteSubtask);
+router.post('/:id/subtasks', isAdminOrManager, addSubtask);
+router.put('/:id/subtasks/:subId', isAdminOrManager, toggleSubtask);
+router.delete('/:id/subtasks/:subId', isAdminOrManager, deleteSubtask);
 
 // Task vendor routes
-router.post('/:id/vendors', addTaskVendor);
-router.put('/:id/vendors/:vendorId', updateTaskVendorStatus);
-router.delete('/:id/vendors/:vendorId', deleteTaskVendor);
+router.post('/:id/vendors', isAdminOrManager, addTaskVendor);
+router.put('/:id/vendors/:vendorId', isAdminOrManager, updateTaskVendorStatus);
+router.delete('/:id/vendors/:vendorId', isAdminOrManager, deleteTaskVendor);
 
 // Vendor cross-task routes
 router.get('/by-vendor/:vendorId', getTasksByVendorId);
-router.put('/vendor-toggle/:vendorId', toggleVendorAcrossTasks);
+router.put('/vendor-toggle/:vendorId', isAdminOrManager, toggleVendorAcrossTasks);
 
 // Payments (Budgets) route
-router.put('/:id/payment/:type/:itemId', updatePayment);
+router.put('/:id/payment/:type/:itemId', isAdminOrManager, updatePayment);
 
 export default router;

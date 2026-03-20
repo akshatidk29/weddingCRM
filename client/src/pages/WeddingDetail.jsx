@@ -691,9 +691,11 @@ export default function WeddingDetail() {
                                 <h4 className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase flex items-center">
                                   <Target className="h-4 w-4 mr-1" /> Event Tasks
                                 </h4>
-                                <Button variant="outline" size="sm" onClick={() => openAddTaskToEvent(event._id)}>
-                                  <Plus className="h-3 w-3 mr-1" /> Add Task
-                                </Button>
+                                {(isAdmin || isManager) && (
+                                  <Button variant="outline" size="sm" onClick={() => openAddTaskToEvent(event._id)}>
+                                    <Plus className="h-3 w-3 mr-1" /> Add Task
+                                  </Button>
+                                )}
                               </div>
 
                               {tasks.filter(t => t.event?._id === event._id || t.event === event._id).length === 0 ? (
@@ -703,7 +705,7 @@ export default function WeddingDetail() {
                                   {tasks.filter(t => t.event?._id === event._id || t.event === event._id).map(task => (
                                     <div key={task._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border border-stone-100 rounded-xl hover:bg-stone-50 transition-colors">
                                       <div className="flex items-center gap-3">
-                                        <div onClick={() => toggleTaskStatus(task._id, task.status)} className="cursor-pointer">
+                                        <div onClick={() => (isAdmin || isManager) && toggleTaskStatus(task._id, task.status)} className={`${(isAdmin || isManager) ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
                                           {task.status === 'done' || task.status === 'verified' ? (
                                             <CheckCircle className="h-5 w-5 text-emerald-500" />
                                           ) : task.status === 'in_progress' ? (
@@ -805,7 +807,9 @@ export default function WeddingDetail() {
                 <CheckCircle className="h-5 w-5 text-stone-600" />
                 Tasks & Checklist
               </h2>
-              <Button icon={Plus} size="sm" onClick={() => setShowTaskModal(true)}>Add Task</Button>
+              {(isAdmin || isManager) && (
+                <Button icon={Plus} size="sm" onClick={() => setShowTaskModal(true)}>Add Task</Button>
+              )}
             </div>
 
             {Object.keys(tasksByCategory).length === 0 ? (
@@ -839,6 +843,7 @@ export default function WeddingDetail() {
                               <div key={task._id}>
                                 <div className="p-4 flex items-center gap-4 hover:bg-stone-50 transition-colors">
                                   <button
+                                    disabled={!isAdmin && !isManager}
                                     onClick={() => {
                                       if (task.status === 'pending') {
                                         if ((info.hasSubtasks || info.hasVendors) && !info.canAutoComplete) {
@@ -852,7 +857,7 @@ export default function WeddingDetail() {
                                         handleTaskStatusChange(task._id, 'pending');
                                       }
                                     }}
-                                    className="shrink-0"
+                                    className={`shrink-0 ${(!isAdmin && !isManager) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   >
                                     {getStatusIcon(task.status)}
                                   </button>
@@ -902,9 +907,11 @@ export default function WeddingDetail() {
                                         {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                                       </button>
                                     )}
-                                    <button onClick={() => openEditTask(task)} className="p-2 hover:bg-stone-100 rounded-lg text-stone-400 hover:text-stone-700 transition-colors">
-                                      <Edit className="w-4 h-4" />
-                                    </button>
+                                    {(isAdmin || isManager) && (
+                                      <button onClick={() => openEditTask(task)} className="p-2 hover:bg-stone-100 rounded-lg text-stone-400 hover:text-stone-700 transition-colors">
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
 
@@ -916,8 +923,9 @@ export default function WeddingDetail() {
                                         {task.subtasks.map(sub => (
                                           <div key={sub._id} className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white border border-stone-100 hover:border-stone-200 group transition-colors">
                                             <button
+                                              disabled={!isAdmin && !isManager}
                                               onClick={() => handleToggleSubtask(task._id, sub._id)}
-                                              className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${sub.completed ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300 hover:border-stone-500'}`}
+                                              className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${sub.completed ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300 hover:border-stone-500'} ${(!isAdmin && !isManager) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
                                               {sub.completed && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                             </button>
@@ -927,9 +935,11 @@ export default function WeddingDetail() {
                                                 ${Math.abs(sub.amount)} {sub.amount < 0 ? 'Receivable' : 'Payable'}
                                               </span>
                                             )}
-                                            <button onClick={() => handleDeleteSubtask(task._id, sub._id)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-100 rounded text-stone-400 hover:text-rose-500 transition-all">
-                                              <Trash2 className="w-3 h-3" />
-                                            </button>
+                                            {(isAdmin || isManager) && (
+                                              <button onClick={() => handleDeleteSubtask(task._id, sub._id)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-100 rounded text-stone-400 hover:text-rose-500 transition-all">
+                                                <Trash2 className="w-3 h-3" />
+                                              </button>
+                                            )}
                                           </div>
                                         ))}
                                       </div>
@@ -941,8 +951,9 @@ export default function WeddingDetail() {
                                         {task.taskVendors.map(tv => (
                                           <div key={tv._id} className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white border border-stone-100 hover:border-stone-200 group transition-colors">
                                             <button
+                                              disabled={!isAdmin && !isManager}
                                               onClick={() => handleUpdateVendorStatus(task._id, tv._id, tv.status === 'completed' ? 'pending' : 'completed')}
-                                              className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${tv.status === 'completed' ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300 hover:border-stone-500'}`}
+                                              className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${tv.status === 'completed' ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300 hover:border-stone-500'} ${(!isAdmin && !isManager) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
                                               {tv.status === 'completed' && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                             </button>
@@ -959,9 +970,11 @@ export default function WeddingDetail() {
                                               )}
                                             </div>
                                             <Badge size="sm" variant={tv.status === 'completed' ? 'success' : 'warning'}>{tv.status}</Badge>
-                                            <button onClick={() => handleDeleteTaskVendor(task._id, tv._id)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-100 rounded text-stone-400 hover:text-rose-500 transition-all">
-                                              <Trash2 className="w-3 h-3" />
-                                            </button>
+                                            {(isAdmin || isManager) && (
+                                              <button onClick={() => handleDeleteTaskVendor(task._id, tv._id)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-100 rounded text-stone-400 hover:text-rose-500 transition-all">
+                                                <Trash2 className="w-3 h-3" />
+                                              </button>
+                                            )}
                                           </div>
                                         ))}
                                       </div>

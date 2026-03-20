@@ -420,9 +420,11 @@ export default function Tasks() {
         title="Tasks"
         subtitle="Manage all tasks across weddings"
         actions={
-          <Button icon={Plus} onClick={() => setShowTaskModal(true)}>
-            New Task
-          </Button>
+          (isAdmin || isManager) && (
+            <Button icon={Plus} onClick={() => setShowTaskModal(true)}>
+              New Task
+            </Button>
+          )
         }
       />
 
@@ -540,6 +542,7 @@ export default function Tasks() {
                     <div className="p-4 flex items-center gap-4 hover:bg-stone-50">
                       {/* Completion Checkbox */}
                       <button
+                        disabled={!isAdmin && !isManager}
                         onClick={() => {
                           if (task.status === 'pending') {
                             if ((info.hasSubtasks || info.hasVendors) && !info.canAutoComplete) {
@@ -555,7 +558,7 @@ export default function Tasks() {
                           task.status === 'done' || task.status === 'verified'
                             ? 'bg-emerald-500 border-emerald-500'
                             : 'border-stone-300 hover:border-stone-500'
-                        }`}
+                        } ${(!isAdmin && !isManager) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         {(task.status === 'done' || task.status === 'verified') && (
                           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -630,14 +633,16 @@ export default function Tasks() {
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-stone-100 text-stone-600`}>
                           {task.category}
                         </span>
-                        <button
-                          onClick={() => openEditTask(task)}
-                          className="p-2 hover:bg-stone-100 rounded-xl text-stone-400 hover:text-stone-700 transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
+                        {(isAdmin || isManager) && (
+                          <button
+                            onClick={() => openEditTask(task)}
+                            className="p-2 hover:bg-stone-100 rounded-xl text-stone-400 hover:text-stone-700 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        )}
                         {(info.hasSubtasks || info.hasVendors) && (
                           <button
                             onClick={() => toggleTaskExpand(task._id)}
@@ -659,12 +664,13 @@ export default function Tasks() {
                             {task.subtasks.map(sub => (
                               <div key={sub._id} className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white border border-stone-100 hover:border-stone-200 transition-colors">
                                 <button
+                                  disabled={!isAdmin && !isManager}
                                   onClick={() => handleToggleSubtask(task._id, sub._id)}
                                   className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
                                     sub.completed
                                       ? 'bg-emerald-500 border-emerald-500'
                                       : 'border-stone-300 hover:border-stone-500'
-                                  }`}
+                                  } ${(!isAdmin && !isManager) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                   {sub.completed && (
                                     <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -696,12 +702,13 @@ export default function Tasks() {
                             {task.taskVendors.map(v => (
                               <div key={v._id} className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white border border-stone-100 hover:border-stone-200 transition-colors">
                                 <button
+                                  disabled={!isAdmin && !isManager}
                                   onClick={() => handleUpdateVendorStatus(task._id, v._id, v.status === 'completed' ? 'pending' : 'completed')}
                                   className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
                                     v.status === 'completed'
                                       ? 'bg-emerald-500 border-emerald-500'
                                       : 'border-stone-300 hover:border-stone-500'
-                                  }`}
+                                  } ${(!isAdmin && !isManager) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                   {v.status === 'completed' && (
                                     <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

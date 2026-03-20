@@ -102,7 +102,7 @@ export default function Vendors() {
   const [filterEvents, setFilterEvents] = useState([]);
   const [formData, setFormData] = useState({
     name: '', category: 'other', contactPerson: '', email: '', phone: '',
-    address: '', city: '', rating: 3, priceRange: 'moderate', notes: ''
+    address: '', city: '', rating: 3, priceRange: 'moderate', amount: '', notes: ''
   });
   const [expandedVendor, setExpandedVendor] = useState(null);
   const [linkedTasks, setLinkedTasks] = useState({});
@@ -215,6 +215,7 @@ export default function Vendors() {
       city: vendor.city || '',
       rating: vendor.rating || 3,
       priceRange: vendor.priceRange || 'moderate',
+      amount: vendor.amount || '',
       notes: vendor.notes || ''
     });
     setShowModal(true);
@@ -235,7 +236,7 @@ export default function Vendors() {
     setEditingVendor(null);
     setFormData({
       name: '', category: 'other', contactPerson: '', email: '', phone: '',
-      address: '', city: '', rating: 3, priceRange: 'moderate', notes: ''
+      address: '', city: '', rating: 3, priceRange: 'moderate', amount: '', notes: ''
     });
   };
 
@@ -398,7 +399,10 @@ export default function Vendors() {
                             <h3 className="font-semibold text-stone-900">{vendor.name}</h3>
                             <p className="text-sm text-stone-500 capitalize">{vendor.category}</p>
                           </div>
-                          <span className="text-sm font-medium text-emerald-600">{priceLabels[vendor.priceRange]}</span>
+                          <div className="text-right">
+                            <span className="block text-sm font-medium text-emerald-600">{priceLabels[vendor.priceRange]}</span>
+                            {vendor.amount > 0 && <span className="block text-xs font-medium text-stone-400 mt-0.5">${vendor.amount}</span>}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -459,15 +463,17 @@ export default function Vendors() {
                           <>
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-[10px] font-semibold tracking-[0.15em] text-stone-400 uppercase">Mark All</span>
-                              <button
-                                onClick={() => {
-                                  const allCompleted = vendorTasks.every(t => t.taskVendors.find(tv => tv.vendor._id === vendor._id)?.status === 'completed');
-                                  handleToggleVendorAcrossTasks(vendor._id, allCompleted ? 'completed' : 'pending');
-                                }}
-                                className="text-xs text-stone-600 hover:text-stone-900 transition-colors font-medium"
-                              >
-                                Toggle Across Tasks
-                              </button>
+                              {isManager && (
+                                <button
+                                  onClick={() => {
+                                    const allCompleted = vendorTasks.every(t => t.taskVendors.find(tv => tv.vendor._id === vendor._id)?.status === 'completed');
+                                    handleToggleVendorAcrossTasks(vendor._id, allCompleted ? 'completed' : 'pending');
+                                  }}
+                                  className="text-xs text-stone-600 hover:text-stone-900 transition-colors font-medium"
+                                >
+                                  Toggle Across Tasks
+                                </button>
+                              )}
                             </div>
                             <div className="px-3 py-2 bg-blue-50 rounded-xl flex justify-between border border-blue-100">
                               <span className="text-xs text-blue-700">Budget: ${vendorTasks.reduce((sum, t) => sum + Math.abs(t.taskVendors.find(tv => tv.vendor?._id === vendor._id)?.amount || 0), 0)}</span>
@@ -501,10 +507,11 @@ export default function Vendors() {
                                 
                                 <div className="flex items-center gap-2 mt-2">
                                   <button
+                                    disabled={!isManager}
                                     onClick={() => handleUpdateVendorTaskStatus(task._id, vendorEntry._id, vendorEntry.status === 'completed' ? 'pending' : 'completed', vendor._id)}
                                     className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
                                       vendorEntry.status === 'completed' ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300 hover:border-stone-500'
-                                    }`}
+                                    } ${!isManager ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   >
                                     {vendorEntry.status === 'completed' && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                   </button>
@@ -600,12 +607,20 @@ export default function Vendors() {
             />
           </div>
 
-          <Input
-            label="Email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+            <Input
+              label="Default Amount ($)"
+              type="number"
+              value={formData.amount}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <Input
