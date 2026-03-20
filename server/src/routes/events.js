@@ -10,7 +10,7 @@ import {
   getClientEvents,
   addHotelToEvent
 } from '../controllers/eventController.js';
-import { protect, isAdminOrManager } from '../middleware/auth.js';
+import { protect, isAdminOrManager, isAdminManagerOrClient } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -24,14 +24,14 @@ router.get('/wedding/:weddingId', getEventsByWedding);
 
 router.route('/:id')
   .get(getEvent)
-  .put(isAdminOrManager, updateEvent)
-  .delete(isAdminOrManager, deleteEvent);
+  .put(isAdminManagerOrClient, updateEvent)
+  .delete(isAdminManagerOrClient, deleteEvent);
 
-router.post('/', isAdminOrManager, createEvent);
+router.post('/', isAdminManagerOrClient, createEvent);
 
-router.post('/:id/team', isAdminOrManager, addEventTeamMember);
-router.delete('/:id/team/:userId', isAdminOrManager, removeEventTeamMember);
+router.post('/:id/team', isAdminManagerOrClient, addEventTeamMember);
+router.delete('/:id/team/:userId', isAdminManagerOrClient, removeEventTeamMember);
 
-router.post('/:id/hotels', isAdminOrManager, addHotelToEvent);
+router.post('/:id/hotels', isAdminManagerOrClient, addHotelToEvent);
 
 export default router;

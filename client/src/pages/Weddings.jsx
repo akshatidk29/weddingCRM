@@ -217,7 +217,7 @@ export default function Weddings() {
   const [search, setSearch] = useState('');
 
   const emptyForm = {
-    name: '', clientName: '', clientEmail: '', clientPhone: '',
+    name: '', clientName: '', clientEmail: '', clientPhone: '', clientId: '',
     weddingDate: '', endDate: '',
     venue: { name: '', address: '', city: '' },
     guestCount: '', budget: { estimated: '' },
@@ -254,7 +254,8 @@ export default function Weddings() {
     completed: weddings.filter(w => w.status === 'completed').length,
   };
 
-  const userOpts = users.filter(u => u.role !== 'team_member').map(u => ({ value: u._id, label: u.name }));
+  const managerOpts = users.filter(u => ['admin', 'relationship_manager'].includes(u.role)).map(u => ({ value: u._id, label: u.name }));
+  const clientOpts  = users.filter(u => u.role === 'client').map(u => ({ value: u._id, label: u.name }));
 
   /* Upcoming weddings count */
   const upcomingCount = weddings.filter(w => {
@@ -271,24 +272,25 @@ export default function Weddings() {
       `}</style>
 
       <div className="font-body min-h-screen bg-[#faf9f7] text-stone-900 selection:bg-stone-200">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-8 sm:py-12">
 
-          {/* ── Header ── */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 mb-8 border-b border-stone-200/60 pb-6 sm:pb-8">
+        {/* ── Hero Header ── */}
+        <div className="bg-stone-900 py-12 sm:py-16 px-5 sm:px-8 lg:px-10">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Weddings Overview</p>
-              <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-medium text-stone-900">Weddings</h1>
-              <p className="text-stone-400 text-sm mt-2 italic">
-                {weddings.length} total · {upcomingCount} upcoming this month
-              </p>
+              <p className="text-[11px] font-bold tracking-[0.2em] text-[#b07d46] uppercase mb-2">Weddings Overview</p>
+              <h1 className="font-display text-4xl sm:text-5xl font-medium text-white">Weddings</h1>
+              <p className="text-stone-400 text-sm mt-2">{weddings.length} total · {upcomingCount} upcoming this month</p>
             </div>
             {isManager && (
               <button onClick={() => setShowModal(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-[#faf9f7] rounded-lg text-sm font-medium hover:bg-stone-800 transition-all duration-300 self-start sm:self-auto flex-shrink-0">
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#faf9f7] text-stone-900 rounded-lg text-sm font-medium hover:bg-white transition-all self-start sm:self-auto flex-shrink-0">
                 <Plus className="h-4 w-4" /> New Wedding
               </button>
             )}
           </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-8 sm:py-12">
 
           {loading ? (
             <div className="space-y-4">
@@ -493,7 +495,7 @@ export default function Weddings() {
             </Field>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <Field label="Client Email">
               <input type="email" value={form.clientEmail} placeholder="client@email.com"
                 onChange={e => setForm(f => ({ ...f, clientEmail: e.target.value }))} className={inputCls} />
@@ -501,6 +503,14 @@ export default function Weddings() {
             <Field label="Client Phone">
               <input type="tel" value={form.clientPhone} placeholder="+91 98765 43210"
                 onChange={e => setForm(f => ({ ...f, clientPhone: e.target.value }))} className={inputCls} />
+            </Field>
+            <Field label="Linked Client Account">
+              <select value={form.clientId}
+                onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
+                className={`${inputCls} appearance-none`}>
+                <option value="">None / Invite later</option>
+                {clientOpts.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+              </select>
             </Field>
           </div>
 
@@ -544,7 +554,7 @@ export default function Weddings() {
                 onChange={e => setForm(f => ({ ...f, relationshipManager: e.target.value }))}
                 className={`${inputCls} appearance-none`}>
                 <option value="">Select planner</option>
-                {userOpts.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                {managerOpts.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
               </select>
             </Field>
           </div>

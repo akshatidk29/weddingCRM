@@ -433,20 +433,23 @@ export default function Tasks() {
       `}</style>
 
       <div className="font-body min-h-screen bg-[#faf9f7] text-stone-900 selection:bg-stone-200">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-12">
 
-          {/* ── Header ── */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12 border-b border-stone-200/60 pb-8">
+        {/* ── Hero Header ── */}
+        <div className="bg-stone-900 py-12 sm:py-16 px-5 sm:px-8 lg:px-10">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-3">Operations</p>
-              <h1 className="font-display text-4xl sm:text-5xl font-medium text-stone-900">Task Directory</h1>
-              <p className="text-stone-400 text-sm mt-2 italic">Master checklist across all events.</p>
+              <p className="text-[11px] font-bold tracking-[0.2em] text-[#b07d46] uppercase mb-2">Operations</p>
+              <h1 className="font-display text-4xl sm:text-5xl font-medium text-white">Task Directory</h1>
+              <p className="text-stone-400 text-sm mt-2">Master checklist across all events.</p>
             </div>
             <button onClick={openCreate}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-stone-900 text-[#faf9f7] rounded-full text-sm font-medium hover:bg-stone-800 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md self-start sm:self-auto flex-shrink-0">
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#faf9f7] text-stone-900 rounded-lg text-sm font-medium hover:bg-white transition-all self-start sm:self-auto flex-shrink-0">
               <Plus className="h-4 w-4" /> New Task
             </button>
           </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-12">
 
           {loading ? (
             <div className="space-y-4">

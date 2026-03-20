@@ -4,6 +4,10 @@ import Notification from '../models/Notification.js';
 
 export const getLeads = async (req, res) => {
   try {
+    if (req.user.role === 'client') {
+      return res.status(403).json({ message: 'Clients are not authorized to view leads' });
+    }
+
     const { stage, assignedTo, search } = req.query;
     const query = {};
 
@@ -34,6 +38,10 @@ export const getLeads = async (req, res) => {
 
 export const getLead = async (req, res) => {
   try {
+    if (req.user.role === 'client') {
+      return res.status(403).json({ message: 'Clients are not authorized to view leads' });
+    }
+
     const lead = await Lead.findById(req.params.id)
       .populate('assignedTo', 'name email')
       .populate('createdBy', 'name')
@@ -231,6 +239,10 @@ export const deleteLead = async (req, res) => {
 
 export const getLeadsByStage = async (req, res) => {
   try {
+    if (req.user.role === 'client') {
+      return res.status(403).json({ message: 'Clients are not authorized to view leads' });
+    }
+
     const query = {};
     if (req.user.role === 'team_member') {
       query.assignedTo = req.user._id;

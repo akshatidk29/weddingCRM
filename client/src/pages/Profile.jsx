@@ -81,28 +81,26 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-[#faf9f7] pb-16">
 
-      {/* ── Header ── */}
-      <div className="border-b border-stone-200/60 bg-white/50">
-        <div className="max-w-5xl mx-auto px-5 sm:px-8 lg:px-10 py-8 sm:py-10">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            {/* Avatar */}
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-stone-700 flex items-center justify-center flex-shrink-0">
-              <span className="text-[#faf9f7] text-2xl sm:text-3xl font-semibold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                {user?.name?.[0]?.toUpperCase()}
+      {/* ── Hero Header ── */}
+      <div className="bg-stone-900 py-12 sm:py-16 px-5 sm:px-8 lg:px-10">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center gap-5">
+          {/* Avatar */}
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-stone-700 flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-2xl sm:text-3xl font-semibold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+              {user?.name?.[0]?.toUpperCase()}
+            </span>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                {user?.name}
+              </h1>
+              <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${role.badge}`}>
+                {role.label}
               </span>
             </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl sm:text-3xl font-semibold text-stone-900 tracking-tight" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                  {user?.name}
-                </h1>
-                <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${role.badge}`}>
-                  {role.label}
-                </span>
-              </div>
-              <p className="text-stone-400 text-sm mt-1 truncate">{user?.email}</p>
-            </div>
+            <p className="text-stone-400 text-sm mt-1 truncate">{user?.email}</p>
           </div>
         </div>
       </div>

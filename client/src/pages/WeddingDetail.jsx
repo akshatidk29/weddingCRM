@@ -47,9 +47,8 @@ function Checkbox({ checked, onChange, size = 'md' }) {
   const sz = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
   return (
     <button type="button" onClick={onChange}
-      className={`${sz} rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-        checked ? 'bg-[#5a8f72] border-[#5a8f72]' : 'border-stone-300 hover:border-stone-500'
-      }`}>
+      className={`${sz} rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? 'bg-[#5a8f72] border-[#5a8f72]' : 'border-stone-300 hover:border-stone-500'
+        }`}>
       {checked && (
         <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -65,9 +64,9 @@ function ProgressRing({ pct = 0, size = 36, stroke = 3, color = '#a8a29e' }) {
   const circ = 2 * Math.PI * r;
   return (
     <svg width={size} height={size} className="rotate-[-90deg] flex-shrink-0">
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#f0ede8" strokeWidth={stroke} />
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-        strokeDasharray={circ} strokeDashoffset={circ - (pct/100)*circ} strokeLinecap="round"
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#f0ede8" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        strokeDasharray={circ} strokeDashoffset={circ - (pct / 100) * circ} strokeLinecap="round"
         style={{ transition: 'stroke-dashoffset 0.7s ease' }} />
     </svg>
   );
@@ -80,9 +79,9 @@ function Sk({ className = '' }) {
 
 /* ── Helpers ── */
 function getCompletionInfo(task) {
-  const sDone  = task.subtasks?.filter(s => s.completed).length || 0;
+  const sDone = task.subtasks?.filter(s => s.completed).length || 0;
   const sTotal = task.subtasks?.length || 0;
-  const vDone  = task.taskVendors?.filter(v => v.status === 'completed').length || 0;
+  const vDone = task.taskVendors?.filter(v => v.status === 'completed').length || 0;
   const vTotal = task.taskVendors?.length || 0;
   return {
     subtasksDone: sDone, subtasksTotal: sTotal,
@@ -95,26 +94,26 @@ function getCompletionInfo(task) {
   };
 }
 
-const getVName  = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.vendor.name  : (tv.name  || 'Unknown');
+const getVName = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.vendor.name : (tv.name || 'Unknown');
 const getVPhone = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.vendor.phone : (tv.phone || '');
 const getVEmail = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.vendor.email : (tv.email || '');
 
 /* ── Priority styles ── */
 const PRIORITY = {
-  low:    { bar: 'bg-stone-300',    label: null },
-  medium: { bar: 'bg-stone-400',    label: null },
-  high:   { bar: 'bg-[#b07d46]',   label: 'text-[#b07d46]' },
-  urgent: { bar: 'bg-[#c0604a]',   label: 'text-[#c0604a]' },
+  low: { bar: 'bg-stone-300', label: null },
+  medium: { bar: 'bg-stone-400', label: null },
+  high: { bar: 'bg-[#b07d46]', label: 'text-[#b07d46]' },
+  urgent: { bar: 'bg-[#c0604a]', label: 'text-[#c0604a]' },
 };
 
 /* ─────────────────────────────────────────
    TASK ROW  (flat row · click opens drawer)
 ───────────────────────────────────────── */
 function TaskRow({ task, onStatusChange, onSelect, onEdit, isManager, isAdmin }) {
-  const info    = getCompletionInfo(task);
-  const done    = task.status === 'done' || task.status === 'verified';
+  const info = getCompletionInfo(task);
+  const done = task.status === 'done' || task.status === 'verified';
   const overdue = task.status === 'pending' && isOverdue(task.dueDate);
-  const pri     = PRIORITY[task.priority] || PRIORITY.medium;
+  const pri = PRIORITY[task.priority] || PRIORITY.medium;
 
   return (
     <div
@@ -253,9 +252,8 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
                     <Checkbox size="sm" checked={sub.completed} onChange={() => onToggleSubtask(task._id, sub._id)} />
                     <span className={`text-[13px] flex-1 ${sub.completed ? 'text-stone-300 line-through' : 'text-stone-600'}`}>{sub.title}</span>
                     {sub.amount !== 0 && (
-                      <span className={`text-[11px] font-medium flex-shrink-0 ${
-                        sub.paymentStatus === 'completed' ? 'text-teal-700' : sub.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
-                      }`}>₹{Math.abs(sub.amount).toLocaleString()}</span>
+                      <span className={`text-[11px] font-medium flex-shrink-0 ${sub.paymentStatus === 'completed' ? 'text-teal-700' : sub.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
+                        }`}>₹{Math.abs(sub.amount).toLocaleString()}</span>
                     )}
                     {(isAdmin || isManager) && (
                       <button onClick={() => onDeleteSubtask(task._id, sub._id)} className="opacity-0 group-hover:opacity-100 p-0.5 text-stone-300 hover:text-[#c0604a] transition-all"><Trash2 className="w-3 h-3" /></button>
@@ -284,9 +282,8 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
                       )}
                     </div>
                     {tv.amount !== 0 && (
-                      <span className={`text-[11px] font-medium flex-shrink-0 ${
-                        tv.paymentStatus === 'completed' ? 'text-teal-700' : tv.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
-                      }`}>₹{Math.abs(tv.amount).toLocaleString()}</span>
+                      <span className={`text-[11px] font-medium flex-shrink-0 ${tv.paymentStatus === 'completed' ? 'text-teal-700' : tv.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
+                        }`}>₹{Math.abs(tv.amount).toLocaleString()}</span>
                     )}
                     {(isAdmin || isManager) && (
                       <button onClick={() => onDeleteVendor(task._id, tv._id)} className="opacity-0 group-hover:opacity-100 p-0.5 text-stone-300 hover:text-[#c0604a] transition-all"><Trash2 className="w-3 h-3" /></button>
@@ -306,42 +303,42 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
    MAIN PAGE
 ═══════════════════════════════════════ */
 export default function WeddingDetailWrapper() {
-  const { id }      = useParams();
-  const isManager   = useAuthStore(s => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
-  const isAdmin     = useAuthStore(s => s.user?.role === 'admin');
+  const { id } = useParams();
+  const isManager = useAuthStore(s => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
+  const isAdmin = useAuthStore(s => s.user?.role === 'admin');
 
-  const [wedding, setWedding]                 = useState(null);
-  const [tasks, setTasks]                     = useState([]);
+  const [wedding, setWedding] = useState(null);
+  const [tasks, setTasks] = useState([]);
   const [tasksByCategory, setTasksByCategory] = useState({});
-  const [events, setEvents]                   = useState([]);
-  const [loading, setLoading]                 = useState(true);
-  const [users, setUsers]                     = useState([]);
-  const [vendors, setVendors]                 = useState([]);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
+  const [vendors, setVendors] = useState([]);
 
-  const [expandedCats, setExpandedCats]       = useState({});
-  const [expandedEvents, setExpandedEvents]   = useState({});
+  const [expandedCats, setExpandedCats] = useState({});
+  const [expandedEvents, setExpandedEvents] = useState({});
 
-  const [showTaskModal, setShowTaskModal]               = useState(false);
-  const [showTeamModal, setShowTeamModal]               = useState(false);
-  const [showVendorModal, setShowVendorModal]           = useState(false);
-  const [showEventModal, setShowEventModal]             = useState(false);
-  const [showEventTeamModal, setShowEventTeamModal]     = useState(false);
-  const [editingTask, setEditingTask]                   = useState(null);
-  const [editingEvent, setEditingEvent]                 = useState(null);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [showVendorModal, setShowVendorModal] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [showEventTeamModal, setShowEventTeamModal] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [editingEvent, setEditingEvent] = useState(null);
   const [selectedEventForTask, setSelectedEventForTask] = useState(null);
   const [selectedEventForTeam, setSelectedEventForTeam] = useState(null);
-  const [selectedTask, setSelectedTask]                 = useState(null);
-  const [docsSettings, setDocsSettings]                 = useState({ isOpen: false, entityId: null, entityType: null, title: '' });
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [docsSettings, setDocsSettings] = useState({ isOpen: false, entityId: null, entityType: null, title: '' });
 
-  const emptyTask  = { title: '', description: '', category: 'other', priority: 'medium', assignedTo: '', dueDate: '', notes: '', event: '', subtasks: [], taskVendors: [] };
+  const emptyTask = { title: '', description: '', category: 'other', priority: 'medium', assignedTo: '', dueDate: '', notes: '', event: '', subtasks: [], taskVendors: [] };
   const emptyEvent = { name: '', description: '', eventDate: '', endDate: '', venue: { name: '', address: '', city: '' }, notes: '' };
-  const [taskForm, setTaskForm]     = useState(emptyTask);
-  const [eventForm, setEventForm]   = useState(emptyEvent);
-  const [teamForm, setTeamForm]     = useState({ userId: '', role: '' });
+  const [taskForm, setTaskForm] = useState(emptyTask);
+  const [eventForm, setEventForm] = useState(emptyEvent);
+  const [teamForm, setTeamForm] = useState({ userId: '', role: '' });
   const [vendorForm, setVendorForm] = useState({ vendorId: '', category: '', amount: '', notes: '' });
   const [eventTeamForm, setEventTeamForm] = useState({ userId: '', role: '' });
 
-  const [newSubtaskTitle, setNewSubtaskTitle]   = useState('');
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [newSubtaskAmount, setNewSubtaskAmount] = useState('');
   const emptyVendor = { name: '', phone: '', email: '', address: '', city: '', category: 'other', amount: '' };
   const [newVendor, setNewVendor] = useState(emptyVendor);
@@ -364,17 +361,17 @@ export default function WeddingDetailWrapper() {
     finally { setLoading(false); }
   };
 
-  const loadUsers   = async () => { try { const r = await api.get('/auth/users'); setUsers(r.data.users); } catch {} };
-  const loadVendors = async () => { try { const r = await api.get('/vendors'); setVendors(r.data.vendors); } catch {} };
+  const loadUsers = async () => { try { const r = await api.get('/auth/users'); setUsers(r.data.users); } catch { } };
+  const loadVendors = async () => { try { const r = await api.get('/vendors'); setVendors(r.data.vendors); } catch { } };
 
-  const handleTaskStatus    = async (taskId, status) => { try { await api.put(`/tasks/${taskId}/status`, { status }); loadWedding(); } catch {} };
-  const handleToggleSubtask = async (taskId, subId)  => { try { await api.put(`/tasks/${taskId}/subtasks/${subId}`); loadWedding(); } catch {} };
-  const handleDeleteSubtask = async (taskId, subId)  => { try { await api.delete(`/tasks/${taskId}/subtasks/${subId}`); loadWedding(); } catch {} };
-  const handleVendorStatus  = async (taskId, tvId, status) => { try { await api.put(`/tasks/${taskId}/vendors/${tvId}`, { status }); loadWedding(); } catch {} };
-  const handleDeleteVendor  = async (taskId, tvId)   => { try { await api.delete(`/tasks/${taskId}/vendors/${tvId}`); loadWedding(); } catch {} };
+  const handleTaskStatus = async (taskId, status) => { try { await api.put(`/tasks/${taskId}/status`, { status }); loadWedding(); } catch { } };
+  const handleToggleSubtask = async (taskId, subId) => { try { await api.put(`/tasks/${taskId}/subtasks/${subId}`); loadWedding(); } catch { } };
+  const handleDeleteSubtask = async (taskId, subId) => { try { await api.delete(`/tasks/${taskId}/subtasks/${subId}`); loadWedding(); } catch { } };
+  const handleVendorStatus = async (taskId, tvId, status) => { try { await api.put(`/tasks/${taskId}/vendors/${tvId}`, { status }); loadWedding(); } catch { } };
+  const handleDeleteVendor = async (taskId, tvId) => { try { await api.delete(`/tasks/${taskId}/vendors/${tvId}`); loadWedding(); } catch { } };
 
-  const handleAddTeam   = async (e) => { e.preventDefault(); try { await api.post(`/weddings/${id}/team`, teamForm); loadWedding(); setShowTeamModal(false); setTeamForm({ userId: '', role: '' }); } catch {} };
-  const handleAddVendor = async (e) => { e.preventDefault(); try { await api.post(`/weddings/${id}/vendors`, vendorForm); loadWedding(); setShowVendorModal(false); setVendorForm({ vendorId: '', category: '', amount: '', notes: '' }); } catch {} };
+  const handleAddTeam = async (e) => { e.preventDefault(); try { await api.post(`/weddings/${id}/team`, teamForm); loadWedding(); setShowTeamModal(false); setTeamForm({ userId: '', role: '' }); } catch { } };
+  const handleAddVendor = async (e) => { e.preventDefault(); try { await api.post(`/weddings/${id}/vendors`, vendorForm); loadWedding(); setShowVendorModal(false); setVendorForm({ vendorId: '', category: '', amount: '', notes: '' }); } catch { } };
 
   const handleEventSubmit = async (e) => {
     e.preventDefault();
@@ -382,18 +379,18 @@ export default function WeddingDetailWrapper() {
       if (editingEvent) await api.put(`/events/${editingEvent._id}`, { ...eventForm, wedding: id });
       else await api.post('/events', { ...eventForm, wedding: id });
       loadWedding(); closeEventModal();
-    } catch {}
+    } catch { }
   };
   const handleDeleteEvent = async (eventId) => {
     if (!confirm('Delete this event and all its tasks?')) return;
-    try { await api.delete(`/events/${eventId}`); loadWedding(); } catch {}
+    try { await api.delete(`/events/${eventId}`); loadWedding(); } catch { }
   };
   const handleAddEventTeam = async (e) => {
     e.preventDefault();
     if (!selectedEventForTeam) return;
-    try { await api.post(`/events/${selectedEventForTeam}/team`, eventTeamForm); loadWedding(); setShowEventTeamModal(false); setEventTeamForm({ userId: '', role: '' }); setSelectedEventForTeam(null); } catch {}
+    try { await api.post(`/events/${selectedEventForTeam}/team`, eventTeamForm); loadWedding(); setShowEventTeamModal(false); setEventTeamForm({ userId: '', role: '' }); setSelectedEventForTeam(null); } catch { }
   };
-  const handleRemoveEventTeam = async (eventId, userId) => { try { await api.delete(`/events/${eventId}/team/${userId}`); loadWedding(); } catch {} };
+  const handleRemoveEventTeam = async (eventId, userId) => { try { await api.delete(`/events/${eventId}/team/${userId}`); loadWedding(); } catch { } };
 
   const handleOpenDocs = (type, id, title) => {
     setDocsSettings({ isOpen: true, entityId: id, entityType: type, title });
@@ -420,7 +417,7 @@ export default function WeddingDetailWrapper() {
         await api.post('/tasks', cp);
       }
       loadWedding(); loadVendors(); closeTaskModal();
-    } catch {}
+    } catch { }
   };
 
   const openEditTask = (task) => {
@@ -439,7 +436,7 @@ export default function WeddingDetailWrapper() {
     setShowEventModal(true);
   };
 
-  const closeTaskModal  = () => { setShowTaskModal(false); setEditingTask(null); setSelectedEventForTask(null); setTaskForm(emptyTask); setNewSubtaskTitle(''); setNewSubtaskAmount(''); setNewVendor(emptyVendor); };
+  const closeTaskModal = () => { setShowTaskModal(false); setEditingTask(null); setSelectedEventForTask(null); setTaskForm(emptyTask); setNewSubtaskTitle(''); setNewSubtaskAmount(''); setNewVendor(emptyVendor); };
   const closeEventModal = () => { setShowEventModal(false); setEditingEvent(null); setEventForm(emptyEvent); };
 
   const addSubtask = () => {
@@ -488,10 +485,10 @@ export default function WeddingDetailWrapper() {
   const prog = wedding.progress || 0;
 
   const daysColor = days === null ? 'text-stone-900'
-    : days === 0   ? 'text-[#c0604a]'
-    : days <= 7    ? 'text-[#c0604a]'
-    : days <= 30   ? 'text-[#b07d46]'
-    : 'text-stone-900';
+    : days === 0 ? 'text-[#c0604a]'
+      : days <= 7 ? 'text-[#c0604a]'
+        : days <= 30 ? 'text-[#b07d46]'
+          : 'text-stone-900';
 
   return (
     <>
@@ -603,8 +600,8 @@ export default function WeddingDetailWrapper() {
                   <div className="divide-y divide-stone-100/60">
                     {events.map(ev => {
                       const evTasks = tasks.filter(t => t.event?._id === ev._id || t.event === ev._id);
-                      const isExp   = expandedEvents[ev._id];
-                      const evProg  = ev.progress || 0;
+                      const isExp = expandedEvents[ev._id];
+                      const evProg = ev.progress || 0;
                       return (
                         <div key={ev._id}>
                           <div
@@ -620,7 +617,7 @@ export default function WeddingDetailWrapper() {
                             </div>
                             <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
                               <span className="text-[10px] text-stone-400 hidden sm:block">{evProg}%</span>
-                              <button onClick={(e) => { e.stopPropagation(); handleOpenDocs('event', ev._id, ev.name); }} 
+                              <button onClick={(e) => { e.stopPropagation(); handleOpenDocs('event', ev._id, ev.name); }}
                                 className="p-1 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-all opacity-0 group-hover:opacity-100"
                                 title="Documents">
                                 <FileText className="h-3.5 w-3.5" />
@@ -656,8 +653,8 @@ export default function WeddingDetailWrapper() {
                                       <table className="w-full">
                                         <tbody className="divide-y divide-stone-100/60">
                                           {evTasks.map(task => {
-                                            const info    = getCompletionInfo(task);
-                                            const isDone  = task.status === 'done' || task.status === 'verified';
+                                            const info = getCompletionInfo(task);
+                                            const isDone = task.status === 'done' || task.status === 'verified';
                                             const overdue = task.status === 'pending' && isOverdue(task.dueDate);
                                             return (
                                               <tr key={task._id} onClick={() => setSelectedTask(task)} className="cursor-pointer hover:bg-[#faf9f7] transition-all group">
@@ -808,9 +805,9 @@ export default function WeddingDetailWrapper() {
                       </thead>
                       <tbody className="divide-y divide-stone-100/60">
                         {Object.entries(tasksByCategory).map(([category, catTasks]) => {
-                          const done  = catTasks.filter(t => t.status === 'done' || t.status === 'verified').length;
+                          const done = catTasks.filter(t => t.status === 'done' || t.status === 'verified').length;
                           const isExp = expandedCats[category];
-                          const pct   = catTasks.length ? Math.round((done / catTasks.length) * 100) : 0;
+                          const pct = catTasks.length ? Math.round((done / catTasks.length) * 100) : 0;
 
                           return (
                             <React.Fragment key={category}>
@@ -835,8 +832,8 @@ export default function WeddingDetailWrapper() {
 
                               {/* Task sub-rows */}
                               {isExp && catTasks.map(task => {
-                                const info    = getCompletionInfo(task);
-                                const isDone  = task.status === 'done' || task.status === 'verified';
+                                const info = getCompletionInfo(task);
+                                const isDone = task.status === 'done' || task.status === 'verified';
                                 const overdue = task.status === 'pending' && isOverdue(task.dueDate);
 
                                 return (
@@ -876,9 +873,8 @@ export default function WeddingDetailWrapper() {
                                       ) : <span className="text-stone-300 text-xs">—</span>}
                                     </td>
                                     <td className="px-5 py-3 hidden sm:table-cell">
-                                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-[0.15em] bg-white border border-stone-200/60 ${
-                                        isDone ? 'text-teal-700' : overdue ? 'text-amber-700' : 'text-stone-400'
-                                      }`}>
+                                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-[0.15em] bg-white border border-stone-200/60 ${isDone ? 'text-teal-700' : overdue ? 'text-amber-700' : 'text-stone-400'
+                                        }`}>
                                         <span className={`w-1.5 h-1.5 rounded-full ${isDone ? 'bg-teal-700' : overdue ? 'bg-amber-700' : 'bg-stone-300'}`} />
                                         {isDone ? 'Done' : overdue ? 'Overdue' : 'Pending'}
                                       </span>
@@ -945,9 +941,9 @@ export default function WeddingDetailWrapper() {
                     <div className="flex items-center gap-4 mt-2">
                       <div className="relative" style={{ width: size, height: size }}>
                         <svg width={size} height={size} className="-rotate-90">
-                          <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#f0ede8" strokeWidth={strokeWidth} />
-                          <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={pct === 100 ? '#5a8f72' : '#1c1917'} strokeWidth={strokeWidth}
-                            strokeDasharray={circumference} strokeDashoffset={circumference - (pct/100)*circumference} strokeLinecap="round"
+                          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f0ede8" strokeWidth={strokeWidth} />
+                          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={pct === 100 ? '#5a8f72' : '#1c1917'} strokeWidth={strokeWidth}
+                            strokeDasharray={circumference} strokeDashoffset={circumference - (pct / 100) * circumference} strokeLinecap="round"
                             style={{ transition: 'stroke-dashoffset 0.7s ease' }} />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -1126,7 +1122,7 @@ export default function WeddingDetailWrapper() {
             </Field>
             <Field label="Priority">
               <select value={taskForm.priority} onChange={e => setTaskForm(f => ({ ...f, priority: e.target.value }))} className={`${inputCls} appearance-none`}>
-                {['low','medium','high','urgent'].map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
+                {['low', 'medium', 'high', 'urgent'].map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
               </select>
             </Field>
           </div>
@@ -1157,13 +1153,13 @@ export default function WeddingDetailWrapper() {
                   <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${sub.completed ? 'bg-[#5a8f72] border-[#5a8f72]' : 'border-stone-300'}`} />
                   <span className="text-[13px] text-stone-700 flex-1">{sub.title}</span>
                   {sub.amount > 0 && <span className="text-[11px] text-stone-400">₹{sub.amount.toLocaleString()}</span>}
-                  <button type="button" onClick={() => setTaskForm(f => ({ ...f, subtasks: f.subtasks.filter((_,j)=>j!==i) }))}
+                  <button type="button" onClick={() => setTaskForm(f => ({ ...f, subtasks: f.subtasks.filter((_, j) => j !== i) }))}
                     className="p-1 rounded hover:bg-red-50 text-stone-300 hover:text-[#c0604a] transition-all"><X className="w-3 h-3" /></button>
                 </div>
               ))}
             </div>
             <div className="flex gap-2">
-              <input type="text" placeholder="Add subtask..." value={newSubtaskTitle} onChange={e => setNewSubtaskTitle(e.target.value)} onKeyDown={e => { if(e.key==='Enter'){e.preventDefault();addSubtask();}}}
+              <input type="text" placeholder="Add subtask..." value={newSubtaskTitle} onChange={e => setNewSubtaskTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSubtask(); } }}
                 className="flex-1 px-4 py-2.5 border border-stone-200 rounded-xl text-sm bg-white placeholder-stone-300 focus:outline-none focus:border-stone-400" />
               <input type="number" placeholder="₹" value={newSubtaskAmount} onChange={e => setNewSubtaskAmount(e.target.value)}
                 className="w-24 px-4 py-2.5 border border-stone-200 rounded-xl text-sm bg-white placeholder-stone-300 focus:outline-none focus:border-stone-400" />
@@ -1180,12 +1176,12 @@ export default function WeddingDetailWrapper() {
                 <div key={i} className="flex items-center gap-2 px-3 py-2.5 bg-white border border-stone-100 rounded-xl">
                   <div className="w-1.5 h-1.5 rounded-full bg-stone-300 flex-shrink-0" />
                   <span className="text-[13px] text-stone-700 flex-1 truncate">{getVName(tv)}</span>
-                  <button type="button" onClick={() => setTaskForm(f => ({ ...f, taskVendors: f.taskVendors.filter((_,j)=>j!==i) }))}
+                  <button type="button" onClick={() => setTaskForm(f => ({ ...f, taskVendors: f.taskVendors.filter((_, j) => j !== i) }))}
                     className="p-1 rounded hover:bg-red-50 text-stone-300 hover:text-[#c0604a] transition-all"><X className="w-3 h-3" /></button>
                 </div>
               ))}
             </div>
-            <select value="" onChange={e => { selectExistingVendor(e.target.value); e.target.value=''; }} className={`${inputCls} appearance-none mb-3`}>
+            <select value="" onChange={e => { selectExistingVendor(e.target.value); e.target.value = ''; }} className={`${inputCls} appearance-none mb-3`}>
               <option value="">Select existing vendor...</option>
               {vendors.map(v => <option key={v._id} value={v._id}>{v.name} ({v.category})</option>)}
             </select>
@@ -1226,7 +1222,7 @@ export default function WeddingDetailWrapper() {
           <Field label="Team Member">
             <select value={teamForm.userId} onChange={e => setTeamForm(f => ({ ...f, userId: e.target.value }))} required className={`${inputCls} appearance-none`}>
               <option value="">Select member...</option>
-              {users.map(u => <option key={u._id} value={u._id}>{u.name} ({u.role.replace('_',' ')})</option>)}
+              {users.map(u => <option key={u._id} value={u._id}>{u.name} ({u.role.replace('_', ' ')})</option>)}
             </select>
           </Field>
           <Field label="Role">

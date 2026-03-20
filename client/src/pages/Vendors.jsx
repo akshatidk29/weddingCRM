@@ -332,22 +332,25 @@ export default function Vendors() {
       `}</style>
 
       <div className="font-body min-h-screen bg-[#faf9f7] text-stone-900 selection:bg-stone-200">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-8">
 
-          {/* ── Header ── */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8 border-b border-stone-200/60 pb-6">
+        {/* ── Hero Header ── */}
+        <div className="bg-stone-900 py-12 sm:py-16 px-5 sm:px-8 lg:px-10">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Directory</p>
-              <h1 className="font-display text-3xl sm:text-4xl font-medium text-stone-900">Vendors</h1>
-              <p className="text-stone-400 text-sm mt-2 italic">Manage your trusted vendor network.</p>
+              <p className="text-[11px] font-bold tracking-[0.2em] text-[#b07d46] uppercase mb-2">Directory</p>
+              <h1 className="font-display text-4xl sm:text-5xl font-medium text-white">Vendors</h1>
+              <p className="text-stone-400 text-sm mt-2">Manage your trusted vendor network.</p>
             </div>
             {isManager && (
               <button onClick={() => setShowModal(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-[#faf9f7] rounded-lg text-sm font-medium hover:bg-stone-800 transition-all self-start sm:self-auto flex-shrink-0">
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#faf9f7] text-stone-900 rounded-lg text-sm font-medium hover:bg-white transition-all self-start sm:self-auto flex-shrink-0">
                 <Plus className="h-4 w-4" /> Add Vendor
               </button>
             )}
           </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-8">
 
           {loading ? (
             <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">

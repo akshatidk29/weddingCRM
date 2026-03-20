@@ -9,7 +9,7 @@ export default function DocumentsDrawer({ isOpen, onClose, entityId, entityType,
   const fileInputRef = useRef(null);
   
   const { user } = useAuthStore();
-  const isAdminOrManager = user?.role === 'admin' || user?.role === 'relationship_manager';
+  const canManageDocs = user?.role === 'admin' || user?.role === 'relationship_manager' || user?.role === 'client';
 
   useEffect(() => {
     if (isOpen) {
@@ -86,7 +86,7 @@ export default function DocumentsDrawer({ isOpen, onClose, entityId, entityType,
 
         <div className="px-6 py-5 space-y-6">
           {/* Upload Section */}
-          {isAdminOrManager && (
+          {canManageDocs && (
             <div>
                <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-3">Upload Document</p>
                <div 
@@ -142,7 +142,7 @@ export default function DocumentsDrawer({ isOpen, onClose, entityId, entityType,
                       >
                         <Download className="w-4 h-4" />
                       </a>
-                      {isAdminOrManager && (
+                      {canManageDocs && (
                         <button 
                           onClick={() => handleDelete(doc._id)}
                           className="p-1.5 text-stone-400 hover:text-[#c0604a] hover:bg-[#c0604a]/10 rounded-md transition-colors"

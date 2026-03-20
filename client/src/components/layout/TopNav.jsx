@@ -146,6 +146,13 @@ export default function TopNav() {
   const searchRef = useRef(null);
   const debounceRef = useRef(null);
 
+  const filteredNavItems = navItems.filter(item => {
+    if (user?.role === 'client') {
+      return !['Templates', 'Leads'].includes(item.label);
+    }
+    return true;
+  });
+
   useEffect(() => {
     const onOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setIsMenuOpen(false);
@@ -250,7 +257,7 @@ export default function TopNav() {
           {/* Center — Nav Links */}
           {user && (
             <nav className="hidden lg:flex items-center gap-5">
-              {navItems.map(item => (
+              {filteredNavItems.map(item => (
                 <NavItem key={item.to} {...item} />
               ))}
             </nav>
@@ -389,7 +396,7 @@ export default function TopNav() {
         {/* Mobile Nav Drawer */}
         {user && isMobileNavOpen && (
           <div className="lg:hidden bg-stone-900 border-t border-stone-800 px-4 py-3 space-y-0.5">
-            {navItems.map(item => (
+            {filteredNavItems.map(item => (
               <NavLink
                 key={item.to}
                 to={item.to}

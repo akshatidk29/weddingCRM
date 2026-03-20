@@ -19,7 +19,9 @@ export function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
+    <div className="min-h-screen bg-[#faf9f7] relative">
+      {/* Dark background patch behind the sidebar's top rounded corner so it blends with hero headers */}
+      <div className="hidden lg:block fixed top-14 left-0 w-60 h-20 bg-stone-900 z-20" />
       <Sidebar />
       <main className="lg:ml-60 min-h-[calc(100vh-56px)]">
         <Outlet />

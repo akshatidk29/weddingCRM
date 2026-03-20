@@ -6,18 +6,42 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bell } from 'lucide-react';
 import useChatStore from '../../stores/chatStore';
+import useNotificationStore from '../../stores/notificationStore';
 
 export default function NotificationBell() {
-  const hasUnread      = useChatStore(s => s.hasUnread);
-  const notifications  = useChatStore(s => s.notifications);
-  const markAllRead    = useChatStore(s => s.markAllRead);
-  const clearAll       = useChatStore(s => s.clearNotifications);
-  const toggleChat     = useChatStore(s => s.toggleChat);
+  const hasChatUnread     = useChatStore(s => s.hasUnread);
+  const chatNotifications = useChatStore(s => s.notifications);
+  const markChatAllRead   = useChatStore(s => s.markAllRead);
+  const clearChatAll      = useChatStore(s => s.clearNotifications);
+  const toggleChat        = useChatStore(s => s.toggleChat);
+
+  const {
+    notifications: backendNotifications,
+    unreadCount: backendUnreadCount,
+    fetchNotifications,
+    markAllAsRead: markBackendAllAsRead,
+    isLoading
+  } = useNotificationStore();
+
+  const handleClearAll = () => {
+    clearChatAll();
+    // Assuming backend notifications can't be 'cleared' by user easily, or we just rely on marking read
+  };
 
   const [ringing, setRinging]   = useState(false);
   const [showPanel, setShowPanel] = useState(false);
   const panelRef = useRef(null);
   const prevUnread = useRef(false);
+
+  // Fetch backend notifications on mount
+  useEffect(() => {
+    fetchNotifications();
+    // Optional: poll every 1 min
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  const hasUnread = hasChatUnread || backendUnreadCount > 0;
 
   // Trigger ring animation whenever a new unread arrives
   useEffect(() => {
@@ -27,7 +51,7 @@ export default function NotificationBell() {
       return () => clearTimeout(t);
     }
     prevUnread.current = hasUnread;
-  }, [hasUnread, notifications.length]);
+  }, [hasUnread, chatNotifications.length, backendNotifications.length]);
 
   // Close panel on outside click
   useEffect(() => {
@@ -45,11 +69,24 @@ export default function NotificationBell() {
       setShowPanel(false);
     } else {
       setShowPanel(true);
-      markAllRead();
+      if (hasChatUnread) markChatAllRead();
+      if (backendUnreadCount > 0) markBackendAllAsRead();
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const formattedBackendNotifications = backendNotifications.map(n => ({
+    id: n._id,
+    text: n.message,
+    ts: n.createdAt,
+    read: n.read,
+    isBackend: true
+  }));
+
+  const allNotifications = [...chatNotifications, ...formattedBackendNotifications].sort(
+    (a, b) => new Date(b.ts) - new Date(a.ts)
+  );
+
+  const totalUnreadCount = chatNotifications.filter(n => !n.read).length + backendUnreadCount;
 
   return (
     <>
@@ -87,9 +124,9 @@ export default function NotificationBell() {
           </span>
 
           {/* Unread badge */}
-          {unreadCount > 0 && (
+          {totalUnreadCount > 0 && (
             <span className="badge-pop absolute top-1 right-1 min-w-[16px] h-4 bg-[#faf9f7] text-stone-900 text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
             </span>
           )}
         </button>
@@ -102,13 +139,13 @@ export default function NotificationBell() {
               <div>
                 <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-stone-400">Notifications</p>
                 <p className="text-xs text-stone-400 mt-0.5">
-                  {notifications.length === 0 ? 'Nothing yet' : `${notifications.length} alert${notifications.length !== 1 ? 's' : ''}`}
+                  {allNotifications.length === 0 ? 'Nothing yet' : `${allNotifications.length} alert${allNotifications.length !== 1 ? 's' : ''}`}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {notifications.length > 0 && (
-                  <button onClick={clearAll} className="text-[11px] text-stone-400 hover:text-stone-700 transition-colors">
-                    Clear all
+                {allNotifications.length > 0 && (
+                  <button onClick={handleClearAll} className="text-[11px] text-stone-400 hover:text-stone-700 transition-colors">
+                    Clear chat alerts
                   </button>
                 )}
                 <button
@@ -122,15 +159,22 @@ export default function NotificationBell() {
 
             {/* List */}
             <div className="max-h-80 overflow-y-auto divide-y divide-stone-50">
-              {notifications.length === 0 ? (
+              {isLoading && allNotifications.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-sm text-stone-400">Loading...</p>
+                </div>
+              ) : allNotifications.length === 0 ? (
                 <div className="py-10 text-center">
                   <p className="text-sm text-stone-400">You're all caught up.</p>
                 </div>
               ) : (
-                notifications.map(n => (
+                allNotifications.map(n => (
                   <div key={n.id} className={`px-4 py-3.5 transition-colors ${n.read ? '' : 'bg-stone-50/60'}`}>
-                    <p className="text-[13px] text-stone-800 leading-snug">{n.text}</p>
-                    <p className="text-[11px] text-stone-400 mt-1.5">
+                    <p className="text-[13px] text-stone-800 leading-snug">
+                      {n.isBackend && <span className="inline-block w-2 h-2 rounded-full bg-stone-900 mr-2 -translate-y-px"></span>}
+                      {n.text}
+                    </p>
+                    <p className="text-[11px] text-stone-400 mt-1.5 flex items-center gap-1.5">
                       {formatRelativeTime(n.ts)}
                     </p>
                   </div>

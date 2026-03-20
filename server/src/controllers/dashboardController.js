@@ -9,25 +9,34 @@ export const getDashboardStats = async (req, res) => {
     if (req.user.role === 'team_member') {
       query.assignedTo = req.user._id;
     }
-
-    const totalLeads = await Lead.countDocuments(query);
-    const leadsByStage = await Lead.aggregate([
+    
+    // Clients have 0 leads
+    const isClient = req.user.role === 'client';
+    const totalLeads = isClient ? 0 : await Lead.countDocuments(query);
+    const leadsByStage = isClient ? [] : await Lead.aggregate([
       { $match: query },
       { $group: { _id: '$stage', count: { $sum: 1 } } }
     ]);
 
-    const weddingQuery = req.user.role === 'team_member' 
-      ? { 'assignedTeam.user': req.user._id }
-      : {};
+    let weddingQuery = {};
+    if (req.user.role === 'team_member') {
+      weddingQuery = { 'assignedTeam.user': req.user._id };
+    } else if (req.user.role === 'client') {
+      weddingQuery = { clientId: req.user._id };
+    }
 
     const activeWeddings = await Wedding.countDocuments({
       ...weddingQuery,
       status: { $in: ['planning', 'in_progress'] }
     });
 
-    const taskQuery = req.user.role === 'team_member'
-      ? { assignedTo: req.user._id }
-      : {};
+    let taskQuery = {};
+    if (req.user.role === 'team_member') {
+      taskQuery = { assignedTo: req.user._id };
+    } else if (req.user.role === 'client') {
+      const userWeddings = await Wedding.find({ clientId: req.user._id }).select('_id');
+      taskQuery = { wedding: { $in: userWeddings.map(w => w._id) } };
+    }
 
     const pendingTasks = await Task.countDocuments({
       ...taskQuery,
@@ -44,12 +53,12 @@ export const getDashboardStats = async (req, res) => {
     thisMonth.setDate(1);
     thisMonth.setHours(0, 0, 0, 0);
 
-    const newLeadsThisMonth = await Lead.countDocuments({
+    const newLeadsThisMonth = isClient ? 0 : await Lead.countDocuments({
       ...query,
       createdAt: { $gte: thisMonth }
     });
 
-    const conversions = await Lead.countDocuments({
+    const conversions = isClient ? 0 : await Lead.countDocuments({
       ...query,
       stage: 'booked',
       updatedAt: { $gte: thisMonth }
@@ -82,20 +91,37 @@ export const getDashboardStats = async (req, res) => {
 
 export const getRecentActivity = async (req, res) => {
   try {
-    const recentLeads = await Lead.find()
+    const isClient = req.user.role === 'client';
+
+    const recentLeads = isClient ? [] : await Lead.find()
       .sort({ createdAt: -1 })
       .limit(5)
       .select('name stage createdAt');
 
-    const recentWeddings = await Wedding.find()
+    let weddingQuery = {};
+    if (req.user.role === 'team_member') {
+      weddingQuery = { 'assignedTeam.user': req.user._id };
+    } else if (isClient) {
+      weddingQuery = { clientId: req.user._id };
+    }
+
+    const recentWeddings = await Wedding.find(weddingQuery)
       .sort({ createdAt: -1 })
       .limit(5)
       .select('name clientName weddingDate');
 
-    const upcomingTasks = await Task.find({
+    let taskQuery = {
       status: 'pending',
       dueDate: { $gte: new Date() }
-    })
+    };
+    if (req.user.role === 'team_member') {
+      taskQuery.assignedTo = req.user._id;
+    } else if (isClient) {
+      const userWeddings = await Wedding.find({ clientId: req.user._id }).select('_id');
+      taskQuery.wedding = { $in: userWeddings.map(w => w._id) };
+    }
+
+    const upcomingTasks = await Task.find(taskQuery)
       .sort({ dueDate: 1 })
       .limit(5)
       .populate('wedding', 'name')
@@ -114,6 +140,10 @@ export const getRecentActivity = async (req, res) => {
 
 export const getMonthlyStats = async (req, res) => {
   try {
+    if (req.user.role === 'client') {
+      return res.json({ leadsPerMonth: [], conversionsPerMonth: [] });
+    }
+
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 

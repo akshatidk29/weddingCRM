@@ -91,6 +91,7 @@ const roleOptions = [
   { value: 'admin',                label: 'Admin' },
   { value: 'relationship_manager', label: 'Relationship Manager' },
   { value: 'team_member',          label: 'Team Member' },
+  { value: 'client',               label: 'Client' },
 ];
 
 const inputCls = "w-full pl-11 pr-4 py-3 bg-white border border-stone-200/60 rounded-lg text-sm text-stone-900 placeholder-stone-300 focus:outline-none focus:border-stone-400 transition-all shadow-sm";

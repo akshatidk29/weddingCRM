@@ -190,14 +190,14 @@ export default function Budget() {
       `}</style>
 
       <div className="font-body min-h-[calc(100vh-56px)] bg-[#faf9f7] text-stone-900 selection:bg-stone-200">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-8">
 
-          {/* ── Header ── */}
-          <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 border-b border-stone-200/60 pb-6">
+        {/* ── Hero Header ── */}
+        <div className="bg-stone-900 py-12 sm:py-16 px-5 sm:px-8 lg:px-10">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Finance</p>
-              <h1 className="font-display text-3xl sm:text-4xl font-medium text-stone-900">Budget</h1>
-              <p className="text-stone-400 text-sm mt-2 italic">Track payments and finances for each wedding.</p>
+              <p className="text-[11px] font-bold tracking-[0.2em] text-[#b07d46] uppercase mb-2">Finance</p>
+              <h1 className="font-display text-4xl sm:text-5xl font-medium text-white">Budget</h1>
+              <p className="text-stone-400 text-sm mt-2">Track payments and finances for each wedding.</p>
             </div>
 
             {!loading && weddingBudgets.length > 0 && (
@@ -205,7 +205,7 @@ export default function Budget() {
                 <select
                   value={selectedId}
                   onChange={e => { setSelectedId(e.target.value); setStatusFilter(''); }}
-                  className="appearance-none pl-4 pr-10 py-2.5 bg-white border border-stone-200/60 rounded-lg text-sm font-medium text-stone-900 focus:outline-none focus:border-stone-400 transition-all min-w-[200px] cursor-pointer shadow-sm"
+                  className="appearance-none pl-4 pr-10 py-2.5 bg-[#faf9f7] border border-stone-700 rounded-lg text-sm font-medium text-stone-900 focus:outline-none focus:border-stone-500 transition-all min-w-[200px] cursor-pointer"
                 >
                   {weddingBudgets.map(wb => (
                     <option key={wb._id} value={wb._id}>{wb.name}</option>
@@ -214,7 +214,10 @@ export default function Budget() {
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
               </div>
             )}
-          </header>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-8">
 
           {loading ? (
             <div className="space-y-4">
