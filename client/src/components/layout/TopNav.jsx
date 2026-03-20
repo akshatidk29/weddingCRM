@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { LogOut, User, ChevronDown, Menu, X } from 'lucide-react';
+import { LogOut, User, ChevronDown, Menu, X, Search, Bell, Plus } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import useAuthStore from '../../stores/authStore';
 
@@ -8,13 +8,11 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/leads',     label: 'Leads' },
   { to: '/weddings',  label: 'Weddings' },
-  { to: '/tasks',     label: 'Tasks' },
   { to: '/vendors',   label: 'Vendors' },
-  { to: '/budget',    label: 'Budget' },
 ];
 
 /* ─────────────────────────────────────────
-   NAV ITEM — underline slide-in on hover/active
+   NAV ITEM
 ───────────────────────────────────────── */
 function NavItem({ to, label, onClick }) {
   return (
@@ -23,25 +21,12 @@ function NavItem({ to, label, onClick }) {
       onClick={onClick}
       className={({ isActive }) =>
         clsx(
-          'relative text-sm font-medium py-1 transition-colors duration-200 group',
-          isActive ? 'text-stone-900' : 'text-stone-400 hover:text-stone-900'
+          'relative text-xs font-bold uppercase tracking-wider py-1 transition-colors duration-200',
+          isActive ? 'text-stone-900 border-b-2 border-stone-900' : 'text-stone-400 hover:text-stone-900'
         )
       }
     >
-      {({ isActive }) => (
-        <>
-          {label}
-          {/* Underline: always present for active, slides in on hover */}
-          <span
-            className={clsx(
-              'absolute -bottom-0.5 left-0 h-px bg-stone-900 transition-all duration-300',
-              isActive
-                ? 'w-full'
-                : 'w-0 group-hover:w-full'
-            )}
-          />
-        </>
-      )}
+      {label}
     </NavLink>
   );
 }
@@ -49,14 +34,15 @@ function NavItem({ to, label, onClick }) {
 export default function TopNav() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const navigate          = useNavigate();
-  const [isMenuOpen, setIsMenuOpen]           = useState(false);
+  const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [scrolled, setScrolled]               = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 15);
+    const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -79,118 +65,166 @@ export default function TopNav() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Outfit:wght@300;400;500;600&display=swap');
-        .nav-font-display { font-family: 'Playfair Display', Georgia, serif; }
-        .nav-font-body    { font-family: 'Outfit', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap');
+        .nav-font-display { font-family: 'Cormorant Garamond', serif; }
+        .nav-font-body    { font-family: 'Inter', sans-serif; }
       `}</style>
 
       <header className={clsx(
-        'nav-font-body sticky top-0 z-50 transition-all duration-300',
-        scrolled
-          ? 'bg-[#faf9f7]/90 backdrop-blur-md border-b border-stone-200/60 shadow-sm'
-          : 'bg-[#faf9f7] border-b border-stone-100'
+        'nav-font-body fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        scrolled ? 'bg-white shadow-sm shadow-stone-900/5' : 'bg-white'
       )}>
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
-          <div className="flex items-center justify-between h-14 sm:h-16">
+        <div className="flex items-center justify-between px-5 sm:px-8 lg:px-10 h-14">
 
-            {/* LEFT — Logo + nav */}
-            <div className="flex items-center gap-8 lg:gap-10">
-              <NavLink
-                to="/"
-                className="nav-font-display text-xl font-bold text-stone-900 tracking-wide flex-shrink-0"
-              >
-                Lagna
-              </NavLink>
+          {/* Left - Logo + Search */}
+          <div className="flex items-center gap-6 lg:gap-8">
+            <NavLink to="/" className="nav-font-display text-2xl italic font-medium text-stone-900 tracking-tight flex-shrink-0">
+              Lagna
+            </NavLink>
 
-              {user && (
-                <nav className="hidden md:flex items-center gap-6 lg:gap-7">
-                  {navItems.map(item => (
-                    <NavItem key={item.to} {...item} />
-                  ))}
-                </nav>
-              )}
-            </div>
+            {user && (
+              <div className="hidden md:flex items-center bg-white border border-stone-200/60 px-4 py-1.5 rounded-full shadow-sm">
+                <Search className="w-4 h-4 text-stone-300 mr-2" />
+                <input 
+                  className="bg-transparent border-none focus:outline-none text-sm w-48 lg:w-64 text-stone-700 placeholder-stone-300"
+                  placeholder="Search weddings, leads..."
+                  type="text"
+                />
+              </div>
+            )}
+          </div>
 
-            {/* RIGHT — user actions */}
-            <div className="flex items-center gap-2">
-              {user ? (
-                <>
-                  {/* User dropdown */}
-                  <div className="relative" ref={menuRef}>
-                    <button
-                      onClick={() => setIsMenuOpen(o => !o)}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-stone-900/5 transition-colors"
-                    >
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-rose-600">
+          {/* Center - Nav Links */}
+          {user && (
+            <nav className="hidden lg:flex items-center gap-6">
+              {navItems.map(item => (
+                <NavItem key={item.to} {...item} />
+              ))}
+            </nav>
+          )}
+
+          {/* Right - Actions */}
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                {/* Mobile search */}
+                <button 
+                  className="md:hidden p-2 text-stone-400 hover:text-stone-900 transition-colors"
+                  onClick={() => setShowSearch(!showSearch)}
+                >
+                  <Search className="h-5 w-5" />
+                </button>
+
+                {/* Notifications */}
+                <button className="hidden sm:flex p-2 text-stone-400 hover:text-stone-900 transition-colors">
+                  <Bell className="h-5 w-5" />
+                </button>
+
+                {/* Add Wedding */}
+                <NavLink
+                  to="/weddings"
+                  className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-[#faf9f7] text-xs font-medium rounded-full hover:bg-stone-800 transition-all duration-300 hover:-translate-y-0.5"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden lg:inline">New Wedding</span>
+                </NavLink>
+
+                {/* User Menu */}
+                <div className="relative" ref={menuRef}>
+                  <button
+                    onClick={() => setIsMenuOpen(o => !o)}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-stone-100 border border-stone-200/60 flex items-center justify-center overflow-hidden">
+                      {user?.profileImage ? (
+                        <img src={user.profileImage} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xs font-bold text-stone-600">
                           {user?.name?.[0]?.toUpperCase()}
                         </span>
-                      </div>
-                      <span className="hidden sm:block text-sm font-medium text-stone-700 max-w-[110px] truncate">
-                        {user?.name}
-                      </span>
-                      <ChevronDown className={clsx(
-                        'h-3.5 w-3.5 text-stone-400 transition-transform duration-200 flex-shrink-0',
-                        isMenuOpen && 'rotate-180'
-                      )} />
-                    </button>
+                      )}
+                    </div>
+                    <ChevronDown className={clsx(
+                      'h-3.5 w-3.5 text-stone-400 transition-transform hidden sm:block',
+                      isMenuOpen && 'rotate-180'
+                    )} />
+                  </button>
 
-                    {isMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-52 bg-[#faf9f7] rounded-2xl shadow-xl border border-stone-200/80 py-1.5 z-50">
-                        <div className="px-4 py-3 border-b border-stone-100">
-                          <p className="text-sm font-semibold text-stone-900 truncate">{user.name}</p>
-                          <p className="text-xs text-stone-400 truncate mt-0.5">{user.email}</p>
-                        </div>
-                        <div className="py-1">
-                          <button
-                            onClick={() => { navigate('/profile'); setIsMenuOpen(false); }}
-                            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-stone-600 hover:text-stone-900 hover:bg-stone-900/5 transition-colors"
-                          >
-                            <User className="h-3.5 w-3.5 text-stone-400" /> Profile
-                          </button>
-                          <button
-                            onClick={handleLogout}
-                            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-rose-500 hover:bg-rose-50 transition-colors"
-                          >
-                            <LogOut className="h-3.5 w-3.5" /> Sign out
-                          </button>
-                        </div>
+                  {isMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-lg border border-stone-200/60 py-1 z-50">
+                      <div className="px-4 py-3 border-b border-stone-200/60">
+                        <p className="text-sm font-medium text-stone-900 truncate">{user.name}</p>
+                        <p className="text-xs text-stone-400 truncate mt-0.5">{user.email}</p>
+                        <p className="text-[10px] text-stone-500 font-bold uppercase tracking-[0.2em] mt-1">
+                          {user.role?.replace('_', ' ')}
+                        </p>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Mobile hamburger */}
-                  <button
-                    className="md:hidden p-2 rounded-full text-stone-500 hover:bg-stone-900/5 transition-colors"
-                    onClick={() => setIsMobileNavOpen(o => !o)}
-                    aria-label="Toggle menu"
-                  >
-                    {isMobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                  </button>
-                </>
-              ) : (
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <button
-                    onClick={() => navigate('/login')}
-                    className="text-sm font-medium text-stone-500 hover:text-stone-900 transition-colors px-2 py-1"
-                  >
-                    Log in
-                  </button>
-                  <button
-                    onClick={() => navigate('/register')}
-                    className="text-sm font-semibold px-5 py-2 bg-stone-900 text-white rounded-full hover:bg-stone-800 transition-all hover:shadow-md"
-                  >
-                    Get Started
-                  </button>
+                      <div className="py-1">
+                        <button
+                          onClick={() => { navigate('/profile'); setIsMenuOpen(false); }}
+                          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-stone-600 hover:bg-[#faf9f7] transition-colors"
+                        >
+                          <User className="h-4 w-4 text-stone-400" /> Profile Settings
+                        </button>
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-stone-500 hover:bg-[#faf9f7] transition-colors"
+                        >
+                          <LogOut className="h-4 w-4" /> Sign out
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+
+                {/* Mobile Menu Toggle */}
+                <button
+                  className="lg:hidden p-2 text-stone-400 hover:text-stone-900 transition-colors"
+                  onClick={() => setIsMobileNavOpen(o => !o)}
+                >
+                  {isMobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => navigate('/login')}
+                  className="text-sm font-medium text-stone-500 hover:text-stone-900 px-3 py-1.5 transition-colors"
+                >
+                  Log in
+                </button>
+                <button
+                  onClick={() => navigate('/register')}
+                  className="text-sm font-medium px-5 py-2.5 bg-stone-900 text-[#faf9f7] rounded-full hover:bg-stone-800 transition-all duration-300"
+                >
+                  Get Started
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* ── Mobile drawer ── */}
+        {/* Mobile Search */}
+        {user && showSearch && (
+          <div className="md:hidden px-4 pb-3 border-b border-stone-200/60">
+            <div className="flex items-center bg-white border border-stone-200/60 px-4 py-2 rounded-full shadow-sm">
+              <Search className="w-4 h-4 text-stone-300 mr-2" />
+              <input 
+                className="bg-transparent border-none focus:outline-none text-sm w-full text-stone-700 placeholder-stone-300"
+                placeholder="Search weddings, leads..."
+                type="text"
+                autoFocus
+              />
+              <button onClick={() => setShowSearch(false)} className="p-1 text-stone-400">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Nav Drawer */}
         {user && isMobileNavOpen && (
-          <div className="md:hidden bg-[#faf9f7] border-t border-stone-100 px-5 py-5 space-y-1">
+          <div className="lg:hidden bg-white border-t border-stone-200/60 px-4 py-3 space-y-1 shadow-lg">
             {navItems.map(item => (
               <NavLink
                 key={item.to}
@@ -198,25 +232,26 @@ export default function TopNav() {
                 onClick={() => setIsMobileNavOpen(false)}
                 className={({ isActive }) =>
                   clsx(
-                    'flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-medium transition-colors',
+                    'flex items-center w-full px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300',
                     isActive
-                      ? 'text-stone-900 bg-stone-900/6'
-                      : 'text-stone-500 hover:text-stone-900 hover:bg-stone-50'
+                      ? 'text-stone-900 bg-[#faf9f7] border-l-2 border-stone-900'
+                      : 'text-stone-500 hover:text-stone-900 hover:bg-[#faf9f7]'
                   )
                 }
               >
-                {({ isActive }) => (
-                  <>
-                    <span>{item.label}</span>
-                    {isActive && <span className="w-1 h-1 rounded-full bg-stone-900" />}
-                  </>
-                )}
+                {item.label}
               </NavLink>
             ))}
-            <div className="pt-2 mt-2 border-t border-stone-100">
+            <div className="pt-3 mt-3 border-t border-stone-200/60 space-y-1">
+              <button
+                onClick={() => { navigate('/profile'); setIsMobileNavOpen(false); }}
+                className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-stone-500 rounded-xl hover:bg-[#faf9f7] transition-colors"
+              >
+                <User className="h-4 w-4" /> Profile
+              </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2.5 w-full px-4 py-3 text-sm font-medium text-rose-500 rounded-xl hover:bg-rose-50 transition-colors"
+                className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-stone-500 rounded-xl hover:bg-[#faf9f7] transition-colors"
               >
                 <LogOut className="h-4 w-4" /> Sign Out
               </button>
@@ -224,6 +259,9 @@ export default function TopNav() {
           </div>
         )}
       </header>
+
+      {/* Spacer */}
+      <div className="h-14" />
     </>
   );
 }

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  CheckSquare, Clock, AlertTriangle, ChevronDown, ChevronRight,
-  Phone, Mail, AlertCircle, Plus, X
+  CheckSquare, Clock, AlertTriangle, ChevronRight,
+  Phone, Mail, AlertCircle, Plus, X, Edit, Trash2, Calendar
 } from 'lucide-react';
 import { formatDate, taskCategories, vendorCategories, isOverdue } from '../utils/helpers';
 import useAuthStore from '../stores/authStore';
@@ -24,13 +24,13 @@ function Field({ label, children }) {
 }
 
 /* ─────────────────────────────────────────
-   PRIORITY META — Premium Minimalist
+   PRIORITY META — Stone Palette
 ───────────────────────────────────────── */
-const priorityMeta = {
-  low:    { bar: 'bg-stone-300',   text: 'text-stone-400',  label: 'Low' },
-  medium: { bar: 'bg-amber-700',   text: 'text-amber-700',  label: 'Medium' },
-  high:   { bar: 'bg-stone-900',   text: 'text-stone-900',  label: 'High' },
-  urgent: { bar: 'bg-rose-800',    text: 'text-rose-800',   label: 'Urgent' },
+const PRIORITY = {
+  low:    { bar: 'bg-stone-300',  text: 'text-stone-400'  },
+  medium: { bar: 'bg-stone-400',  text: 'text-stone-500'  },
+  high:   { bar: 'bg-amber-700',  text: 'text-amber-700'  },
+  urgent: { bar: 'bg-[#c0604a]',  text: 'text-[#c0604a]'  },
 };
 
 /* ─────────────────────────────────────────
@@ -113,21 +113,166 @@ const getVendorName  = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.v
 const getVendorPhone = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.vendor.phone : (tv.phone || '');
 const getVendorEmail = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.vendor.email : (tv.email || '');
 
+/* ─────────────────────────────────────────
+   TASK DETAIL DRAWER  (slides in from right)
+───────────────────────────────────────── */
+function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUpdateVendorStatus, onEdit, isManager }) {
+  const [visible, setVisible] = useState(false);
+  const info = task ? getCompletionInfo(task) : {};
+  const done = task && (task.status === 'done' || task.status === 'verified');
+  const overdue = task && task.status === 'pending' && isOverdue(task.dueDate);
+
+  useEffect(() => {
+    if (task) {
+      requestAnimationFrame(() => setVisible(true));
+    }
+  }, [task]);
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 300);
+  };
+
+  if (!task) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className={`absolute inset-0 transition-opacity duration-300 ${visible ? 'bg-stone-950/20 backdrop-blur-[2px]' : 'bg-transparent'}`} onClick={handleClose} />
+      <div className={`relative w-full max-w-md bg-[#faf9f7] shadow-2xl transition-transform duration-300 ease-out overflow-y-auto ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
+        {/* Header */}
+        <div className="sticky top-0 bg-[#faf9f7] border-b border-stone-100 px-6 py-4 flex items-center justify-between z-10">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-1">Task Detail</p>
+            <h3 className={`font-display text-lg font-medium leading-tight ${done ? 'text-stone-300 line-through' : 'text-stone-900'}`}>{task.title}</h3>
+          </div>
+          <button onClick={handleClose} className="p-2 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors flex-shrink-0 ml-3">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-6">
+          {/* Meta grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {task.wedding && (
+              <div className="col-span-2">
+                <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-1">Wedding</p>
+                <Link to={`/weddings/${task.wedding._id}`} className="text-sm text-stone-700 hover:text-stone-900 transition-colors italic">{task.wedding.name}</Link>
+              </div>
+            )}
+            {task.dueDate && (
+              <div>
+                <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-1">Due Date</p>
+                <p className={`text-sm ${overdue ? 'text-amber-700 font-medium' : 'text-stone-700'}`}>{formatDate(task.dueDate)}</p>
+              </div>
+            )}
+            {task.assignedTo && (
+              <div>
+                <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-1">Assigned To</p>
+                <p className="text-sm text-stone-700">{task.assignedTo.name}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-1">Priority</p>
+              <p className={`text-sm font-medium capitalize ${task.priority === 'urgent' ? 'text-[#c0604a]' : task.priority === 'high' ? 'text-amber-700' : 'text-stone-700'}`}>{task.priority}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-1">Status</p>
+              <p className={`text-sm font-medium capitalize ${done ? 'text-teal-700' : overdue ? 'text-amber-700' : 'text-stone-700'}`}>{task.status?.replace('_', ' ')}</p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            {!done && (
+              <button onClick={() => { onStatusChange(task._id, 'done'); handleClose(); }}
+                className="flex-1 px-4 py-2.5 bg-stone-900 text-white rounded-full text-[11px] font-semibold hover:bg-stone-800 transition-all text-center">
+                Mark Complete
+              </button>
+            )}
+            {done && (
+              <button onClick={() => { onStatusChange(task._id, 'pending'); handleClose(); }}
+                className="flex-1 px-4 py-2.5 border border-stone-200 text-stone-600 rounded-full text-[11px] font-semibold hover:bg-stone-50 transition-all text-center">
+                Reopen
+              </button>
+            )}
+            {isManager && (
+              <button onClick={() => { onEdit(task); handleClose(); }}
+                className="px-4 py-2.5 border border-stone-200 text-stone-600 rounded-full text-[11px] font-semibold hover:bg-stone-50 transition-all">
+                Edit
+              </button>
+            )}
+          </div>
+
+          {/* Subtasks */}
+          {info.hasSubtasks && (
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-3">
+                Subtasks <span className="text-stone-300 ml-1">{task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}</span>
+              </p>
+              <div className="bg-white rounded-xl border border-stone-200/60 divide-y divide-stone-100/60 overflow-hidden">
+                {task.subtasks.map(sub => (
+                  <div key={sub._id} className="group flex items-center gap-3 px-4 py-3 hover:bg-[#faf9f7] transition-colors">
+                    <Checkbox size="sm" checked={sub.completed} onChange={() => onToggleSubtask(task._id, sub._id)} />
+                    <span className={`text-[13px] flex-1 ${sub.completed ? 'text-stone-300 line-through' : 'text-stone-600'}`}>{sub.title}</span>
+                    {sub.amount !== 0 && (
+                      <span className={`text-[11px] font-medium flex-shrink-0 ${
+                        sub.paymentStatus === 'completed' ? 'text-teal-700' : sub.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
+                      }`}>₹{Math.abs(sub.amount).toLocaleString()}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Vendors */}
+          {info.hasVendors && (
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-3">
+                Vendors <span className="text-stone-300 ml-1">{task.taskVendors.filter(v => v.status === 'completed').length}/{task.taskVendors.length}</span>
+              </p>
+              <div className="bg-white rounded-xl border border-stone-200/60 divide-y divide-stone-100/60 overflow-hidden">
+                {task.taskVendors.map(tv => (
+                  <div key={tv._id} className="group flex items-center gap-3 px-4 py-3 hover:bg-[#faf9f7] transition-colors">
+                    <Checkbox size="sm" checked={tv.status === 'completed'}
+                      onChange={() => onUpdateVendorStatus(task._id, tv._id, tv.status === 'completed' ? 'pending' : 'completed')} />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[13px] ${tv.status === 'completed' ? 'text-stone-300 line-through' : 'text-stone-600'}`}>{getVendorName(tv)}</p>
+                      {(getVendorPhone(tv) || getVendorEmail(tv)) && (
+                        <p className="text-[11px] text-stone-400 mt-0.5 truncate">{getVendorPhone(tv)}{getVendorPhone(tv) && getVendorEmail(tv) && ' · '}{getVendorEmail(tv)}</p>
+                      )}
+                    </div>
+                    {tv.amount !== 0 && (
+                      <span className={`text-[11px] font-medium flex-shrink-0 ${
+                        tv.paymentStatus === 'completed' ? 'text-teal-700' : tv.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
+                      }`}>₹{Math.abs(tv.amount).toLocaleString()}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════ */
 export default function Tasks() {
   const user = useAuthStore((s) => s.user);
   const isManager = useAuthStore((s) => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
-  const { 
+  const {
     tasks, weddings, events, users, vendors, loading,
-    fetchTasks, fetchEventsForWedding, updateTaskStatus, toggleSubtask, 
+    fetchTasks, fetchEventsForWedding, updateTaskStatus, toggleSubtask,
     updateTaskVendorStatus, createTask, updateTask
   } = useTaskStore();
   const [filter, setFilter]     = useState({ status: '', category: '', wedding: '', event: '' });
   const [filterEvents, setFilterEvents] = useState([]);
   const [view, setView]         = useState('all');
-  const [expanded, setExpanded] = useState({});
+  const [selectedTask, setSelectedTask] = useState(null);
 
   // Modal
   const [showModal, setShowModal]     = useState(false);
@@ -145,6 +290,15 @@ export default function Tasks() {
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
+  /* Keep drawer data fresh */
+  useEffect(() => {
+    if (selectedTask) {
+      const fresh = tasks.find(t => t._id === selectedTask._id);
+      if (fresh) setSelectedTask(fresh);
+      else setSelectedTask(null);
+    }
+  }, [tasks]);
+
   const handleStatus = async (taskId, newStatus) => {
     await updateTaskStatus(taskId, newStatus);
   };
@@ -156,11 +310,6 @@ export default function Tasks() {
   const handleVendorStatus = async (taskId, vendorId, status) => {
     await updateTaskVendorStatus(taskId, vendorId, status);
   };
-
-  const toggleExpand = (e, id) => {
-    e.stopPropagation();
-    setExpanded(p => ({ ...p, [id]: !p[id] }));
-  }
 
   const loadEventsForWedding = async (weddingId) => {
     if (!weddingId) { setFormEvents([]); return; }
@@ -182,8 +331,7 @@ export default function Tasks() {
   };
 
   const openCreate = () => { setEditingTask(null); setForm(emptyForm); setShowModal(true); };
-  const openEdit   = (e, task) => {
-    e.stopPropagation();
+  const openEdit = (task) => {
     setEditingTask(task);
     if (task.wedding?._id) loadEventsForWedding(task.wedding._id);
     setForm({
@@ -291,65 +439,108 @@ export default function Tasks() {
 
           {loading ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{[...Array(4)].map((_,i)=><Sk key={i} className="h-28"/>)}</div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{[...Array(4)].map((_, i) => <Sk key={i} className="h-28" />)}</div>
               <Sk className="h-16" />
               <Sk className="h-[500px]" />
             </div>
           ) : (
             <>
-              {/* ── Stats strip ── */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-                {[
-                  { label: 'All Tasks',  value: stats.total,   bar: 'bg-stone-300',  onClick: () => { setView('all'); setFilter(f => ({ ...f, status: '' })); } },
-                  { label: 'Pending',    value: stats.pending, bar: 'bg-amber-700',  onClick: () => { setView('all'); setFilter(f => ({ ...f, status: 'pending' })); } },
-                  { label: 'Completed',  value: stats.done,    bar: 'bg-teal-700',   onClick: () => { setView('all'); setFilter(f => ({ ...f, status: 'done' })); } },
-                  { label: 'Overdue',    value: stats.overdue, bar: stats.overdue > 0 ? 'bg-rose-800' : 'bg-stone-200', onClick: () => setView('overdue') },
-                ].map(m => (
-                  <button key={m.label} onClick={m.onClick}
-                    className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200/60 text-left transition-all duration-300 hover:-translate-y-0.5 group">
-                    <div className={`h-[1px] w-8 ${m.bar} mb-4 transition-all duration-300 group-hover:w-12`} />
-                    <p className="font-display text-3xl font-medium text-stone-900 leading-none">{m.value}</p>
-                    <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mt-3">{m.label}</p>
-                  </button>
-                ))}
+              {/* ── Analytics: Stats + Bar Chart ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+                {/* Stats cards - 2x2 grid */}
+                <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+                  {[
+                    { label: 'All Tasks', value: stats.total, bar: 'bg-stone-300', onClick: () => { setView('all'); setFilter(f => ({ ...f, status: '' })); } },
+                    { label: 'Pending', value: stats.pending, bar: 'bg-amber-700', onClick: () => { setView('all'); setFilter(f => ({ ...f, status: 'pending' })); } },
+                    { label: 'Completed', value: stats.done, bar: 'bg-teal-700', onClick: () => { setView('all'); setFilter(f => ({ ...f, status: 'done' })); } },
+                    { label: 'Overdue', value: stats.overdue, bar: stats.overdue > 0 ? 'bg-[#c0604a]' : 'bg-stone-200', onClick: () => setView('overdue') },
+                  ].map(m => (
+                    <button key={m.label} onClick={m.onClick}
+                      className="bg-white p-5 rounded-2xl shadow-sm border border-stone-200/60 text-left transition-all duration-300 hover:-translate-y-0.5 group">
+                      <div className={`h-[1px] w-8 ${m.bar} mb-3 transition-all duration-300 group-hover:w-12`} />
+                      <p className="font-display text-3xl font-medium text-stone-900 leading-none">{m.value}</p>
+                      <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mt-2">{m.label}</p>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Bar chart - Top weddings by task count */}
+                <div className="bg-white rounded-2xl p-5 border border-stone-200/60 shadow-sm">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-4">Top Weddings by Tasks</h3>
+                  {(() => {
+                    const weddingCounts = {};
+                    tasks.forEach(t => {
+                      if (t.wedding) {
+                        const wName = t.wedding.name || 'Unknown';
+                        weddingCounts[wName] = (weddingCounts[wName] || 0) + 1;
+                      }
+                    });
+                    const sorted = Object.entries(weddingCounts)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 5);
+                    const maxCount = sorted.length > 0 ? sorted[0][1] : 1;
+
+                    if (sorted.length === 0) return <p className="text-sm text-stone-400 italic text-center py-6">No data yet</p>;
+
+                    return (
+                      <div className="space-y-3">
+                        {sorted.map(([name, count]) => {
+                          const widthPct = Math.max((count / maxCount) * 100, 8);
+                          return (
+                            <div key={name} className="flex items-center gap-3">
+                              <div className="w-20 flex-shrink-0 truncate">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 truncate">{name.length > 10 ? name.slice(0, 10) + '…' : name}</span>
+                              </div>
+                              <div className="flex-1 h-7 bg-stone-100 rounded-lg overflow-hidden relative">
+                                <div
+                                  className="h-full bg-stone-700 rounded-lg transition-all duration-500 flex items-center justify-end pr-2"
+                                  style={{ width: `${widthPct}%` }}
+                                >
+                                  {count > 0 && <span className="text-[10px] font-bold text-white">{count}</span>}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
 
               {/* ── Filters ── */}
-              <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-4 mb-8">
-                {/* View tabs */}
-                <div className="flex gap-1 p-1 bg-white border border-stone-200/60 shadow-sm rounded-full self-start">
+              <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-4 mb-6">
+                <div className="flex gap-1 p-1 bg-white border border-stone-200/60 shadow-sm rounded-lg self-start">
                   {[
-                    { id: 'all',     label: 'All' },
-                    { id: 'my',      label: 'Mine' },
+                    { id: 'all', label: 'All' },
+                    { id: 'my', label: 'Mine' },
                     { id: 'overdue', label: 'Overdue' },
                   ].map(t => (
                     <button key={t.id} onClick={() => setView(t.id)}
-                      className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
-                        view === t.id
-                          ? t.id === 'overdue' ? 'bg-rose-50 text-rose-800' : 'bg-stone-900 text-[#faf9f7]'
-                          : 'text-stone-400 hover:text-stone-900'
+                      className={`px-5 py-2.5 rounded-md text-sm font-medium transition-all duration-300 ${
+                        view === t.id ? 'bg-stone-900 text-[#faf9f7]' : 'text-stone-400 hover:text-stone-900'
                       }`}>
                       {t.label}
                     </button>
                   ))}
                 </div>
 
-                <div className="flex flex-wrap gap-4 sm:ml-auto">
+                <div className="flex flex-wrap gap-3 sm:ml-auto">
                   <select value={filter.category} onChange={e => setFilter(f => ({ ...f, category: e.target.value }))}
-                    className="py-3 px-4 text-sm rounded-full bg-white border border-stone-200/60 shadow-sm text-stone-700 focus:outline-none focus:border-stone-400 appearance-none transition-all duration-300 w-full sm:w-44">
+                    className="py-2.5 px-4 text-sm rounded-lg bg-white border border-stone-200/60 shadow-sm text-stone-700 focus:outline-none focus:border-stone-400 appearance-none transition-all w-full sm:w-44">
                     <option value="">All Categories</option>
                     {taskCategories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
 
                   <select value={filter.wedding} onChange={e => handleFilterWedding(e.target.value)}
-                    className="py-3 px-4 text-sm rounded-full bg-white border border-stone-200/60 shadow-sm text-stone-700 focus:outline-none focus:border-stone-400 appearance-none transition-all duration-300 w-full sm:w-48">
+                    className="py-2.5 px-4 text-sm rounded-lg bg-white border border-stone-200/60 shadow-sm text-stone-700 focus:outline-none focus:border-stone-400 appearance-none transition-all w-full sm:w-48">
                     <option value="">All Weddings</option>
                     {weddings.map(w => <option key={w._id} value={w._id}>{w.name}</option>)}
                   </select>
 
                   {filter.wedding && filterEvents.length > 0 && (
                     <select value={filter.event} onChange={e => setFilter(f => ({ ...f, event: e.target.value }))}
-                      className="py-3 px-4 text-sm rounded-full bg-white border border-stone-200/60 shadow-sm text-stone-700 focus:outline-none focus:border-stone-400 appearance-none transition-all duration-300 w-full sm:w-48">
+                      className="py-2.5 px-4 text-sm rounded-lg bg-white border border-stone-200/60 shadow-sm text-stone-700 focus:outline-none focus:border-stone-400 appearance-none transition-all w-full sm:w-48">
                       <option value="">All Events</option>
                       {filterEvents.map(ev => <option key={ev._id} value={ev._id}>{ev.name}</option>)}
                     </select>
@@ -357,202 +548,108 @@ export default function Tasks() {
                 </div>
               </div>
 
-              {/* ── Count ── */}
-              <p className="text-xs text-stone-400 mb-6 italic border-b border-stone-200/60 pb-4 inline-block">
-                Displaying {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
-              </p>
-
-              {/* ── Task list ── */}
+              {/* ── Task Table ── */}
               {filteredTasks.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm py-20 text-center">
                   <p className="text-stone-400 text-sm italic">No tasks match your current filters.</p>
                 </div>
               ) : (
                 <div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 overflow-hidden">
-                  <div className="divide-y divide-stone-100/60">
-                    {filteredTasks.map(task => {
-                      const info     = getCompletionInfo(task);
-                      const overdue  = task.status === 'pending' && isOverdue(task.dueDate);
-                      const isExp    = expanded[task._id];
-                      const done     = task.status === 'done' || task.status === 'verified';
-                      const pm       = priorityMeta[task.priority] || priorityMeta.medium;
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-stone-100/60 bg-[#faf9f7]/50">
+                          {['', 'Task', 'Wedding', 'Due Date', 'Category', 'Assigned', 'Status', ''].map(h => (
+                            <th key={h || Math.random()} className={`text-left px-5 py-4 text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase whitespace-nowrap
+                              ${h === 'Due Date' || h === 'Category' ? 'hidden md:table-cell' : ''}
+                              ${h === 'Assigned' ? 'hidden lg:table-cell' : ''}
+                            `}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100/60">
+                        {filteredTasks.map(task => {
+                          const info    = getCompletionInfo(task);
+                          const overdue = task.status === 'pending' && isOverdue(task.dueDate);
+                          const done    = task.status === 'done' || task.status === 'verified';
 
-                      return (
-                        <div key={task._id} className="group transition-colors duration-300 hover:bg-[#faf9f7]/50">
-                          {/* ── Task row ── */}
-                          <div 
-                            className={`flex items-start gap-5 px-6 py-5 cursor-pointer ${overdue ? 'border-l-[3px] border-rose-800 bg-rose-50/20' : ''}`}
-                            onClick={(e) => (info.hasSubtasks || info.hasVendors) && toggleExpand(e, task._id)}
-                          >
-
-                            {/* Checkbox */}
-                            <div className="mt-0.5 flex-shrink-0">
-                              <Checkbox
-                                checked={done}
-                                onChange={() => {
+                          return (
+                            <tr
+                              key={task._id}
+                              onClick={() => setSelectedTask(task)}
+                              className="cursor-pointer hover:bg-[#faf9f7] transition-all group"
+                            >
+                              {/* Checkbox */}
+                              <td className="px-5 py-4 w-10" onClick={e => e.stopPropagation()}>
+                                <Checkbox checked={done} onChange={() => {
                                   if (done) { handleStatus(task._id, 'pending'); return; }
-                                  if ((info.hasSubtasks || info.hasVendors) && !info.canAutoComplete) {
-                                    setExpanded(p => ({ ...p, [task._id]: true })); return;
-                                  }
+                                  if ((info.hasSubtasks || info.hasVendors) && !info.canAutoComplete) { setSelectedTask(task); return; }
                                   handleStatus(task._id, 'done');
-                                }}
-                              />
-                            </div>
+                                }} />
+                              </td>
 
-                            {/* Main content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3 flex-wrap mb-1">
-                                <p className={`text-sm font-medium transition-colors duration-300 ${done ? 'text-stone-300 line-through' : 'text-stone-900 group-hover:text-stone-600'}`}>
-                                  {task.title}
-                                </p>
-                                {/* Priority Indicator */}
-                                {(task.priority === 'high' || task.priority === 'urgent') && (
-                                  <span className={`text-[9px] font-bold uppercase tracking-[0.2em] px-2 py-0.5 border border-stone-200/60 rounded-full bg-white ${pm.text}`}>
-                                    {pm.label}
-                                  </span>
-                                )}
-                                {task.status === 'verified' && (
-                                  <span className="text-[9px] font-bold uppercase tracking-[0.2em] px-2 py-0.5 border border-emerald-200/60 rounded-full bg-emerald-50 text-emerald-700">Verified</span>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-2 mt-1.5 text-xs text-stone-400 flex-wrap">
-                                {task.wedding && (
-                                  <Link to={`/weddings/${task.wedding._id}`}
-                                    className="hover:text-stone-900 transition-colors truncate italic"
-                                    onClick={e => e.stopPropagation()}>
-                                    {task.wedding.name}
-                                  </Link>
-                                )}
-                                {task.event && (
-                                  <span className="text-stone-300">| {task.event.name}</span>
-                                )}
-                                {task.assignedTo && <span>| Assigned: {task.assignedTo.name}</span>}
+                              {/* Task name */}
+                              <td className="px-5 py-4">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-sm font-medium ${done ? 'text-stone-300 line-through' : 'text-stone-900'}`}>{task.title}</span>
+                                  {task.priority === 'urgent' && <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#c0604a]">Urgent</span>}
+                                  {task.priority === 'high' && <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-amber-700">High</span>}
+                                </div>
                                 {info.hasSubtasks && (
-                                  <span className={info.allSubtasksDone ? 'text-teal-700' : 'text-stone-500'}>
-                                    | {info.subtasksDone}/{info.subtasksTotal} subtasks
-                                  </span>
+                                  <p className="text-[11px] text-stone-400 mt-0.5">{info.subtasksDone}/{info.subtasksTotal} subtasks</p>
                                 )}
-                                {info.hasVendors && (
-                                  <span className={info.allVendorsDone ? 'text-teal-700' : 'text-stone-500'}>
-                                    | {info.vendorsDone}/{info.vendorsTotal} vendors
-                                  </span>
-                                )}
-                              </div>
+                              </td>
 
-                              {/* Blocking warning */}
-                              {task.status === 'pending' && (info.hasSubtasks || info.hasVendors) && !info.canAutoComplete && (
-                                <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-amber-700 font-medium">
-                                  <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                                  <span>
-                                    {info.pendingSubtasks > 0 && `${info.pendingSubtasks} subtask${info.pendingSubtasks > 1 ? 's' : ''}`}
-                                    {info.pendingSubtasks > 0 && info.pendingVendors > 0 && ' & '}
-                                    {info.pendingVendors > 0 && `${info.pendingVendors} vendor${info.pendingVendors > 1 ? 's' : ''}`}
-                                    {' remaining'}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
+                              {/* Wedding */}
+                              <td className="px-5 py-4">
+                                {task.wedding ? (
+                                  <span className="text-sm text-stone-600 italic">{task.wedding.name}</span>
+                                ) : <span className="text-stone-300">—</span>}
+                              </td>
 
-                            {/* Right: date + category + actions */}
-                            <div className="flex items-center gap-4 flex-shrink-0 ml-4">
-                              <span className="text-[9px] font-bold tracking-[0.2em] text-stone-400 uppercase hidden lg:block">
-                                {task.category}
-                              </span>
-                              {task.dueDate && (
-                                <span className={`text-[11px] hidden sm:block font-medium tracking-wide ${overdue ? 'text-rose-800' : 'text-stone-400'}`}>
-                                  {formatDate(task.dueDate)}
+                              {/* Due Date */}
+                              <td className="px-5 py-4 hidden md:table-cell whitespace-nowrap">
+                                {task.dueDate ? (
+                                  <span className={`text-sm ${overdue ? 'text-amber-700 font-medium' : 'text-stone-600'}`}>{formatDate(task.dueDate)}</span>
+                                ) : <span className="text-stone-300">—</span>}
+                              </td>
+
+                              {/* Category */}
+                              <td className="px-5 py-4 hidden md:table-cell">
+                                <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-stone-400">{task.category}</span>
+                              </td>
+
+                              {/* Assigned */}
+                              <td className="px-5 py-4 hidden lg:table-cell">
+                                {task.assignedTo ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full border border-stone-200/60 bg-stone-100 flex items-center justify-center flex-shrink-0">
+                                      <span className="text-[10px] font-medium text-stone-600">{task.assignedTo.name?.charAt(0)?.toUpperCase()}</span>
+                                    </div>
+                                    <span className="text-xs text-stone-500 truncate max-w-[80px]">{task.assignedTo.name?.split(' ')[0]}</span>
+                                  </div>
+                                ) : <span className="text-stone-300 text-xs">—</span>}
+                              </td>
+
+                              {/* Status */}
+                              <td className="px-5 py-4">
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.15em] bg-white border border-stone-200/60 shadow-sm ${
+                                  done ? 'text-teal-700' : overdue ? 'text-amber-700' : 'text-stone-500'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${done ? 'bg-teal-700' : overdue ? 'bg-amber-700' : 'bg-stone-300'}`} />
+                                  {done ? 'Done' : overdue ? 'Overdue' : 'Pending'}
                                 </span>
-                              )}
-                              
-                              <div className="flex items-center gap-1">
-                                {isManager && (
-                                  <button onClick={(e) => openEdit(e, task)}
-                                    className="p-2 rounded-full text-stone-300 hover:text-stone-900 hover:bg-white border border-transparent hover:border-stone-200/60 shadow-sm transition-all duration-300 opacity-0 group-hover:opacity-100">
-                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                  </button>
-                                )}
-                                {(info.hasSubtasks || info.hasVendors) && (
-                                  <button onClick={(e) => toggleExpand(e, task._id)}
-                                    className="p-2 rounded-full text-stone-400 hover:text-stone-900 transition-all duration-300">
-                                    {isExp ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                              </td>
 
-                          {/* ── Expanded: subtasks + vendors ── */}
-                          {isExp && (
-                            <div className="px-6 pb-6 pt-2 bg-[#faf9f7] border-t border-stone-100/60 space-y-6">
-                              {/* Subtasks */}
-                              {info.hasSubtasks && (
-                                <div className="space-y-3 pl-10">
-                                  <p className={labelCls}>Subtasks</p>
-                                  {task.subtasks.map(sub => (
-                                    <div key={sub._id} className="flex items-center gap-4 px-4 py-3 bg-white rounded-xl shadow-sm border border-stone-200/60 transition-colors duration-300">
-                                      <Checkbox size="sm" checked={sub.completed}
-                                        onChange={() => handleToggleSubtask(task._id, sub._id)} />
-                                      <span className={`text-sm font-medium flex-1 transition-colors duration-300 ${sub.completed ? 'text-stone-300 line-through' : 'text-stone-900'}`}>
-                                        {sub.title}
-                                      </span>
-                                      {sub.amount !== 0 && (
-                                        <span className={`text-[10px] font-bold tracking-wide ${
-                                          sub.paymentStatus === 'completed' ? 'text-teal-700' :
-                                          sub.paymentStatus === 'partial'   ? 'text-amber-700'   : 'text-stone-400'
-                                        }`}>
-                                          ₹{Math.abs(sub.amount).toLocaleString()}
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Vendors */}
-                              {info.hasVendors && (
-                                <div className={`space-y-3 pl-10 ${!info.hasSubtasks ? 'pt-2' : ''}`}>
-                                  <p className={labelCls}>Vendors Assigned</p>
-                                  {task.taskVendors.map(v => (
-                                    <div key={v._id} className="flex items-center gap-4 px-4 py-3 bg-white rounded-xl shadow-sm border border-stone-200/60 transition-colors duration-300">
-                                      <Checkbox size="sm" checked={v.status === 'completed'}
-                                        onChange={() => handleVendorStatus(task._id, v._id, v.status === 'completed' ? 'pending' : 'completed')} />
-                                      <div className="flex-1 min-w-0">
-                                        <span className={`text-sm font-medium transition-colors duration-300 ${v.status === 'completed' ? 'text-stone-300 line-through' : 'text-stone-900'}`}>
-                                          {getVendorName(v)}
-                                        </span>
-                                        <div className="flex items-center gap-4 mt-1.5 flex-wrap">
-                                          {getVendorPhone(v) && (
-                                            <span className="text-[11px] text-stone-500 flex items-center gap-1.5 hover:text-stone-900 transition-colors">
-                                              <Phone className="w-3 h-3 text-stone-300" />{getVendorPhone(v)}
-                                            </span>
-                                          )}
-                                          {getVendorEmail(v) && (
-                                            <span className="text-[11px] text-stone-500 flex items-center gap-1.5 hover:text-stone-900 transition-colors">
-                                              <Mail className="w-3 h-3 text-stone-300" />{getVendorEmail(v)}
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                      {v.amount !== 0 && (
-                                        <span className={`text-[10px] font-bold tracking-wide flex-shrink-0 ${
-                                          v.paymentStatus === 'completed' ? 'text-teal-700' :
-                                          v.paymentStatus === 'partial'   ? 'text-amber-700'   : 'text-stone-400'
-                                        }`}>
-                                          ₹{Math.abs(v.amount).toLocaleString()}
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                              {/* Arrow */}
+                              <td className="px-5 py-4 text-right">
+                                <ChevronRight className="h-4 w-4 text-stone-300 group-hover:text-stone-900 transition-colors inline-block" />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
@@ -637,8 +734,8 @@ export default function Tasks() {
                   <div className={`w-3 h-3 rounded-sm border flex-shrink-0 ${sub.completed ? 'bg-stone-900 border-stone-900' : 'border-stone-300'}`} />
                   <span className={`text-sm font-medium flex-1 ${sub.completed ? 'text-stone-300 line-through' : 'text-stone-700'}`}>{sub.title}</span>
                   {sub.amount > 0 && <span className="text-[10px] font-bold tracking-wide text-stone-400">₹{sub.amount.toLocaleString()}</span>}
-                  <button type="button" onClick={() => setForm(f => ({ ...f, subtasks: f.subtasks.filter((_,j)=>j!==i) }))}
-                    className="p-1 rounded-full hover:bg-rose-50 text-stone-300 hover:text-rose-800 transition-all">
+                  <button type="button" onClick={() => setForm(f => ({ ...f, subtasks: f.subtasks.filter((_, j) => j !== i) }))}
+                    className="p-1 rounded-full hover:bg-stone-100 text-stone-300 hover:text-[#c0604a] transition-all">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -669,8 +766,8 @@ export default function Tasks() {
                   <div className="w-1.5 h-1.5 rounded-full bg-stone-400 flex-shrink-0" />
                   <span className="text-sm font-medium text-stone-700 flex-1 truncate">{getVendorName(v)}</span>
                   {v.amount > 0 && <span className="text-[10px] font-bold tracking-wide text-stone-400">₹{v.amount.toLocaleString()}</span>}
-                  <button type="button" onClick={() => setForm(f => ({ ...f, taskVendors: f.taskVendors.filter((_,j)=>j!==i) }))}
-                    className="p-1 rounded-full hover:bg-rose-50 text-stone-300 hover:text-rose-800 transition-all">
+                  <button type="button" onClick={() => setForm(f => ({ ...f, taskVendors: f.taskVendors.filter((_, j) => j !== i) }))}
+                    className="p-1 rounded-full hover:bg-stone-100 text-stone-300 hover:text-[#c0604a] transition-all">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -738,6 +835,17 @@ export default function Tasks() {
           </div>
         </form>
       </Modal>
+
+      {/* ═══ Task Detail Drawer ═══ */}
+      <TaskDetailDrawer
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+        onStatusChange={handleStatus}
+        onToggleSubtask={handleToggleSubtask}
+        onUpdateVendorStatus={handleVendorStatus}
+        onEdit={openEdit}
+        isManager={isManager}
+      />
     </>
   );
 }

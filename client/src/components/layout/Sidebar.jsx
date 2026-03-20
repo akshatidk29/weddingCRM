@@ -4,97 +4,80 @@ import {
   Users, 
   Heart, 
   CheckSquare, 
-  Store,
-  Wallet,
+  Briefcase,
+  TrendingUp,
   Settings,
-  ChevronLeft,
-  ChevronRight
+  HelpCircle,
+  Plus
 } from 'lucide-react';
-import { clsx } from 'clsx';
-import { useState } from 'react';
-import useAuthStore from '../../stores/authStore';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Leads', href: '/leads', icon: Users },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Weddings', href: '/weddings', icon: Heart },
+  { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-  { name: 'Vendors', href: '/vendors', icon: Store },
-  { name: 'Budget', href: '/budget', icon: Wallet },
+  { name: 'Vendors', href: '/vendors', icon: Briefcase },
+  { name: 'Budget', href: '/budget', icon: TrendingUp },
 ];
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
-  const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
   const location = useLocation();
 
   return (
-    <aside className={clsx(
-      'fixed left-0 top-0 h-screen bg-gray-900/50 backdrop-blur-xl border-r border-white/[0.06]',
-      'flex flex-col transition-all duration-300 z-40',
-      collapsed ? 'w-20' : 'w-64'
-    )}>
-      <div className="flex items-center justify-between h-16 px-4 border-b border-white/[0.06]">
-        {!collapsed && (
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-white text-lg">WedCRM</span>
-          </div>
-        )}
-        {collapsed && (
-          <div className="w-10 h-10 mx-auto rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-            <Heart className="w-5 h-5 text-white" />
-          </div>
-        )}
+    <aside className="hidden lg:flex flex-col w-60 bg-[#faf9f7] border-r border-stone-200/60 fixed left-0 top-14 h-[calc(100vh-56px)] z-30">
+      {/* Brand */}
+      <div className="px-5 pt-5 pb-3">
+        <h2 className="font-display text-lg text-stone-900 tracking-tight">Lagna</h2>
+        <p className="text-[9px] uppercase tracking-[0.18em] text-stone-400 font-medium mt-0.5">
+          Wedding CRM
+        </p>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      {/* Navigation */}
+      <nav className="flex-1 px-3 overflow-y-auto">
         {navigation.map((item) => {
           const isActive = location.pathname === item.href || 
-            (item.href !== '/' && location.pathname.startsWith(item.href));
+            (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
           
           return (
             <NavLink
               key={item.name}
               to={item.href}
-              className={clsx(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+              className={`flex items-center gap-3 px-3 py-2.5 mb-0.5 transition-all duration-200 rounded-lg ${
                 isActive 
-                  ? 'bg-purple-500/20 text-purple-400' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white',
-                collapsed && 'justify-center'
-              )}
+                  ? 'bg-white text-stone-900 font-medium shadow-sm' 
+                  : 'text-stone-500 hover:text-stone-900 hover:bg-white/50'
+              }`}
             >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span className="font-medium">{item.name}</span>}
+              <item.icon className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm">{item.name}</span>
             </NavLink>
           );
         })}
       </nav>
 
-      <div className="p-3 border-t border-white/[0.06]">
-        {isAdmin && (
-          <NavLink
-            to="/settings"
-            className={clsx(
-              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all',
-              collapsed && 'justify-center'
-            )}
-          >
-            <Settings className="w-5 h-5" />
-            {!collapsed && <span className="font-medium">Settings</span>}
-          </NavLink>
-        )}
-        
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-gray-500 hover:bg-white/5 hover:text-white transition-all"
+      {/* Bottom */}
+      <div className="px-3 pb-4 mt-auto space-y-2">
+        <NavLink
+          to="/leads"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-stone-900 text-[#faf9f7] rounded-lg text-sm font-medium hover:bg-stone-800 transition-colors"
         >
-          {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-          {!collapsed && <span className="text-sm">Collapse</span>}
-        </button>
+          <Plus className="w-4 h-4" />
+          New Lead
+        </NavLink>
+        <div className="pt-3 border-t border-stone-200/60 space-y-0.5">
+          <NavLink 
+            to="/profile" 
+            className="flex items-center gap-2 text-stone-400 text-xs hover:text-stone-900 transition-colors py-1.5 px-2 rounded"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Settings
+          </NavLink>
+          <button className="flex items-center gap-2 text-stone-400 text-xs hover:text-stone-900 transition-colors py-1.5 px-2 rounded w-full text-left">
+            <HelpCircle className="w-3.5 h-3.5" />
+            Help
+          </button>
+        </div>
       </div>
     </aside>
   );

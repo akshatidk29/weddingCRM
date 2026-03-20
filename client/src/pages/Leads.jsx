@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Plus, Search, LayoutGrid, List,
-  Phone, Mail, Calendar, X, ChevronRight, ArrowRight, Heart
+  Phone, Calendar, X, ChevronRight, Heart, TrendingUp, Users, BarChart3
 } from 'lucide-react';
 import {
   DndContext, closestCenter, KeyboardSensor,
@@ -18,15 +18,15 @@ import useLeadStore from '../stores/leadStore';
 /* ─────────────────────────────────────────
    SHARED PRIMITIVES
 ───────────────────────────────────────── */
-const inputCls = "w-full px-4 py-3 bg-white border border-stone-200/60 rounded-xl text-sm font-body text-stone-900 placeholder-stone-300 focus:outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400 transition-all duration-300";
-const labelCls = "block text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2 font-body";
+const inputCls = "w-full px-4 py-2.5 bg-white border border-stone-200/60 rounded-lg text-sm font-body text-stone-900 placeholder-stone-300 focus:outline-none focus:border-stone-400 transition-all";
+const labelCls = "block text-[10px] font-bold tracking-[0.18em] text-stone-400 uppercase mb-1.5 font-body";
 
 function Field({ label, hint, children }) {
   return (
     <div>
       {label && <label className={labelCls}>{label}</label>}
       {children}
-      {hint && <p className="text-xs text-stone-400 mt-1.5 font-body">{hint}</p>}
+      {hint && <p className="text-xs text-stone-400 mt-1 font-body">{hint}</p>}
     </div>
   );
 }
@@ -52,8 +52,6 @@ function TextareaInput({ ...props }) {
 ───────────────────────────────────────── */
 const stages = [
   { id: 'inquiry',     label: 'Inquiry' },
-  { id: 'proposal',    label: 'Proposal' },
-  { id: 'negotiation', label: 'Negotiation' },
   { id: 'booked',      label: 'Booked' },
 ];
 
@@ -86,13 +84,13 @@ function StagePill({ stage }) {
 function Modal({ isOpen, onClose, title, children }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-300">
-      <div className="absolute inset-0 bg-stone-900/20 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#faf9f7] rounded-t-2xl sm:rounded-2xl shadow-sm border border-stone-200/60 w-full sm:max-w-lg max-h-[92vh] overflow-hidden flex flex-col transition-all duration-300">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-stone-950/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#faf9f7] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-stone-200/60 flex-shrink-0">
-          <h2 className="font-display text-2xl font-medium tracking-tight text-stone-900">{title}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-stone-200/50 text-stone-400 hover:text-stone-900 transition-all duration-300">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 flex-shrink-0">
+          <h2 className="font-display text-lg font-medium text-stone-900">{title}</h2>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -213,13 +211,160 @@ function Sk({ className = '' }) {
   return <div className={`bg-stone-200/50 animate-pulse rounded-2xl ${className}`} />;
 }
 
+/* ─────────────────────────────────────────
+   DONUT CHART - Lead Sources
+───────────────────────────────────────── */
+function SourceDonutChart({ data }) {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  if (total === 0) return null;
+  
+  const colors = {
+    referral: '#44403c',       // stone-700
+    website: '#78716c',        // stone-500
+    social_media: '#a8a29e',   // stone-400
+    advertisement: '#d6d3d1',  // stone-300
+    walk_in: '#e7e5e4',        // stone-200
+    other: '#f5f5f4',          // stone-100
+  };
+  
+  let cumulative = 0;
+  const size = 120;
+  const strokeWidth = 24;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  
+  return (
+    <div className="flex items-center gap-6">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="-rotate-90">
+          {data.map((item, i) => {
+            const pct = item.value / total;
+            const offset = cumulative * circumference;
+            cumulative += pct;
+            return (
+              <circle
+                key={item.source}
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke={colors[item.source] || '#e7e5e4'}
+                strokeWidth={strokeWidth}
+                strokeDasharray={`${pct * circumference} ${circumference}`}
+                strokeDashoffset={-offset}
+                className="transition-all duration-500"
+              />
+            );
+          })}
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <p className="font-display text-2xl font-medium text-stone-900">{total}</p>
+            <p className="text-[9px] text-stone-400 uppercase tracking-wider">Total</p>
+          </div>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        {data.filter(d => d.value > 0).slice(0, 4).map(item => (
+          <div key={item.source} className="flex items-center gap-2 text-xs">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors[item.source] || '#e7e5e4' }} />
+            <span className="text-stone-600 capitalize">{item.label}</span>
+            <span className="text-stone-400 ml-auto">{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   FUNNEL CHART - Stage Distribution
+───────────────────────────────────────── */
+function StageFunnel({ pipeline }) {
+  const stageData = [
+    { id: 'inquiry', label: 'Inquiry', count: pipeline.inquiry?.length || 0, color: 'bg-stone-300' },
+    { id: 'proposal', label: 'Proposal', count: pipeline.proposal?.length || 0, color: 'bg-amber-700' },
+    { id: 'negotiation', label: 'Negotiation', count: pipeline.negotiation?.length || 0, color: 'bg-stone-700' },
+    { id: 'booked', label: 'Booked', count: pipeline.booked?.length || 0, color: 'bg-teal-700' },
+  ];
+  
+  const max = Math.max(...stageData.map(s => s.count), 1);
+  
+  return (
+    <div className="space-y-3">
+      {stageData.map((stage, idx) => {
+        const widthPct = Math.max((stage.count / max) * 100, 8);
+        return (
+          <div key={stage.id} className="flex items-center gap-3">
+            <div className="w-20 flex-shrink-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">{stage.label}</span>
+            </div>
+            <div className="flex-1 h-7 bg-stone-100 rounded-lg overflow-hidden relative">
+              <div 
+                className={`h-full ${stage.color} rounded-lg transition-all duration-500 flex items-center justify-end pr-2`}
+                style={{ width: `${widthPct}%` }}
+              >
+                {stage.count > 0 && (
+                  <span className="text-[10px] font-bold text-white">{stage.count}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   BAR CHART - Budget by Stage
+───────────────────────────────────────── */
+function BudgetByStageChart({ pipeline }) {
+  const stageData = [
+    { id: 'inquiry', label: 'Inquiry', budget: (pipeline.inquiry || []).reduce((s, l) => s + (l.estimatedBudget || 0), 0), color: 'bg-stone-300' },
+    { id: 'proposal', label: 'Proposal', budget: (pipeline.proposal || []).reduce((s, l) => s + (l.estimatedBudget || 0), 0), color: 'bg-amber-700' },
+    { id: 'negotiation', label: 'Negotiation', budget: (pipeline.negotiation || []).reduce((s, l) => s + (l.estimatedBudget || 0), 0), color: 'bg-stone-700' },
+    { id: 'booked', label: 'Booked', budget: (pipeline.booked || []).reduce((s, l) => s + (l.estimatedBudget || 0), 0), color: 'bg-teal-700' },
+  ];
+  
+  const max = Math.max(...stageData.map(s => s.budget), 1);
+  const total = stageData.reduce((s, d) => s + d.budget, 0);
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-baseline gap-2">
+        <span className="font-display text-2xl font-medium text-stone-900">{formatCurrency(total)}</span>
+        <span className="text-xs text-stone-400">pipeline value</span>
+      </div>
+      <div className="flex items-end gap-2 h-24">
+        {stageData.map((stage) => {
+          const heightPct = Math.max((stage.budget / max) * 100, 4);
+          return (
+            <div key={stage.id} className="flex-1 flex flex-col items-center gap-1">
+              <div className="w-full bg-stone-100 rounded-t-lg overflow-hidden flex items-end" style={{ height: '100%' }}>
+                <div 
+                  className={`w-full ${stage.color} rounded-t-lg transition-all duration-500`}
+                  style={{ height: `${heightPct}%` }}
+                />
+              </div>
+              <span className="text-[9px] text-stone-400 uppercase tracking-wider">{stage.label.slice(0, 3)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════ */
 export default function Leads() {
+  const user = useAuthStore((s) => s.user);
   const isManager = useAuthStore((s) => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
   const { pipeline: leads, leads: allLeads, users, loading, fetchLeads, createLead, updateLead, updateLeadStage, convertLead } = useLeadStore();
   const [view, setView]             = useState('table');
+  const [showAnalytics, setShowAnalytics] = useState(true);
   const [showModal, setShowModal]   = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [search, setSearch]         = useState('');
@@ -290,6 +435,20 @@ export default function Leads() {
   const pipelineTotal = Object.values(leads).flat().reduce((s, l) => s + (l.estimatedBudget || 0), 0);
   const bookedCount   = (leads.booked || []).length;
 
+  /* Source distribution for chart */
+  const sourceData = useMemo(() => {
+    const counts = {};
+    allLeads.forEach(l => {
+      const src = l.source || 'other';
+      counts[src] = (counts[src] || 0) + 1;
+    });
+    return leadSources.map(s => ({
+      source: s.value,
+      label: s.label,
+      value: counts[s.value] || 0
+    })).filter(d => d.value > 0);
+  }, [allLeads]);
+
   const sourceOpts = leadSources.map(s => ({ value: s.value, label: s.label }));
   const stageOpts  = stages.map(s => ({ value: s.id, label: s.label }));
   const userOpts   = users.map(u => ({ value: u._id, label: u.name }));
@@ -304,81 +463,122 @@ export default function Leads() {
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <div className="font-body min-h-screen bg-[#faf9f7] text-stone-900 selection:bg-stone-200">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-12">
+      <div className="font-body bg-[#faf9f7] text-stone-900 selection:bg-stone-200 min-h-[calc(100vh-56px)] pb-8">
+        <div className="px-5 sm:px-8 lg:px-10 py-8">
 
           {/* ── Page header ── */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12 border-b border-stone-200/60 pb-8">
+          <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 border-b border-stone-200/60 pb-6">
             <div>
-              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-3">Pipeline Overview</p>
-              <h1 className="font-display text-4xl sm:text-5xl font-medium text-stone-900">Inquiries</h1>
+              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Lead Management</p>
+              <h1 className="font-display text-3xl sm:text-4xl font-medium text-stone-900">Leads</h1>
+              <p className="text-stone-400 text-sm mt-2 italic">
+                {allLeads.length} total inquiries
+              </p>
             </div>
             {isManager && (
               <button
                 onClick={openCreate}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-stone-900 text-[#faf9f7] rounded-full text-sm font-medium hover:bg-stone-800 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md self-start sm:self-auto flex-shrink-0"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-[#faf9f7] rounded-lg text-sm font-medium hover:bg-stone-800 transition-all self-start sm:self-auto flex-shrink-0"
               >
-                <Plus className="h-4 w-4" /> Add Lead
+                <Plus className="h-4 w-4" /> New Lead
               </button>
             )}
-          </div>
+          </header>
 
           {loading ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{[...Array(4)].map((_,i)=><Sk key={i} className="h-28"/>)}</div>
-              <Sk className="h-16" />
-              <Sk className="h-[500px]" />
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{[...Array(4)].map((_,i)=><Sk key={i} className="h-24"/>)}</div>
+              <Sk className="h-40" />
+              <Sk className="h-[400px]" />
             </div>
           ) : (
             <>
-              {/* ── Pipeline summary strip ── */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+              {/* ── Stats Cards ── */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
-                  { label: 'Total Inquiries',    value: allLeads.length,            bar: 'bg-stone-300' },
-                  { label: 'Pipeline Value', value: formatCurrency(pipelineTotal),  bar: 'bg-amber-700' },
-                  { label: 'Booked Weddings',        value: bookedCount,            bar: 'bg-teal-700' },
-                  { label: 'Conversion Rate',    value: allLeads.length ? `${Math.round((bookedCount / allLeads.length) * 100)}%` : '0%', bar: 'bg-stone-900' },
-                ].map(m => (
-                  <div key={m.label} className="bg-white rounded-2xl p-6 border border-stone-200/60 shadow-sm transition-all duration-300 hover:-translate-y-0.5">
-                    <div className={`h-[1px] w-8 ${m.bar} mb-4`} />
-                    <p className="font-display text-3xl font-medium text-stone-900 leading-none">{m.value}</p>
-                    <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mt-3">{m.label}</p>
+                  { label: 'Total Leads', value: allLeads.length, bar: 'bg-stone-300', icon: Users },
+                  { label: 'Pipeline Value', value: formatCurrency(pipelineTotal), bar: 'bg-amber-700', icon: TrendingUp },
+                  { label: 'Booked', value: bookedCount, bar: 'bg-teal-700', icon: Heart },
+                  { label: 'Conversion', value: allLeads.length ? `${Math.round((bookedCount / allLeads.length) * 100)}%` : '0%', bar: 'bg-stone-900', icon: BarChart3 },
+                ].map(m => {
+                  const Icon = m.icon;
+                  return (
+                    <div key={m.label} className="group bg-white rounded-2xl p-5 border border-stone-200/60 shadow-sm transition-all duration-300 hover:-translate-y-0.5">
+                      <div className={`h-[1px] w-6 ${m.bar} mb-4 group-hover:w-10 transition-all duration-300`} />
+                      <p className="font-display text-2xl sm:text-3xl font-medium text-stone-900 leading-none">{m.value}</p>
+                      <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mt-3">{m.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── Analytics Section (collapsible on mobile) ── */}
+              <div className="mb-6">
+                <button 
+                  onClick={() => setShowAnalytics(!showAnalytics)}
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-stone-400 hover:text-stone-900 mb-4 lg:hidden"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  {showAnalytics ? 'Hide Analytics' : 'Show Analytics'}
+                </button>
+                
+                <div className={`grid grid-cols-1 lg:grid-cols-3 gap-4 ${showAnalytics ? 'block' : 'hidden lg:grid'}`}>
+                  {/* Lead Sources Chart */}
+                  <div className="bg-white rounded-2xl p-5 border border-stone-200/60 shadow-sm">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-4">Lead Sources</h3>
+                    {sourceData.length > 0 ? (
+                      <SourceDonutChart data={sourceData} />
+                    ) : (
+                      <p className="text-sm text-stone-400 italic text-center py-8">No data yet</p>
+                    )}
                   </div>
-                ))}
+
+                  {/* Stage Funnel */}
+                  <div className="bg-white rounded-2xl p-5 border border-stone-200/60 shadow-sm">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-4">Stage Funnel</h3>
+                    <StageFunnel pipeline={leads} />
+                  </div>
+
+                  {/* Budget by Stage */}
+                  <div className="bg-white rounded-2xl p-5 border border-stone-200/60 shadow-sm">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-4">Budget Distribution</h3>
+                    <BudgetByStageChart pipeline={leads} />
+                  </div>
+                </div>
               </div>
 
               {/* ── Filters + view toggle ── */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-8">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
                 {/* Search */}
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-300 pointer-events-none" />
                   <input
-                    type="text" placeholder="Search inquiries..."
+                    type="text" placeholder="Search leads..."
                     value={search} onChange={e => setSearch(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 text-sm rounded-full bg-white shadow-sm border border-stone-200/60 placeholder-stone-300 focus:outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400 transition-all duration-300"
+                    className="w-full pl-11 pr-4 py-2.5 text-sm rounded-lg bg-white shadow-sm border border-stone-200/60 placeholder-stone-300 focus:outline-none focus:border-stone-400 transition-all"
                   />
                 </div>
 
                 {/* Stage filter */}
                 <select
                   value={stageFilter} onChange={e => setStageFilter(e.target.value)}
-                  className="py-3 px-4 text-sm rounded-full bg-white shadow-sm border border-stone-200/60 text-stone-700 focus:outline-none focus:border-stone-400 appearance-none transition-all duration-300 w-full sm:w-48"
+                  className="py-2.5 px-4 text-sm rounded-lg bg-white shadow-sm border border-stone-200/60 text-stone-700 focus:outline-none focus:border-stone-400 appearance-none w-full sm:w-44"
                 >
                   <option value="">All Stages</option>
                   {stageOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
 
                 {/* View toggle */}
-                <div className="flex items-center gap-1 p-1 bg-white border border-stone-200/60 rounded-full self-start sm:self-auto flex-shrink-0 shadow-sm">
+                <div className="flex items-center gap-1 p-1 bg-white border border-stone-200/60 rounded-lg self-start sm:self-auto flex-shrink-0 shadow-sm">
                   <button
                     onClick={() => setView('table')}
-                    className={`p-2.5 rounded-full transition-all duration-300 ${view === 'table' ? 'bg-stone-900 text-[#faf9f7]' : 'text-stone-400 hover:text-stone-900'}`}
+                    className={`p-2 rounded-md transition-all ${view === 'table' ? 'bg-stone-900 text-[#faf9f7]' : 'text-stone-400 hover:text-stone-900'}`}
                   >
                     <List className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setView('pipeline')}
-                    className={`p-2.5 rounded-full transition-all duration-300 ${view === 'pipeline' ? 'bg-stone-900 text-[#faf9f7]' : 'text-stone-400 hover:text-stone-900'}`}
+                    className={`p-2 rounded-md transition-all ${view === 'pipeline' ? 'bg-stone-900 text-[#faf9f7]' : 'text-stone-400 hover:text-stone-900'}`}
                   >
                     <LayoutGrid className="h-4 w-4" />
                   </button>
@@ -394,11 +594,11 @@ export default function Leads() {
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-stone-100/60 bg-[#faf9f7]/50">
-                          {['Client Name', 'Contact Details', 'Target Date', 'Est. Budget', 'Stage', 'Origin', 'Planner', ''].map(h => (
-                            <th key={h} className={`text-left px-6 py-5 text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase whitespace-nowrap
-                              ${h === 'Target Date' ? 'hidden md:table-cell' : ''}
-                              ${h === 'Est. Budget' || h === 'Origin' ? 'hidden lg:table-cell' : ''}
-                              ${h === 'Planner' ? 'hidden md:table-cell' : ''}
+                          {['Name', 'Contact', 'Date', 'Budget', 'Stage', 'Source', 'Assigned', ''].map(h => (
+                            <th key={h} className={`text-left px-5 py-4 text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase whitespace-nowrap
+                              ${h === 'Date' ? 'hidden md:table-cell' : ''}
+                              ${h === 'Budget' || h === 'Source' ? 'hidden lg:table-cell' : ''}
+                              ${h === 'Assigned' ? 'hidden md:table-cell' : ''}
                             `}>{h}</th>
                           ))}
                         </tr>
@@ -408,69 +608,67 @@ export default function Leads() {
                           <tr
                             key={lead._id}
                             onClick={() => openEdit(lead)}
-                            className="cursor-pointer hover:bg-[#faf9f7] transition-all duration-300 group"
+                            className="cursor-pointer hover:bg-[#faf9f7] transition-all group"
                           >
                             {/* Name */}
-                            <td className="px-6 py-5">
-                              <div className="flex items-center gap-3">
-                                <span className="font-medium text-stone-900 text-sm flex items-center gap-2 group-hover:translate-x-1 transition-transform duration-300">
-                                  {lead.name}
-                                  {lead.isPriority && <Heart className="w-3.5 h-3.5 text-rose-800 fill-rose-800" />}
-                                </span>
-                              </div>
+                            <td className="px-5 py-4">
+                              <span className="font-medium text-stone-900 text-sm flex items-center gap-2">
+                                {lead.name}
+                                {lead.isPriority && <Heart className="w-3 h-3 text-amber-700 fill-amber-700" />}
+                              </span>
                             </td>
 
                             {/* Contact */}
-                            <td className="px-6 py-5">
-                              <div className="space-y-1">
+                            <td className="px-5 py-4">
+                              <div className="space-y-0.5">
                                 {lead.phone && <p className="text-sm text-stone-600">{lead.phone}</p>}
-                                {lead.email && <p className="text-xs text-stone-400 italic">{lead.email}</p>}
+                                {lead.email && <p className="text-xs text-stone-400 truncate max-w-[150px]">{lead.email}</p>}
                               </div>
                             </td>
 
                             {/* Wedding Date */}
-                            <td className="px-6 py-5 text-sm text-stone-600 hidden md:table-cell whitespace-nowrap">
+                            <td className="px-5 py-4 text-sm text-stone-600 hidden md:table-cell whitespace-nowrap">
                               {lead.weddingDate ? formatDate(lead.weddingDate) : <span className="text-stone-300">—</span>}
                             </td>
 
                             {/* Budget */}
-                            <td className="px-6 py-5 text-sm font-medium text-stone-900 hidden lg:table-cell whitespace-nowrap">
+                            <td className="px-5 py-4 text-sm font-medium text-stone-900 hidden lg:table-cell whitespace-nowrap">
                               {lead.estimatedBudget ? formatCurrency(lead.estimatedBudget) : <span className="text-stone-300">—</span>}
                             </td>
 
                             {/* Stage */}
-                            <td className="px-6 py-5">
+                            <td className="px-5 py-4">
                               <StagePill stage={lead.stage} />
                             </td>
 
                             {/* Source */}
-                            <td className="px-6 py-5 text-[10px] font-bold tracking-[0.2em] uppercase text-stone-400 hidden lg:table-cell">
+                            <td className="px-5 py-4 text-[10px] font-bold tracking-[0.15em] uppercase text-stone-400 hidden lg:table-cell">
                               {leadSources.find(s => s.value === lead.source)?.label || lead.source}
                             </td>
 
                             {/* Assigned */}
-                            <td className="px-6 py-5 hidden md:table-cell">
+                            <td className="px-5 py-4 hidden md:table-cell">
                               {lead.assignedTo ? (
                                 <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full border border-stone-200/60 bg-[#faf9f7] flex items-center justify-center flex-shrink-0">
+                                  <div className="w-6 h-6 rounded-full border border-stone-200/60 bg-stone-100 flex items-center justify-center flex-shrink-0">
                                     <span className="text-[10px] font-medium text-stone-600">
                                       {lead.assignedTo.name?.charAt(0)?.toUpperCase()}
                                     </span>
                                   </div>
-                                  <span className="text-xs text-stone-500">{lead.assignedTo.name}</span>
+                                  <span className="text-xs text-stone-500 truncate max-w-[80px]">{lead.assignedTo.name?.split(' ')[0]}</span>
                                 </div>
                               ) : <span className="text-stone-300 text-xs">—</span>}
                             </td>
 
                             {/* Arrow */}
-                            <td className="px-6 py-5 text-right">
+                            <td className="px-5 py-4 text-right">
                               <ChevronRight className="h-4 w-4 text-stone-300 group-hover:text-stone-900 transition-colors inline-block" />
                             </td>
                           </tr>
                         )) : (
                           <tr>
-                            <td colSpan={8} className="px-6 py-20 text-center">
-                              <p className="text-stone-400 italic text-sm">No inquiries found matching your criteria.</p>
+                            <td colSpan={8} className="px-5 py-16 text-center">
+                              <p className="text-stone-400 italic text-sm">No leads found</p>
                             </td>
                           </tr>
                         )}
@@ -485,7 +683,7 @@ export default function Leads() {
               ════════════════════════════════ */}
               {view === 'pipeline' && (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-5 px-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
+                  <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-5 px-5">
                     <SortableContext items={stages.map(s => s.id)}>
                       {stages.map(stage => (
                         <KanbanColumn
@@ -510,7 +708,7 @@ export default function Leads() {
       <Modal
         isOpen={showModal}
         onClose={closeModal}
-        title={selectedLead ? 'Edit Inquiry' : 'New Inquiry'}
+        title={selectedLead ? 'Edit Lead' : 'New Lead'}
       >
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-2 gap-5">
@@ -558,10 +756,10 @@ export default function Leads() {
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-2 gap-4">
             <Field label="Venue Preference">
               <TextInput
-                type="text" value={form.venue} placeholder="The Plaza Hotel"
+                type="text" value={form.venue} placeholder="Venue name"
                 onChange={e => setForm(f => ({ ...f, venue: e.target.value }))}
               />
             </Field>
@@ -574,7 +772,7 @@ export default function Leads() {
           </div>
 
           {isManager && (
-            <Field label="Assigned Planner">
+            <Field label="Assigned To">
               <SelectInput
                 value={form.assignedTo}
                 options={[{ value: '', label: 'Select team member' }, ...userOpts]}
@@ -583,28 +781,28 @@ export default function Leads() {
             </Field>
           )}
 
-          <Field label="Internal Notes">
+          <Field label="Notes">
             <TextareaInput
-              value={form.notes} placeholder="Aesthetic preferences, priorities, etc..." rows={3}
+              value={form.notes} placeholder="Additional notes..." rows={3}
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
             />
           </Field>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-stone-200/60 mt-4">
+          <div className="flex items-center justify-end gap-3 pt-5 border-t border-stone-200/60 mt-4">
             <button type="button" onClick={closeModal}
-              className="px-6 py-3 rounded-full text-sm font-medium text-stone-500 hover:text-stone-900 border border-stone-200/60 hover:border-stone-400 transition-all duration-300">
+              className="px-5 py-2.5 rounded-lg text-sm font-medium text-stone-500 hover:text-stone-900 border border-stone-200/60 hover:border-stone-400 transition-all">
               Cancel
             </button>
             {selectedLead && selectedLead.stage !== 'booked' && isManager && (
               <button type="button" onClick={handleConvert}
-                className="px-6 py-3 rounded-full text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 transition-all duration-300 border border-amber-200/60">
-                Book Wedding
+                className="px-5 py-2.5 rounded-lg text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 transition-all border border-teal-200/60">
+                Convert to Wedding
               </button>
             )}
             <button type="submit"
-              className="px-8 py-3 rounded-full text-sm font-medium bg-stone-900 text-[#faf9f7] hover:bg-stone-800 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
-              {selectedLead ? 'Save Changes' : 'Create Inquiry'}
+              className="px-6 py-2.5 rounded-lg text-sm font-medium bg-stone-900 text-[#faf9f7] hover:bg-stone-800 transition-all">
+              {selectedLead ? 'Save' : 'Create Lead'}
             </button>
           </div>
         </form>
