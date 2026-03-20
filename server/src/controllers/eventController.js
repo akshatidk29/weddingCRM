@@ -272,3 +272,69 @@ export const getClientEvents = async (req, res) => {
     res.status(500).json({ message: 'Failed to load event information.' });
   }
 };
+
+// @desc    Link Hotel to an Event, adjusting budget or creating tasks automatically
+// @route   POST /api/events/:id/hotels
+export const addHotelToEvent = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const { hotel } = req.body;
+    if (!hotel || !hotel.title) {
+      return res.status(400).json({ message: 'Hotel details are required' });
+    }
+
+    // Attempt to string-parse numeric value out of priceForDisplay
+    // Expected formats e.g. "$95", "Rs. 10,000", "£120"
+    let numericPrice = 0;
+    if (hotel.priceForDisplay && typeof hotel.priceForDisplay === 'string') {
+      const cleanString = hotel.priceForDisplay.replace(/[^\d.]/g, ''); 
+      if (cleanString) {
+        numericPrice = parseFloat(cleanString);
+      }
+    }
+
+    const wedding = await Wedding.findById(event.wedding);
+    if (!wedding) {
+      return res.status(404).json({ message: 'Parent wedding not found' });
+    }
+
+    const rooms = hotel.roomsSelected || 1;
+    const totalHotelCost = numericPrice * rooms;
+    
+    // We add the hotel to the event array in both cases
+    event.hotels.push(hotel);
+    await event.save();
+
+    if (numericPrice > 0) {
+      // It has a price -> add to wedding budget directly
+      wedding.budget.estimated = (wedding.budget.estimated || 0) + totalHotelCost;
+      await wedding.save();
+    } else {
+      // It doesn't have a price -> convert into a task automatically
+      await Task.create({
+        title: `Find price for hotel: ${hotel.title}`,
+        description: `Contact ${hotel.title} to find the price for ${rooms} room(s) for the event '${event.name}'.`,
+        category: 'other',
+        priority: 'high',
+        status: 'pending',
+        wedding: wedding._id,
+        event: event._id,
+        createdBy: req.user._id
+      });
+      // also recalculate event status based on new task
+      await checkEventAutoComplete(event._id);
+    }
+
+    // Return the updated event
+    await event.populate('assignedTeam.user', 'name email avatar');
+    res.status(200).json({ event, message: numericPrice > 0 ? `Added ${totalHotelCost} to wedding budget` : 'Created task to find hotel price' });
+
+  } catch (error) {
+    console.error('Add Hotel to Event Error:', error);
+    res.status(500).json({ message: 'Failed to link hotel to event.' });
+  }
+};

@@ -3,11 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Plus, Clock, UserPlus, Edit, Check,
   ChevronDown, ChevronRight, Trash2, Phone, X, AlertCircle, Mail,
-  MapPin, Calendar, IndianRupee, Users, Heart
+  MapPin, Calendar, IndianRupee, Users, Heart, Building2, Star, FileText
 } from 'lucide-react';
 import { formatDate, formatCurrency, taskCategories, vendorCategories, daysUntil, isOverdue } from '../utils/helpers';
 import useAuthStore from '../stores/authStore';
 import api from '../utils/api';
+import DocumentsDrawer from '../components/shared/DocumentsDrawer';
 
 /* ─────────────────────────────────────────
    DESIGN TOKENS (matches Dashboard / Leads)
@@ -155,7 +156,7 @@ function TaskRow({ task, onStatusChange, onSelect, onEdit, isManager, isAdmin })
 /* ─────────────────────────────────────────
    TASK DETAIL DRAWER  (slides in from right)
 ───────────────────────────────────────── */
-function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUpdateVendorStatus, onDeleteSubtask, onDeleteVendor, onEdit, isManager, isAdmin }) {
+function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUpdateVendorStatus, onDeleteSubtask, onDeleteVendor, onEdit, isManager, isAdmin, onOpenDocs }) {
   const [visible, setVisible] = useState(false);
   const info = task ? getCompletionInfo(task) : {};
   const done = task && (task.status === 'done' || task.status === 'verified');
@@ -234,6 +235,10 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
                 Edit
               </button>
             )}
+            <button onClick={() => { onOpenDocs('task', task._id, task.title, task.documents); }}
+              className="px-4 py-2.5 border border-stone-200 text-stone-600 rounded-full text-[11px] font-semibold hover:bg-stone-50 transition-all">
+              Docs {task.documents?.length ? `(${task.documents.length})` : ''}
+            </button>
           </div>
 
           {/* Subtasks */}
@@ -300,7 +305,7 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
 /* ═══════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════ */
-export default function WeddingDetail() {
+export default function WeddingDetailWrapper() {
   const { id }      = useParams();
   const isManager   = useAuthStore(s => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
   const isAdmin     = useAuthStore(s => s.user?.role === 'admin');
@@ -326,6 +331,7 @@ export default function WeddingDetail() {
   const [selectedEventForTask, setSelectedEventForTask] = useState(null);
   const [selectedEventForTeam, setSelectedEventForTeam] = useState(null);
   const [selectedTask, setSelectedTask]                 = useState(null);
+  const [docsSettings, setDocsSettings]                 = useState({ isOpen: false, entityId: null, entityType: null, title: '' });
 
   const emptyTask  = { title: '', description: '', category: 'other', priority: 'medium', assignedTo: '', dueDate: '', notes: '', event: '', subtasks: [], taskVendors: [] };
   const emptyEvent = { name: '', description: '', eventDate: '', endDate: '', venue: { name: '', address: '', city: '' }, notes: '' };
@@ -389,6 +395,11 @@ export default function WeddingDetail() {
   };
   const handleRemoveEventTeam = async (eventId, userId) => { try { await api.delete(`/events/${eventId}/team/${userId}`); loadWedding(); } catch {} };
 
+  const handleOpenDocs = (type, id, title) => {
+    setDocsSettings({ isOpen: true, entityId: id, entityType: type, title });
+  };
+  const handleDocsUpdate = () => { loadWedding(); };
+
   const handleTaskSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -396,6 +407,7 @@ export default function WeddingDetail() {
         ...taskForm,
         assignedTo: taskForm.assignedTo || undefined,
         dueDate: taskForm.dueDate || undefined,
+        event: taskForm.event || undefined,
         taskVendors: taskForm.taskVendors.map(v =>
           v.vendor && typeof v.vendor === 'object' && v.vendor._id ? { vendor: v.vendor._id, status: v.status || 'pending' } : v
         ),
@@ -608,6 +620,11 @@ export default function WeddingDetail() {
                             </div>
                             <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
                               <span className="text-[10px] text-stone-400 hidden sm:block">{evProg}%</span>
+                              <button onClick={(e) => { e.stopPropagation(); handleOpenDocs('event', ev._id, ev.name); }} 
+                                className="p-1 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-all opacity-0 group-hover:opacity-100"
+                                title="Documents">
+                                <FileText className="h-3.5 w-3.5" />
+                              </button>
                               {(isAdmin || isManager) && (
                                 <>
                                   <button onClick={() => openEditEvent(ev)} className="p-1 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-all opacity-0 group-hover:opacity-100"><Edit className="h-3.5 w-3.5" /></button>
@@ -708,6 +725,47 @@ export default function WeddingDetail() {
                                     </div>
                                   )}
                                 </div>
+
+                                {/* Event Hotels */}
+                                {ev.hotels && ev.hotels.length > 0 && (
+                                  <div className="mt-4 pt-4 border-t border-stone-200/60">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">Linked Hotels</p>
+                                    </div>
+                                    <div className="space-y-3">
+                                      {ev.hotels.map((h, i) => (
+                                        <div key={i} className="flex gap-3 bg-white p-2.5 rounded-xl border border-stone-200/60 shadow-sm">
+                                          <div className="w-12 h-12 rounded-lg bg-stone-100 overflow-hidden flex-shrink-0">
+                                            {h.photoUrl ? (
+                                              <img src={h.photoUrl} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center">
+                                                <Building2 className="w-5 h-5 text-stone-300" />
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="min-w-0 flex-1">
+                                            <p className="text-[13px] font-semibold text-stone-900 truncate">{h.title}</p>
+                                            <p className="text-[10px] text-stone-500 truncate">{h.secondaryInfo || `${h.roomsSelected} Room(s)`}</p>
+                                            <div className="flex items-center justify-between mt-1">
+                                              {h.rating && (
+                                                <div className="flex items-center gap-0.5">
+                                                  <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                                                  <span className="text-[10px] font-bold text-stone-600">{h.rating}</span>
+                                                </div>
+                                              )}
+                                              {h.externalUrl && (
+                                                <a href={h.externalUrl} target="_blank" rel="noreferrer" className="text-[10px] font-medium text-[#b07d46] hover:underline">
+                                                  Details
+                                                </a>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
@@ -1269,6 +1327,20 @@ export default function WeddingDetail() {
         onEdit={openEditTask}
         isManager={isManager}
         isAdmin={isAdmin}
+        onOpenDocs={handleOpenDocs}
+      />
+      <DocumentsDrawer
+        isOpen={docsSettings.isOpen}
+        onClose={() => setDocsSettings(s => ({ ...s, isOpen: false }))}
+        entityId={docsSettings.entityId}
+        entityType={docsSettings.entityType}
+        title={docsSettings.title}
+        documents={[
+          ...tasks.filter(t => t._id === docsSettings.entityId).flatMap(t => t.documents || []),
+          ...events.filter(e => e._id === docsSettings.entityId).flatMap(e => e.documents || [])
+        ]}
+        onUpload={() => loadWedding()}
+        onDelete={() => loadWedding()}
       />
     </>
   );

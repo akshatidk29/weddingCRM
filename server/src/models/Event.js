@@ -35,6 +35,31 @@ const eventSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  documents: [{
+    name: String,
+    url: String,
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  hotels: [{
+    id: String,
+    title: String,
+    primaryInfo: String,
+    secondaryInfo: String,
+    rating: Number,
+    reviewCount: String,
+    priceForDisplay: String,
+    priceDetails: String,
+    photoUrl: String,
+    externalUrl: String,
+    roomsSelected: { type: Number, default: 1 }
+  }],
   notes: String,
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

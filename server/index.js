@@ -2,6 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import authRoutes from './src/routes/auth.js';
 import leadRoutes from './src/routes/leads.js';
@@ -11,6 +16,9 @@ import vendorRoutes from './src/routes/vendors.js';
 import dashboardRoutes from './src/routes/dashboard.js';
 import budgetRoutes from './src/routes/budget.js';
 import eventRoutes from './src/routes/events.js';
+import hotelRoutes from './src/routes/hotels.js';
+import uploadRoutes from './src/routes/upload.js';
+import templateRoutes from './src/routes/templates.js';
 import { errorHandler, notFound } from './src/middleware/errorHandler.js';
 import { startNotificationScheduler } from './src/utils/notificationScheduler.js';
 
@@ -41,6 +49,11 @@ app.use('/api/vendors', vendorRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/hotels', hotelRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/templates', templateRoutes);
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(notFound);
 app.use(errorHandler);

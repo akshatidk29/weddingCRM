@@ -14,6 +14,8 @@ import Tasks from './pages/Tasks';
 import Vendors from './pages/Vendors';
 import Budget from './pages/Budget';
 import Profile from './pages/Profile';
+import Hotels from './pages/Hotels';
+import Templates from './pages/Templates';
 import Footer from "./components/layout/Footer";
 import TopNav from "./components/layout/TopNav";
 
@@ -86,6 +88,8 @@ function App() {
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/budget" element={<Budget />} />
+          <Route path="/hotels" element={<Hotels />} />
+          <Route path="/templates" element={<Templates />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
 

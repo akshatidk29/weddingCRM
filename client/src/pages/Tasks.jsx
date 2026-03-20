@@ -7,6 +7,7 @@ import {
 import { formatDate, taskCategories, vendorCategories, isOverdue } from '../utils/helpers';
 import useAuthStore from '../stores/authStore';
 import useTaskStore from '../stores/taskStore';
+import DocumentsDrawer from '../components/shared/DocumentsDrawer';
 
 /* ─────────────────────────────────────────
    SHARED PRIMITIVES
@@ -116,7 +117,7 @@ const getVendorEmail = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.v
 /* ─────────────────────────────────────────
    TASK DETAIL DRAWER  (slides in from right)
 ───────────────────────────────────────── */
-function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUpdateVendorStatus, onEdit, isManager }) {
+function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUpdateVendorStatus, onEdit, isManager, onOpenDocs }) {
   const [visible, setVisible] = useState(false);
   const info = task ? getCompletionInfo(task) : {};
   const done = task && (task.status === 'done' || task.status === 'verified');
@@ -201,6 +202,10 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
                 Edit
               </button>
             )}
+            <button onClick={() => { onOpenDocs('task', task._id, task.title, task.documents); }}
+              className="px-4 py-2.5 border border-stone-200 text-stone-600 rounded-full text-[11px] font-semibold hover:bg-stone-50 transition-all">
+              Docs {task.documents?.length ? `(${task.documents.length})` : ''}
+            </button>
           </div>
 
           {/* Subtasks */}
@@ -273,6 +278,7 @@ export default function Tasks() {
   const [filterEvents, setFilterEvents] = useState([]);
   const [view, setView]         = useState('all');
   const [selectedTask, setSelectedTask] = useState(null);
+  const [docsSettings, setDocsSettings] = useState({ isOpen: false, entityId: null, entityType: null, title: '' });
 
   // Modal
   const [showModal, setShowModal]     = useState(false);
@@ -311,10 +317,14 @@ export default function Tasks() {
     await updateTaskVendorStatus(taskId, vendorId, status);
   };
 
+  const handleOpenDocs = (type, id, title) => {
+    setDocsSettings({ isOpen: true, entityId: id, entityType: type, title });
+  };
+  const handleDocsUpdate = () => { fetchTasks(); };
+
   const loadEventsForWedding = async (weddingId) => {
-    if (!weddingId) { setFormEvents([]); return; }
+    if (!weddingId) { return; }
     await fetchEventsForWedding(weddingId);
-    setFormEvents(events);
   };
 
   const handleFilterWedding = async (weddingId) => {
@@ -383,6 +393,7 @@ export default function Tasks() {
       ...form,
       assignedTo: form.assignedTo || undefined,
       dueDate: form.dueDate || undefined,
+      event: form.event || undefined,
       taskVendors: form.taskVendors.map(v =>
         v.vendor && typeof v.vendor === 'object' && v.vendor._id
           ? { vendor: v.vendor._id, status: v.status || 'pending' }
@@ -845,6 +856,17 @@ export default function Tasks() {
         onUpdateVendorStatus={handleVendorStatus}
         onEdit={openEdit}
         isManager={isManager}
+        onOpenDocs={handleOpenDocs}
+      />
+      <DocumentsDrawer 
+        isOpen={docsSettings.isOpen} 
+        onClose={() => setDocsSettings(s => ({ ...s, isOpen: false }))}
+        entityId={docsSettings.entityId}
+        entityType={docsSettings.entityType}
+        title={docsSettings.title}
+        documents={tasks.find(t => t._id === docsSettings.entityId)?.documents || []}
+        onUpload={handleDocsUpdate}
+        onDelete={handleDocsUpdate}
       />
     </>
   );
