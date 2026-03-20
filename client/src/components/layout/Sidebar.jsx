@@ -27,7 +27,7 @@ export function Sidebar() {
     <aside className="hidden lg:flex flex-col w-60 bg-[#faf9f7] border-r border-stone-200/60 fixed left-0 top-14 h-[calc(100vh-56px)] z-30">
       {/* Brand */}
       <div className="px-5 pt-5 pb-3">
-        <h2 className="font-display text-lg text-stone-900 tracking-tight">Lagna</h2>
+        <h2 className="font-display text-lg text-stone-900 tracking-tight">Aayojan</h2>
         <p className="text-[9px] uppercase tracking-[0.18em] text-stone-400 font-medium mt-0.5">
           Wedding CRM
         </p>

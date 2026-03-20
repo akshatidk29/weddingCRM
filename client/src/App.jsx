@@ -17,6 +17,10 @@ import Profile from './pages/Profile';
 import Footer from "./components/layout/Footer";
 import TopNav from "./components/layout/TopNav";
 
+
+import ChatBot from './components/chat/ChatBot';
+import { useWeddingPoller } from './hooks/useWeddingPoller';
+
 // Initialize auth state from localStorage on app mount
 function AuthInit() {
   const initialize = useAuthStore((s) => s.initialize);
@@ -45,6 +49,7 @@ function PublicRoute({ children }) {
 }
 
 function App() {
+  useWeddingPoller();
   return (
     <BrowserRouter>
       <AuthInit />
@@ -89,6 +94,7 @@ function App() {
         <Route path="*" element={<Navigate to="/landing" replace />} />
       </Routes>
       <Footer />
+      <ChatBot />
     </BrowserRouter>
   );
 }

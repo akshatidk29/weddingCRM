@@ -40,28 +40,84 @@ function FadeIn({ children, className = '', delay = 0, direction = 'up' }) {
 /* ─────────────────────────────────────────
    ANIMATED TITLE
 ───────────────────────────────────────── */
-function AnimatedLagna() {
-  const [count, setCount] = useState(0);
-  const word = 'Lagna';
+function AnimatedAayojan() {
+  const hindi = ['आ', 'यो', 'ज', 'न'];
+  const english = ['A', 'a', 'y', 'o', 'j', 'a', 'n'];
 
+  const [phase, setPhase] = useState('hindi-in');
+  const [hindiCount, setHindiCount] = useState(0);
+  const [hindiVisible, setHindiVisible] = useState(hindi.map(() => true));
+  const [englishCount, setEnglishCount] = useState(0);
+
+  // 1. Type Hindi in
   useEffect(() => {
-    if (count >= word.length) return;
-    const t = setTimeout(() => setCount(c => c + 1), 185);
+    if (phase !== 'hindi-in') return;
+    if (hindiCount >= hindi.length) {
+      const t = setTimeout(() => setPhase('hindi-out'), 900);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setHindiCount(c => c + 1), 185);
     return () => clearTimeout(t);
-  }, [count]);
+  }, [phase, hindiCount]);
+
+  // 2. Erase Hindi right to left
+  useEffect(() => {
+    if (phase !== 'hindi-out') return;
+    const next = hindiVisible.lastIndexOf(true);
+    if (next === -1) {
+      const t = setTimeout(() => setPhase('english-in'), 300);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => {
+      setHindiVisible(v => v.map((val, i) => i === next ? false : val));
+    }, 160);
+    return () => clearTimeout(t);
+  }, [phase, hindiVisible]);
+
+  // 3. Type English in — then loop
+  useEffect(() => {
+    if (phase !== 'english-in') return;
+    if (englishCount < english.length) {
+      const t = setTimeout(() => setEnglishCount(c => c + 1), 185);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => {
+      setHindiCount(0);
+      setHindiVisible(hindi.map(() => true));
+      setEnglishCount(0);
+      setPhase('hindi-in');
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [phase, englishCount]);
+
+  const showHindi = phase === 'hindi-in' || phase === 'hindi-out';
+  const showEnglish = phase === 'english-in';
 
   return (
     <h1
-      className="font-display leading-[0.88] text-stone-900 mb-6"
-      style={{ fontSize: 'clamp(5rem, 15vw, 10rem)', fontWeight: 700 }}
+      className="font-display leading-[0.88] text-stone-900 mb-6 whitespace-nowrap"
+      style={{ fontSize: 'clamp(3rem, 10vw, 8rem)', fontWeight: 700, minHeight: '1.1em' }}
     >
-      {word.split('').map((char, i) => (
+      {showHindi && hindi.map((char, i) => (
         <span
-          key={i}
+          key={`h-${i}`}
           className="inline-block transition-all duration-500 ease-out"
           style={{
-            opacity: i < count ? 1 : 0,
-            transform: i < count ? 'translateY(0)' : 'translateY(50px)',
+            opacity: i < hindiCount && hindiVisible[i] ? 1 : 0,
+            transform: i < hindiCount && hindiVisible[i] ? 'translateY(0)' : 'translateY(50px)',
+          }}
+        >
+          {char}
+        </span>
+      ))}
+
+      {showEnglish && english.map((char, i) => (
+        <span
+          key={`e-${i}`}
+          className="inline-block transition-all duration-500 ease-out"
+          style={{
+            opacity: i < englishCount ? 1 : 0,
+            transform: i < englishCount ? 'translateY(0)' : 'translateY(50px)',
             transitionDelay: `${i * 55}ms`,
           }}
         >
@@ -71,7 +127,6 @@ function AnimatedLagna() {
     </h1>
   );
 }
-
 /* ─────────────────────────────────────────
    MAIN
 ───────────────────────────────────────── */
@@ -95,7 +150,7 @@ export default function Landing() {
     {
       tag: 'Wedding Planning',
       headline: 'Every detail, one place.',
-      body: 'From guest count to floral themes, Lagna keeps all wedding details beautifully organised. Assign tasks, set milestones, and deliver a flawless experience every time.',
+      body: 'From guest count to floral themes, Aayojan keeps all wedding details beautifully organised. Assign tasks, set milestones, and deliver a flawless experience every time.',
       img: 'img.png',
       imgAlt: 'Wedding detail view',
       flip: true,
@@ -132,7 +187,7 @@ export default function Landing() {
             {/* Left — text */}
             <div>
 
-              <AnimatedLagna />
+              <AnimatedAayojan />
 
               <div className={`transition-all duration-700 delay-820 ${heroLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
                 <p className="font-display italic text-xl sm:text-2xl text-stone-500 mb-4 leading-snug">
@@ -173,7 +228,7 @@ export default function Landing() {
                 <div className="relative flex items-center justify-center">
                   <img
                     src="img.png"
-                    alt="Lagna dashboard"
+                    alt="Aayojan dashboard"
                     /* 1. Changed object-cover to object-contain to prevent cropping.
                        2. Removed fixed aspect ratio to let the image's natural shape lead.
                        3. Removed the border and shadow from this specific wrapper to let the image 'float'.
@@ -339,69 +394,69 @@ export default function Landing() {
       {/* ══════════════════════
           EVERYTHING ELSE — coloured bars only, no emoji
       ══════════════════════ */}
-{/* ══════════════════════
+      {/* ══════════════════════
     EVERYTHING ELSE — Modernized Bento Grid
     ══════════════════════ */}
-<section className="py-24 sm:py-32 bg-stone-50/50">
-  <div className="max-w-7xl mx-auto px-6 lg:px-8">
-    
-    <FadeIn>
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
-        <div className="max-w-2xl">
-          <h2 className="font-display text-4xl sm:text-6xl font-bold text-stone-900 tracking-tight leading-none mb-6">
-            Everything else <br/> <span className="text-stone-400">you need</span>
-          </h2>
-          <p className="text-stone-500 text-lg">
-            Powerful tools designed to stay out of your way and let you focus on what matters.
-          </p>
-        </div>
-        <div className="hidden md:block h-px flex-1 bg-stone-200 mx-12 mb-4" />
-      </div>
-    </FadeIn>
+      <section className="py-24 sm:py-32 bg-stone-50/50">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[
-        { label: 'Calendar & Timeline', desc: 'Visual timelines for every wedding. Never double book, never miss a deadline.', bar: 'bg-rose-500' },
-        { label: 'Role Based Access', desc: 'Admins, managers, coordinators, everyone sees exactly what they need.', bar: 'bg-amber-500' },
-        { label: 'Analytics', desc: 'Track conversions, revenue, and team performance at a glance.', bar: 'bg-emerald-500' },
-        { label: 'Client Communication', desc: 'Log calls, emails, and notes. Every client conversation in one thread.', bar: 'bg-sky-500' },
-        { label: 'Custom Tags', desc: 'Organise leads and weddings your way with flexible tagging and filters.', bar: 'bg-violet-500' },
-        { label: 'Follow-up Reminders', desc: 'Automated reminders so no lead goes cold and no task is forgotten.', bar: 'bg-stone-900' },
-      ].map((item, i) => (
-        <FadeIn key={item.label} delay={i * 100}>
-          <div className="group relative bg-white border border-stone-200/60 p-8 rounded-3xl hover:shadow-[0_20px_50px_rgba(0,0,0,0.04)] hover:-translate-y-1 transition-all duration-500 h-full flex flex-col justify-between overflow-hidden">
-            
-            {/* Background Subtle Gradient Glow */}
-            <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 ${item.bar}`} />
-
-            <div>
-              {/* Feature Numbering (Sleek Modern Detail) */}
-              <span className="block text-[10px] font-bold tracking-[0.2em] text-stone-300 uppercase mb-8">
-                0{i + 1} // Feature
-              </span>
-              
-              <h4 className="text-xl font-bold text-stone-900 mb-3 tracking-tight">
-                {item.label}
-              </h4>
-              <p className="text-stone-500 text-sm leading-relaxed max-w-60">
-                {item.desc}
-              </p>
-            </div>
-
-            {/* The Animated Bar - Now sits at the bottom for a "foundation" look */}
-            <div className="mt-10">
-              <div className="w-full h-px bg-stone-100 relative overflow-hidden">
-                <div 
-                  className={`absolute inset-0 w-0 group-hover:w-full h-full ${item.bar} transition-all duration-700 ease-out`} 
-                />
+          <FadeIn>
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+              <div className="max-w-2xl">
+                <h2 className="font-display text-4xl sm:text-6xl font-bold text-stone-900 tracking-tight leading-none mb-6">
+                  Everything else <br /> <span className="text-stone-400">you need</span>
+                </h2>
+                <p className="text-stone-500 text-lg">
+                  Powerful tools designed to stay out of your way and let you focus on what matters.
+                </p>
               </div>
+              <div className="hidden md:block h-px flex-1 bg-stone-200 mx-12 mb-4" />
             </div>
+          </FadeIn>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { label: 'Calendar & Timeline', desc: 'Visual timelines for every wedding. Never double book, never miss a deadline.', bar: 'bg-rose-500' },
+              { label: 'Role Based Access', desc: 'Admins, managers, coordinators, everyone sees exactly what they need.', bar: 'bg-amber-500' },
+              { label: 'Analytics', desc: 'Track conversions, revenue, and team performance at a glance.', bar: 'bg-emerald-500' },
+              { label: 'Client Communication', desc: 'Log calls, emails, and notes. Every client conversation in one thread.', bar: 'bg-sky-500' },
+              { label: 'Custom Tags', desc: 'Organise leads and weddings your way with flexible tagging and filters.', bar: 'bg-violet-500' },
+              { label: 'Follow-up Reminders', desc: 'Automated reminders so no lead goes cold and no task is forgotten.', bar: 'bg-stone-900' },
+            ].map((item, i) => (
+              <FadeIn key={item.label} delay={i * 100}>
+                <div className="group relative bg-white border border-stone-200/60 p-8 rounded-3xl hover:shadow-[0_20px_50px_rgba(0,0,0,0.04)] hover:-translate-y-1 transition-all duration-500 h-full flex flex-col justify-between overflow-hidden">
+
+                  {/* Background Subtle Gradient Glow */}
+                  <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 ${item.bar}`} />
+
+                  <div>
+                    {/* Feature Numbering (Sleek Modern Detail) */}
+                    <span className="block text-[10px] font-bold tracking-[0.2em] text-stone-300 uppercase mb-8">
+                      0{i + 1} // Feature
+                    </span>
+
+                    <h4 className="text-xl font-bold text-stone-900 mb-3 tracking-tight">
+                      {item.label}
+                    </h4>
+                    <p className="text-stone-500 text-sm leading-relaxed max-w-60">
+                      {item.desc}
+                    </p>
+                  </div>
+
+                  {/* The Animated Bar - Now sits at the bottom for a "foundation" look */}
+                  <div className="mt-10">
+                    <div className="w-full h-px bg-stone-100 relative overflow-hidden">
+                      <div
+                        className={`absolute inset-0 w-0 group-hover:w-full h-full ${item.bar} transition-all duration-700 ease-out`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
           </div>
-        </FadeIn>
-      ))}
-    </div>
-  </div>
-</section>
+        </div>
+      </section>
 
       {/* ══════════════════════
           CTA
@@ -418,7 +473,7 @@ export default function Landing() {
               <span className="italic text-rose-400">next great wedding?</span>
             </h2>
             <p className="text-stone-500 text-base sm:text-lg mb-10 max-w-xl mx-auto leading-relaxed">
-              Join wedding planners across India who trust Lagna to run their business.
+              Join wedding planners across India who trust Aayojan to run their business.
               Start free.
             </p>
             <Link
