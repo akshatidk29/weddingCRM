@@ -8,16 +8,20 @@ import {
   TrendingUp,
   Settings,
   HelpCircle,
-  Plus
+  Plus,
+  Building2,
+  Layers
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Weddings', href: '/weddings', icon: Heart },
+  { name: 'Templates', href: '/templates', icon: Layers },
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Vendors', href: '/vendors', icon: Briefcase },
   { name: 'Budget', href: '/budget', icon: TrendingUp },
+  { name: 'Hotels', href: '/hotels', icon: Building2 },
 ];
 
 export function Sidebar() {

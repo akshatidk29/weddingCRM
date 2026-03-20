@@ -7,7 +7,8 @@ import {
   deleteEvent,
   addEventTeamMember,
   removeEventTeamMember,
-  getClientEvents
+  getClientEvents,
+  addHotelToEvent
 } from '../controllers/eventController.js';
 import { protect, isAdminOrManager } from '../middleware/auth.js';
 
@@ -30,5 +31,7 @@ router.post('/', isAdminOrManager, createEvent);
 
 router.post('/:id/team', isAdminOrManager, addEventTeamMember);
 router.delete('/:id/team/:userId', isAdminOrManager, removeEventTeamMember);
+
+router.post('/:id/hotels', isAdminOrManager, addHotelToEvent);
 
 export default router;

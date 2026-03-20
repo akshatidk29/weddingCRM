@@ -90,6 +90,18 @@ const taskSchema = new mongoose.Schema({
   notes: String,
   subtasks: [subtaskSchema],
   taskVendors: [taskVendorSchema],
+  documents: [{
+    name: String,
+    url: String,
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
