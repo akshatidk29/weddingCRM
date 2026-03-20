@@ -6,7 +6,11 @@ import { calculateProgress } from '../utils/helpers.js';
 export const getWeddings = async (req, res) => {
   try {
     const { status, search } = req.query;
-    const query = {};
+    
+    // Discard expired weddings (dates from yesterday and before)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const query = { weddingDate: { $gte: today } };
 
     if (status) query.status = status;
     if (search) {
@@ -56,6 +60,14 @@ export const getWedding = async (req, res) => {
 
     if (!wedding) {
       return res.status(404).json({ message: 'Wedding not found' });
+    }
+
+    if (req.user.role === 'team_member') {
+      const isAssigned = wedding.assignedTeam.some(t => {
+        const userId = t.user._id || t.user;
+        return userId.toString() === req.user._id.toString();
+      });
+      if (!isAssigned) return res.status(403).json({ message: 'Not authorized to view this wedding' });
     }
 
     const tasks = await Task.find({ wedding: wedding._id })

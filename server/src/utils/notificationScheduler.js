@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import nodemailer from 'nodemailer';
+import twilio from 'twilio';
 import Task from '../models/Task.js';
 import Notification from '../models/Notification.js';
 
@@ -27,10 +28,9 @@ const createTwilioClient = () => {
     return null;
   }
   try {
-    const twilio = require('twilio');
     return twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
   } catch (e) {
-    console.log('📱 Twilio package not installed — SMS notifications disabled');
+    console.log('📱 Twilio initialization failed:', e.message);
     return null;
   }
 };
@@ -102,12 +102,13 @@ const checkAndNotifyVendors = async () => {
 
   try {
     const now = new Date();
-    const fiveHoursLater = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+    const fiveHoursLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-    // Find pending tasks with due date within next 5 hours that have pending vendors
+    // Find pending tasks with due date strictly before the threshold
+    // Using just $lte allows it to also catch overdue tasks that are still 'pending'
     const tasks = await Task.find({
       status: 'pending',
-      dueDate: { $gte: now, $lte: fiveHoursLater },
+      dueDate: { $lte: fiveHoursLater },
       'taskVendors.status': 'pending'
     })
       .populate('wedding', 'name clientName')
