@@ -16,6 +16,7 @@ import Budget from './pages/Budget';
 import Profile from './pages/Profile';
 import Hotels from './pages/Hotels';
 import Templates from './pages/Templates';
+import MoodBoard from './pages/MoodBoard';
 import Footer from "./components/layout/Footer";
 import TopNav from "./components/layout/TopNav";
 
@@ -85,6 +86,7 @@ function App() {
           <Route path="/budget" element={<Budget />} />
           <Route path="/hotels" element={<Hotels />} />
           <Route path="/templates" element={<Templates />} />
+          <Route path="/moodboard" element={<MoodBoard />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
 

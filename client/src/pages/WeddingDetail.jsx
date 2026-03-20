@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Plus, Clock, UserPlus, Edit, Check,
   ChevronDown, ChevronRight, Trash2, Phone, X, AlertCircle, Mail,
-  MapPin, Calendar, IndianRupee, Users, Heart, Building2, Star, FileText
+  MapPin, Calendar, IndianRupee, Users, Heart, Building2, Star, FileText, Palette, Image, Video
 } from 'lucide-react';
 import { formatDate, formatCurrency, taskCategories, vendorCategories, daysUntil, isOverdue } from '../utils/helpers';
 import useAuthStore from '../stores/authStore';
@@ -332,6 +332,8 @@ export default function WeddingDetailWrapper() {
   const [selectedEventForTeam, setSelectedEventForTeam] = useState(null);
   const [selectedTask, setSelectedTask]                 = useState(null);
   const [docsSettings, setDocsSettings]                 = useState({ isOpen: false, entityId: null, entityType: null, title: '' });
+  const [eventMoodItems, setEventMoodItems]             = useState({});
+  const [moodDetailItem, setMoodDetailItem]             = useState(null);
 
   const emptyTask  = { title: '', description: '', category: 'other', priority: 'medium', assignedTo: '', dueDate: '', notes: '', event: '', subtasks: [], taskVendors: [] };
   const emptyEvent = { name: '', description: '', eventDate: '', endDate: '', venue: { name: '', address: '', city: '' }, notes: '' };
@@ -366,6 +368,9 @@ export default function WeddingDetailWrapper() {
 
   const loadUsers   = async () => { try { const r = await api.get('/auth/users'); setUsers(r.data.users); } catch {} };
   const loadVendors = async () => { try { const r = await api.get('/vendors'); setVendors(r.data.vendors); } catch {} };
+  const loadEventMoodItems = async (eventId) => {
+    try { const r = await api.get(`/moodboard/event/${eventId}`); setEventMoodItems(prev => ({ ...prev, [eventId]: r.data.items })); } catch {}
+  };
 
   const handleTaskStatus    = async (taskId, status) => { try { await api.put(`/tasks/${taskId}/status`, { status }); loadWedding(); } catch {} };
   const handleToggleSubtask = async (taskId, subId)  => { try { await api.put(`/tasks/${taskId}/subtasks/${subId}`); loadWedding(); } catch {} };
@@ -609,7 +614,11 @@ export default function WeddingDetailWrapper() {
                         <div key={ev._id}>
                           <div
                             className="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-[#faf9f7] transition-colors group"
-                            onClick={() => setExpandedEvents(p => ({ ...p, [ev._id]: !p[ev._id] }))}
+                            onClick={() => {
+                              const toggled = !expandedEvents[ev._id];
+                              setExpandedEvents(p => ({ ...p, [ev._id]: toggled }));
+                              if (toggled && !eventMoodItems[ev._id]) loadEventMoodItems(ev._id);
+                            }}
                           >
                             <div className={`w-[2px] h-8 rounded-full flex-shrink-0 ${evProg === 100 ? 'bg-teal-700' : 'bg-stone-300'}`} />
                             <div className="flex-1 min-w-0">
@@ -763,6 +772,35 @@ export default function WeddingDetailWrapper() {
                                           </div>
                                         </div>
                                       ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Inspiration Items */}
+                                {eventMoodItems[ev._id] && eventMoodItems[ev._id].length > 0 && (
+                                  <div className="mt-4 pt-4 border-t border-stone-200/60 col-span-full">
+                                    <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Inspiration</p>
+                                    <div className="flex gap-2.5 overflow-x-auto pb-1">
+                                      {eventMoodItems[ev._id].map(mi => {
+                                        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+                                        const ROOT = API_URL.replace('/api', '');
+                                        return (
+                                          <div key={mi._id} onClick={() => setMoodDetailItem(mi)} className="flex-shrink-0 w-20 cursor-pointer group">
+                                            {mi.type === 'image' && mi.mediaUrl ? (
+                                              <div className="w-20 h-20 rounded-xl overflow-hidden border border-stone-200/60 shadow-sm group-hover:shadow-md transition-all">
+                                                <img src={`${ROOT}${mi.mediaUrl}`} alt={mi.title} className="w-full h-full object-cover" />
+                                              </div>
+                                            ) : mi.type === 'color' ? (
+                                              <div className="w-20 h-20 rounded-xl border border-stone-200/60 shadow-sm group-hover:shadow-md transition-all" style={{ backgroundColor: mi.colorHex }} />
+                                            ) : (
+                                              <div className="w-20 h-20 rounded-xl border border-stone-200/60 bg-purple-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+                                                <Video className="w-5 h-5 text-purple-300" />
+                                              </div>
+                                            )}
+                                            <p className="text-[10px] text-stone-500 mt-1 truncate text-center">{mi.title}</p>
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   </div>
                                 )}
@@ -1342,6 +1380,64 @@ export default function WeddingDetailWrapper() {
         onUpload={() => loadWedding()}
         onDelete={() => loadWedding()}
       />
+
+      {/* Mood Board Detail Modal */}
+      <Modal isOpen={!!moodDetailItem} onClose={() => setMoodDetailItem(null)} title={moodDetailItem?.title || 'Inspiration'}>
+        {moodDetailItem && (() => {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+          const ROOT = API_URL.replace('/api', '');
+          
+          return (
+            <div className="space-y-4">
+              {moodDetailItem.type === 'image' && moodDetailItem.mediaUrl && (
+                <img src={`${ROOT}${moodDetailItem.mediaUrl}`} alt={moodDetailItem.title} className="w-full rounded-xl border border-stone-200/60" />
+              )}
+              {moodDetailItem.type === 'video' && moodDetailItem.mediaUrl && (
+                <video controls className="w-full rounded-xl border border-stone-200/60">
+                  <source src={`${ROOT}${moodDetailItem.mediaUrl}`} />
+                </video>
+              )}
+              {moodDetailItem.type === 'color' && (
+                <div className="h-40 rounded-xl border border-stone-200/60" style={{ backgroundColor: moodDetailItem.colorHex }}>
+                  <div className="h-full flex items-end p-4">
+                    <span className="bg-white/90 backdrop-blur-sm text-sm font-bold tracking-wider font-mono text-stone-700 px-3 py-1.5 rounded-lg">{moodDetailItem.colorHex}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-stone-50/50 rounded-xl border border-stone-100 p-3">
+                  <p className="block text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2 font-body">Type</p>
+                  <div className="flex items-center gap-1.5">
+                    {moodDetailItem.type === 'image' && <Image className="w-3.5 h-3.5 text-sky-700" />}
+                    {moodDetailItem.type === 'video' && <Video className="w-3.5 h-3.5 text-purple-700" />}
+                    {moodDetailItem.type === 'color' && <Palette className="w-3.5 h-3.5 text-amber-700" />}
+                    <span className="text-sm text-stone-700 capitalize">{moodDetailItem.type}</span>
+                  </div>
+                </div>
+              </div>
+
+              {moodDetailItem.tags && moodDetailItem.tags.length > 0 && (
+                <div>
+                  <p className="block text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2 font-body">Tags</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {moodDetailItem.tags.map(tag => (
+                      <span key={tag} className="text-[10px] font-bold tracking-wider uppercase bg-stone-100 text-stone-500 px-2.5 py-1 rounded-full">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {moodDetailItem.notes && (
+                <div className="bg-stone-50/50 rounded-xl border border-stone-100 p-3">
+                  <p className="block text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2 font-body">Notes</p>
+                  <p className="text-sm text-stone-600 whitespace-pre-wrap">{moodDetailItem.notes}</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </Modal>
     </>
   );
 }

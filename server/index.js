@@ -19,6 +19,7 @@ import eventRoutes from './src/routes/events.js';
 import hotelRoutes from './src/routes/hotels.js';
 import uploadRoutes from './src/routes/upload.js';
 import templateRoutes from './src/routes/templates.js';
+import moodboardRoutes from './src/routes/moodboard.js';
 import { errorHandler, notFound } from './src/middleware/errorHandler.js';
 import { startNotificationScheduler } from './src/utils/notificationScheduler.js';
 
@@ -52,6 +53,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/hotels', hotelRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/moodboard', moodboardRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

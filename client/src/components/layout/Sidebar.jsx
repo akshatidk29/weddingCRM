@@ -10,13 +10,15 @@ import {
   HelpCircle,
   Plus,
   Building2,
-  Layers
+  Layers,
+  Palette
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Weddings', href: '/weddings', icon: Heart },
   { name: 'Templates', href: '/templates', icon: Layers },
+  { name: 'Mood Board', href: '/moodboard', icon: Palette },
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Vendors', href: '/vendors', icon: Briefcase },

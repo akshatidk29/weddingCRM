@@ -9,6 +9,7 @@ const navItems = [
   { to: '/leads',     label: 'Leads' },
   { to: '/weddings',  label: 'Weddings' },
   { to: '/templates', label: 'Templates' },
+  { to: '/moodboard', label: 'Mood Board' },
   { to: '/vendors',   label: 'Vendors' },
   { to: '/hotels',    label: 'Hotels' },
 ];

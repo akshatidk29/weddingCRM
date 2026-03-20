@@ -30,6 +30,10 @@ const fileFilter = (req, file, cb) => {
     'image/jpeg',
     'image/png',
     'image/jpg',
+    'image/gif',
+    'image/webp',
+    'video/mp4',
+    'video/webm',
     'text/plain',
     'text/csv'
   ];
