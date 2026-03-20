@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import useAuthStore from './stores/authStore';
 import { Layout } from './components/layout/Layout';
+import ToastContainer from './components/ui/Toast';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -15,9 +17,16 @@ import Profile from './pages/Profile';
 import Footer from "./components/layout/Footer";
 import TopNav from "./components/layout/TopNav";
 
+// Initialize auth state from localStorage on app mount
+function AuthInit() {
+  const initialize = useAuthStore((s) => s.initialize);
+  useEffect(() => { initialize(); }, [initialize]);
+  return null;
+}
 
 function PrivateRoute({ children }) {
-  const { user, loading } = useAuth();
+  const user = useAuthStore((s) => s.user);
+  const loading = useAuthStore((s) => s.loading);
 
   if (loading) return null;
   if (!user) return <Navigate to="/landing" replace />;
@@ -26,7 +35,8 @@ function PrivateRoute({ children }) {
 }
 
 function PublicRoute({ children }) {
-  const { user, loading } = useAuth();
+  const user = useAuthStore((s) => s.user);
+  const loading = useAuthStore((s) => s.loading);
 
   if (loading) return null;
   if (user) return <Navigate to="/dashboard" replace />;
@@ -36,50 +46,50 @@ function PublicRoute({ children }) {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <TopNav />
-        <Routes>
-          {/* Public routes */}
-          <Route path="/landing" element={
-            <PublicRoute>
-              <Landing />
-            </PublicRoute>
-          } />
-          <Route path="/login" element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          } />
-          <Route path="/register" element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          } />
+    <BrowserRouter>
+      <AuthInit />
+      <ToastContainer />
+      <TopNav />
+      <Routes>
+        {/* Public routes */}
+        <Route path="/landing" element={
+          <PublicRoute>
+            <Landing />
+          </PublicRoute>
+        } />
+        <Route path="/login" element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        } />
+        <Route path="/register" element={
+          <PublicRoute>
+            <Register />
+          </PublicRoute>
+        } />
 
-          {/* Protected routes */}
-          <Route element={
-            <PrivateRoute>
-              <Layout />
-            </PrivateRoute>
-          }>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/leads" element={<Leads />} />
-            <Route path="/weddings" element={<Weddings />} />
-            <Route path="/weddings/:id" element={<WeddingDetail />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/vendors" element={<Vendors />} />
-            <Route path="/budget" element={<Budget />} />
-            <Route path="/profile" element={<Profile />} />
-          </Route>
+        {/* Protected routes */}
+        <Route element={
+          <PrivateRoute>
+            <Layout />
+          </PrivateRoute>
+        }>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/leads" element={<Leads />} />
+          <Route path="/weddings" element={<Weddings />} />
+          <Route path="/weddings/:id" element={<WeddingDetail />} />
+          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/vendors" element={<Vendors />} />
+          <Route path="/budget" element={<Budget />} />
+          <Route path="/profile" element={<Profile />} />
+        </Route>
 
-          {/* Redirects */}
-          <Route path="/" element={<Navigate to="/landing" replace />} />
-          <Route path="*" element={<Navigate to="/landing" replace />} />
-        </Routes>
-        <Footer />
-      </BrowserRouter>
-    </AuthProvider>
+        {/* Redirects */}
+        <Route path="/" element={<Navigate to="/landing" replace />} />
+        <Route path="*" element={<Navigate to="/landing" replace />} />
+      </Routes>
+      <Footer />
+    </BrowserRouter>
   );
 }
 

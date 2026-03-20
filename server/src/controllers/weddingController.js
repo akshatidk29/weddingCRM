@@ -46,7 +46,7 @@ export const getWeddings = async (req, res) => {
 
     res.json({ weddings: weddingsWithProgress });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to load weddings' });
   }
 };
 
@@ -67,7 +67,7 @@ export const getWedding = async (req, res) => {
         const userId = t.user._id || t.user;
         return userId.toString() === req.user._id.toString();
       });
-      if (!isAssigned) return res.status(403).json({ message: 'Not authorized to view this wedding' });
+      if (!isAssigned) return res.status(403).json({ message: 'You are not assigned to this wedding' });
     }
 
     const tasks = await Task.find({ wedding: wedding._id })
@@ -117,12 +117,18 @@ export const getWedding = async (req, res) => {
       events: eventsWithStats
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to load wedding details' });
   }
 };
 
 export const createWedding = async (req, res) => {
   try {
+    const { name, clientName, weddingDate } = req.body;
+    
+    if (!name || !clientName || !weddingDate) {
+      return res.status(400).json({ message: 'Wedding name, client name, and date are required' });
+    }
+
     const wedding = await Wedding.create({
       ...req.body,
       createdBy: req.user._id
@@ -132,7 +138,11 @@ export const createWedding = async (req, res) => {
 
     res.status(201).json({ wedding });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ message: messages[0] || 'Validation failed' });
+    }
+    res.status(500).json({ message: 'Failed to create wedding' });
   }
 };
 
@@ -152,7 +162,11 @@ export const updateWedding = async (req, res) => {
 
     res.json({ wedding });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ message: messages[0] || 'Validation failed' });
+    }
+    res.status(500).json({ message: 'Failed to update wedding' });
   }
 };
 
@@ -167,15 +181,20 @@ export const deleteWedding = async (req, res) => {
     await Event.deleteMany({ wedding: req.params.id });
     await Task.deleteMany({ wedding: req.params.id });
 
-    res.json({ message: 'Wedding deleted' });
+    res.json({ message: 'Wedding deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to delete wedding' });
   }
 };
 
 export const addTeamMember = async (req, res) => {
   try {
     const { userId, role } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ message: 'Please select a team member' });
+    }
+
     const wedding = await Wedding.findById(req.params.id);
 
     if (!wedding) {
@@ -197,7 +216,7 @@ export const addTeamMember = async (req, res) => {
 
     res.json({ wedding });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to add team member' });
   }
 };
 
@@ -218,13 +237,18 @@ export const removeTeamMember = async (req, res) => {
 
     res.json({ wedding });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to remove team member' });
   }
 };
 
 export const addVendorToWedding = async (req, res) => {
   try {
     const { vendorId, category, amount, notes } = req.body;
+    
+    if (!vendorId) {
+      return res.status(400).json({ message: 'Please select a vendor' });
+    }
+
     const wedding = await Wedding.findById(req.params.id);
 
     if (!wedding) {
@@ -243,7 +267,7 @@ export const addVendorToWedding = async (req, res) => {
 
     res.json({ wedding });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to add vendor' });
   }
 };
 
@@ -263,7 +287,7 @@ export const removeVendorFromWedding = async (req, res) => {
 
     res.json({ wedding });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to remove vendor' });
   }
 };
 
@@ -282,6 +306,6 @@ export const getUpcomingWeddings = async (req, res) => {
 
     res.json({ weddings });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to load upcoming weddings' });
   }
 };

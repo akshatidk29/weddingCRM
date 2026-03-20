@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { User, Mail, Phone, Lock, Check, AlertCircle, ChevronRight, MapPin, Camera } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import useAuthStore from '../stores/authStore';
+import useToastStore from '../stores/toastStore';
 
 /* ── Role config ── */
 const roleConfig = {
@@ -47,24 +47,40 @@ function StatusBanner({ type, text }) {
 }
 
 export default function Profile() {
-  const { user } = useAuth();
+  const user = useAuthStore((s) => s.user);
+  const updateProfile = useAuthStore((s) => s.updateProfile);
+  const changePassword = useAuthStore((s) => s.changePassword);
+  const toast = useToastStore();
   const [activeTab, setActiveTab] = useState('info');
   const [profileForm, setProfileForm] = useState({ name: user?.name || '', phone: user?.phone || '', location: 'Mumbai, India' });
-  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState({ type: '', text: '' });
 
   const role = roleConfig[user?.role] || roleConfig.team_member;
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMsg({ type: '', text: '' });
     try {
-      await api.put('/auth/profile', profileForm);
-      setMsg({ type: 'success', text: 'Profile updated successfully.' });
-    } catch (err) {
-      setMsg({ type: 'error', text: 'Failed to update profile.' });
+      await updateProfile(profileForm);
+    } catch { /* handled by store/interceptor */ }
+    finally { setLoading(false); }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (passwordData.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setLoading(true);
+    try {
+      await changePassword(passwordData.currentPassword, passwordData.newPassword);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } finally { setLoading(false); }
   };
 
@@ -163,7 +179,6 @@ export default function Profile() {
                     <Field label="Email Address (Locked)" hint="Contact admin to change login email.">
                       <TextInput icon={Mail} value={user?.email} disabled />
                     </Field>
-                    <StatusBanner {...msg} />
 
                     <button type="submit" disabled={loading} className="w-fit px-10 py-4 bg-stone-900 text-white rounded-full font-bold hover:bg-stone-800 transition-all active:scale-95 disabled:opacity-50">
                       {loading ? 'Saving Changes...' : 'Save Settings'}
@@ -176,12 +191,37 @@ export default function Profile() {
                     <h3 className="text-2xl font-display font-bold text-stone-900">Security</h3>
                     <p className="text-stone-400 text-sm mt-1">Keep your account secure with a strong password.</p>
                   </div>
-                  {/* Password Form Logic here as per previous code... */}
-                  <form className="grid gap-6 max-w-md">
-                    <Field label="Current Password"><TextInput icon={Lock} type="password" /></Field>
-                    <Field label="New Password"><TextInput icon={Lock} type="password" /></Field>
-                    <Field label="Confirm New Password"><TextInput icon={Lock} type="password" /></Field>
-                    <button className="w-fit px-10 py-4 bg-stone-900 text-white rounded-full font-bold">Update Password</button>
+                  <form onSubmit={handlePasswordSubmit} className="grid gap-6 max-w-md">
+                    <Field label="Current Password">
+                      <TextInput 
+                        icon={Lock} 
+                        type="password" 
+                        value={passwordData.currentPassword}
+                        onChange={e => setPasswordData(d => ({ ...d, currentPassword: e.target.value }))}
+                        required
+                      />
+                    </Field>
+                    <Field label="New Password">
+                      <TextInput 
+                        icon={Lock} 
+                        type="password" 
+                        value={passwordData.newPassword}
+                        onChange={e => setPasswordData(d => ({ ...d, newPassword: e.target.value }))}
+                        required
+                      />
+                    </Field>
+                    <Field label="Confirm New Password">
+                      <TextInput 
+                        icon={Lock} 
+                        type="password" 
+                        value={passwordData.confirmPassword}
+                        onChange={e => setPasswordData(d => ({ ...d, confirmPassword: e.target.value }))}
+                        required
+                      />
+                    </Field>
+                    <button type="submit" disabled={loading} className="w-fit px-10 py-4 bg-stone-900 text-white rounded-full font-bold hover:bg-stone-800 transition-all active:scale-95 disabled:opacity-50">
+                      {loading ? 'Updating Password...' : 'Update Password'}
+                    </button>
                   </form>
                 </div>
               )}

@@ -4,12 +4,12 @@ import {
   Edit, Trash, ChevronDown, ChevronRight, X, Check
 } from 'lucide-react';
 import { vendorCategories } from '../utils/helpers';
-import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import useAuthStore from '../stores/authStore';
+import useVendorStore from '../stores/vendorStore';
 
 /* ─────────────────────────────────────────
    PRIMITIVES
-───────────────────────────────────────── */
+───────────────────────────────────────── */ 
 const inputCls = "w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-sm text-stone-900 placeholder-stone-300 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-900/5 transition-all";
 const labelCls = "block text-[10px] font-semibold tracking-[0.18em] text-stone-400 uppercase mb-2";
 
@@ -87,24 +87,18 @@ function Modal({ isOpen, onClose, title, children }) {
 ───────────────────────────────────────── */
 function VendorRow({ vendor, onEdit, onDelete, isManager }) {
   const [expanded, setExpanded] = useState(false);
-  const [tasks, setTasks]       = useState(null); // null = not loaded
-  const [events, setEvents]     = useState([]);
+  const { vendorTasks, vendorEvents, loadVendorDetails } = useVendorStore();
   const [loadingTasks, setLoadingTasks] = useState(false);
 
-  const m = categoryMeta[vendor.category] || categoryMeta.other;
+  const tasks = vendorTasks[vendor._id];
+  const events = vendorEvents[vendor._id] || [];
 
   const loadTasks = async () => {
-    if (tasks !== null) return;
+    if (tasks !== undefined) return;
     setLoadingTasks(true);
     try {
-      const [tr, er] = await Promise.all([
-        api.get(`/tasks/by-vendor/${vendor._id}`),
-        api.get(`/vendors/${vendor._id}/linked-events`),
-      ]);
-      setTasks(tr.data.tasks || []);
-      setEvents(er.data.events || []);
-    } catch { setTasks([]); }
-    finally { setLoadingTasks(false); }
+      await loadVendorDetails(vendor._id);
+    } finally { setLoadingTasks(false); }
   };
 
   const toggleExpand = () => {
@@ -278,9 +272,8 @@ function Sk({ className = '' }) {
    MAIN PAGE
 ═══════════════════════════════════════ */
 export default function Vendors() {
-  const { isManager }               = useAuth();
-  const [vendors, setVendors]       = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const isManager = useAuthStore((s) => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
+  const { vendors, loading, fetchVendors, createVendor, updateVendor, deleteVendor } = useVendorStore();
   const [showModal, setShowModal]   = useState(false);
   const [editingVendor, setEditingVendor] = useState(null);
   const [search, setSearch]         = useState('');
@@ -292,21 +285,13 @@ export default function Vendors() {
   };
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { loadVendors(); }, []);
-
-  const loadVendors = async () => {
-    try { const r = await api.get('/vendors'); setVendors(r.data.vendors); }
-    catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+  useEffect(() => { fetchVendors(); }, [fetchVendors]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      if (editingVendor) await api.put(`/vendors/${editingVendor._id}`, form);
-      else await api.post('/vendors', form);
-      loadVendors(); closeModal();
-    } catch (e) { console.error(e); }
+    if (editingVendor) await updateVendor(editingVendor._id, form);
+    else await createVendor(form);
+    closeModal();
   };
 
   const openEdit = (vendor) => {
@@ -323,7 +308,7 @@ export default function Vendors() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this vendor?')) return;
-    try { await api.delete(`/vendors/${id}`); loadVendors(); } catch {}
+    await deleteVendor(id);
   };
 
   const closeModal = () => { setShowModal(false); setEditingVendor(null); setForm(emptyForm); };

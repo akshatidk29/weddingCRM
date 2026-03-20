@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom';
 import { Instagram, Twitter, Facebook, Mail, ArrowRight } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import useAuthStore from '../../stores/authStore';
 
 export default function Footer() {
-  const { user } = useAuth();
+  const user = useAuthStore((s) => s.user);
   const currentYear = new Date().getFullYear();
 
   return (

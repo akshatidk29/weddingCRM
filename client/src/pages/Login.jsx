@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import useAuthStore from '../stores/authStore';
 
 function AnimatedLagna() {
   const [count, setCount] = useState(0);
@@ -34,7 +34,7 @@ export default function Login() {
   const [error, setError]               = useState('');
   const [loading, setLoading]           = useState(false);
   const [mounted, setMounted]           = useState(false);
-  const { login }                       = useAuth();
+  const login = useAuthStore((s) => s.login);
   const navigate                        = useNavigate();
 
   useEffect(() => { setMounted(true); }, []);

@@ -4,9 +4,9 @@ import {
   CheckSquare, Clock, AlertTriangle, ChevronDown, ChevronRight,
   Phone, Mail, AlertCircle, Plus, X
 } from 'lucide-react';
-import { formatDate, categoryColors, taskCategories, vendorCategories, isOverdue } from '../utils/helpers';
-import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { formatDate, taskCategories, vendorCategories, isOverdue } from '../utils/helpers';
+import useAuthStore from '../stores/authStore';
+import useTaskStore from '../stores/taskStore';
 
 /* ─────────────────────────────────────────
    SHARED PRIMITIVES
@@ -117,17 +117,17 @@ const getVendorEmail = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.v
    MAIN PAGE
 ═══════════════════════════════════════ */
 export default function Tasks() {
-  const { user, isManager } = useAuth();
-  const [tasks, setTasks]       = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const user = useAuthStore((s) => s.user);
+  const isManager = useAuthStore((s) => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
+  const { 
+    tasks, weddings, events, users, vendors, loading,
+    fetchTasks, fetchEventsForWedding, updateTaskStatus, toggleSubtask, 
+    updateTaskVendorStatus, createTask, updateTask
+  } = useTaskStore();
   const [filter, setFilter]     = useState({ status: '', category: '', wedding: '', event: '' });
-  const [weddings, setWeddings] = useState([]);
-  const [events, setEvents]     = useState([]);
   const [filterEvents, setFilterEvents] = useState([]);
   const [view, setView]         = useState('all');
   const [expanded, setExpanded] = useState({});
-  const [users, setUsers]       = useState([]);
-  const [vendors, setVendors]   = useState([]);
 
   // Modal
   const [showModal, setShowModal]     = useState(false);
@@ -143,26 +143,18 @@ export default function Tasks() {
   const emptyVendor = { name: '', phone: '', email: '', address: '', city: '', category: 'other', amount: '' };
   const [newVendor, setNewVendor]         = useState(emptyVendor);
 
-  useEffect(() => {
-    loadTasks(); loadWeddings(); loadUsers(); loadVendors();
-  }, []);
-
-  const loadTasks    = async () => { try { const r = await api.get('/tasks');        setTasks(r.data.tasks);    } catch {} finally { setLoading(false); } };
-  const loadWeddings = async () => { try { const r = await api.get('/weddings');     setWeddings(r.data.weddings); } catch {} };
-  const loadUsers    = async () => { try { const r = await api.get('/auth/users');   setUsers(r.data.users);    } catch {} };
-  const loadVendors  = async () => { try { const r = await api.get('/vendors');      setVendors(r.data.vendors); } catch {} };
+  useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
   const handleStatus = async (taskId, newStatus) => {
-    try { await api.put(`/tasks/${taskId}/status`, { status: newStatus }); loadTasks(); }
-    catch (e) { alert(e.response?.data?.message || 'Failed to update'); }
+    await updateTaskStatus(taskId, newStatus);
   };
 
   const handleToggleSubtask = async (taskId, subId) => {
-    try { await api.put(`/tasks/${taskId}/subtasks/${subId}`); loadTasks(); } catch {}
+    await toggleSubtask(taskId, subId);
   };
 
   const handleVendorStatus = async (taskId, vendorId, status) => {
-    try { await api.put(`/tasks/${taskId}/vendors/${vendorId}`, { status }); loadTasks(); } catch {}
+    await updateTaskVendorStatus(taskId, vendorId, status);
   };
 
   const toggleExpand = (e, id) => {
@@ -171,15 +163,16 @@ export default function Tasks() {
   }
 
   const loadEventsForWedding = async (weddingId) => {
-    if (!weddingId) { setEvents([]); return; }
-    try { const r = await api.get(`/events/wedding/${weddingId}`); setEvents(r.data.events || []); } catch { setEvents([]); }
+    if (!weddingId) { setFormEvents([]); return; }
+    await fetchEventsForWedding(weddingId);
+    setFormEvents(events);
   };
 
   const handleFilterWedding = async (weddingId) => {
     setFilter(f => ({ ...f, wedding: weddingId, event: '' }));
     if (weddingId) {
-      try { const r = await api.get(`/events/wedding/${weddingId}`); setFilterEvents(r.data.events || []); }
-      catch { setFilterEvents([]); }
+      await fetchEventsForWedding(weddingId);
+      setFilterEvents(events);
     } else setFilterEvents([]);
   };
 
@@ -238,21 +231,19 @@ export default function Tasks() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.wedding) { alert('Please select a wedding'); return; }
-    try {
-      const payload = {
-        ...form,
-        assignedTo: form.assignedTo || undefined,
-        dueDate: form.dueDate || undefined,
-        taskVendors: form.taskVendors.map(v =>
-          v.vendor && typeof v.vendor === 'object' && v.vendor._id
-            ? { vendor: v.vendor._id, status: v.status || 'pending' }
-            : v
-        )
-      };
-      if (editingTask) await api.put(`/tasks/${editingTask._id}`, payload);
-      else await api.post('/tasks', payload);
-      loadTasks(); loadVendors(); closeModal();
-    } catch (e) { console.error(e); }
+    const payload = {
+      ...form,
+      assignedTo: form.assignedTo || undefined,
+      dueDate: form.dueDate || undefined,
+      taskVendors: form.taskVendors.map(v =>
+        v.vendor && typeof v.vendor === 'object' && v.vendor._id
+          ? { vendor: v.vendor._id, status: v.status || 'pending' }
+          : v
+      )
+    };
+    if (editingTask) await updateTask(editingTask._id, payload);
+    else await createTask(payload);
+    closeModal();
   };
 
   const filteredTasks = tasks.filter(task => {

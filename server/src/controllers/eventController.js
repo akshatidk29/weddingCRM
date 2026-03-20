@@ -68,7 +68,8 @@ export const getEventsByWedding = async (req, res) => {
 
     res.json({ events: eventsWithStats });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get events by wedding error:', error);
+    res.status(500).json({ message: 'Failed to load events. Please try again.' });
   }
 };
 
@@ -94,7 +95,8 @@ export const getEvent = async (req, res) => {
 
     res.json({ event, tasks });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get event error:', error);
+    res.status(500).json({ message: 'Failed to load event details. Please try again.' });
   }
 };
 
@@ -102,7 +104,15 @@ export const getEvent = async (req, res) => {
 // @route   POST /api/events
 export const createEvent = async (req, res) => {
   try {
-    const { wedding: weddingId } = req.body;
+    const { wedding: weddingId, name, eventDate } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Event name is required' });
+    }
+
+    if (!eventDate) {
+      return res.status(400).json({ message: 'Event date is required' });
+    }
 
     // Verify the wedding exists
     const wedding = await Wedding.findById(weddingId);
@@ -119,7 +129,8 @@ export const createEvent = async (req, res) => {
 
     res.status(201).json({ event });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Create event error:', error);
+    res.status(500).json({ message: 'Failed to create event. Please try again.' });
   }
 };
 
@@ -140,7 +151,8 @@ export const updateEvent = async (req, res) => {
 
     res.json({ event });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Update event error:', error);
+    res.status(500).json({ message: 'Failed to update event. Please try again.' });
   }
 };
 
@@ -156,9 +168,10 @@ export const deleteEvent = async (req, res) => {
     // Cascade delete all tasks under this event
     await Task.deleteMany({ event: req.params.id });
 
-    res.json({ message: 'Event and its tasks deleted' });
+    res.json({ message: 'Event deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Delete event error:', error);
+    res.status(500).json({ message: 'Failed to delete event. Please try again.' });
   }
 };
 
@@ -167,6 +180,11 @@ export const deleteEvent = async (req, res) => {
 export const addEventTeamMember = async (req, res) => {
   try {
     const { userId, role } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ message: 'Team member is required' });
+    }
+    
     const event = await Event.findById(req.params.id);
 
     if (!event) {
@@ -188,7 +206,8 @@ export const addEventTeamMember = async (req, res) => {
 
     res.json({ event });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Add event team member error:', error);
+    res.status(500).json({ message: 'Failed to add team member. Please try again.' });
   }
 };
 
@@ -211,7 +230,8 @@ export const removeEventTeamMember = async (req, res) => {
 
     res.json({ event });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Remove event team member error:', error);
+    res.status(500).json({ message: 'Failed to remove team member. Please try again.' });
   }
 };
 
@@ -248,6 +268,7 @@ export const getClientEvents = async (req, res) => {
 
     res.json({ wedding, events: eventsWithStats });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get client events error:', error);
+    res.status(500).json({ message: 'Failed to load event information.' });
   }
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Edit, Calendar, ChevronDown } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import useAuthStore from '../stores/authStore';
+import useBudgetStore from '../stores/budgetStore';
 
 /* ─────────────────────────────────────────
    PRIMITIVES
@@ -109,39 +109,30 @@ function DonutChart({ paid, pending, size = 100 }) {
    MAIN PAGE
 ═══════════════════════════════════════ */
 export default function Budget() {
-  const { user }                        = useAuth();
-  const [allItems, setAllItems]         = useState([]);
-  const [weddingBudgets, setWeddingBudgets] = useState([]);
-  const [userRole, setUserRole]         = useState('');
-  const [loading, setLoading]           = useState(true);
+  const user = useAuthStore((s) => s.user);
+  const { allItems, weddingBudgets, loading, fetchBudget, updatePayment } = useBudgetStore();
+  const [userRole, setUserRole] = useState('');
 
   // Selected wedding
-  const [selectedId, setSelectedId]     = useState('');
+  const [selectedId, setSelectedId] = useState('');
 
   // Filters within selected wedding
   const [statusFilter, setStatusFilter] = useState('');
 
   // Payment modal
-  const [showModal, setShowModal]       = useState(false);
-  const [editingItem, setEditingItem]   = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [paidAmountData, setPaidAmountData] = useState('');
 
   const isTeamMember = userRole === 'team_member' || user?.role === 'team_member';
 
-  useEffect(() => { loadBudget(); }, []);
-
   const loadBudget = async () => {
-    try {
-      const r = await api.get('/budget');
-      const data = r.data.budget || r.data.data || [];
-      setAllItems(data);
-      setWeddingBudgets(r.data.weddingBudgets || []);
-      setUserRole(r.data.userRole || user?.role || '');
-      // Auto-select first wedding
-      if (r.data.weddingBudgets?.length) setSelectedId(r.data.weddingBudgets[0]._id);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    const data = await fetchBudget();
+    setUserRole(data?.userRole || user?.role || '');
+    if (data?.weddingBudgets?.length) setSelectedId(data.weddingBudgets[0]._id);
   };
+
+  useEffect(() => { loadBudget(); }, []);
 
   const openEdit = (item) => {
     setEditingItem(item);
@@ -152,13 +143,10 @@ export default function Budget() {
   const handleUpdatePayment = async (e) => {
     e.preventDefault();
     if (!editingItem) return;
-    try {
-      await api.put(`/tasks/${editingItem.taskId}/payment/${editingItem.type}/${editingItem._id}`, {
-        paidAmount: Number(paidAmountData)
-      });
-      setShowModal(false);
-      loadBudget();
-    } catch { alert('Failed to update payment'); }
+    await updatePayment(editingItem.taskId, editingItem.type, editingItem._id, {
+      paidAmount: Number(paidAmountData)
+    });
+    setShowModal(false);
   };
 
   /* ── Derived data for selected wedding ── */

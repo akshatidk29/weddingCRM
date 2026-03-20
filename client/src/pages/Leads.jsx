@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Plus, Search, LayoutGrid, List,
   Phone, Mail, Calendar, X, ChevronRight, ArrowRight, Heart
@@ -13,8 +12,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { formatDate, formatCurrency, leadSources } from '../utils/helpers';
-import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import useAuthStore from '../stores/authStore';
+import useLeadStore from '../stores/leadStore';
 
 /* ─────────────────────────────────────────
    SHARED PRIMITIVES
@@ -218,14 +217,11 @@ function Sk({ className = '' }) {
    MAIN PAGE
 ═══════════════════════════════════════ */
 export default function Leads() {
-  const { isManager } = useAuth();
-  const [leads, setLeads]           = useState({});
-  const [allLeads, setAllLeads]     = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const isManager = useAuthStore((s) => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
+  const { pipeline: leads, leads: allLeads, users, loading, fetchLeads, createLead, updateLead, updateLeadStage, convertLead } = useLeadStore();
   const [view, setView]             = useState('table');
   const [showModal, setShowModal]   = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [users, setUsers]           = useState([]);
   const [search, setSearch]         = useState('');
   const [stageFilter, setStageFilter] = useState('');
 
@@ -241,21 +237,7 @@ export default function Leads() {
     useSensor(KeyboardSensor)
   );
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    try {
-      const [pipe, all, usrs] = await Promise.all([
-        api.get('/leads/pipeline'),
-        api.get('/leads'),
-        api.get('/auth/users'),
-      ]);
-      setLeads(pipe.data.leads);
-      setAllLeads(all.data.leads);
-      setUsers(usrs.data.users);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+  useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
   const handleDragEnd = async ({ active, over }) => {
     if (!over || active.id === over.id) return;
@@ -264,10 +246,7 @@ export default function Leads() {
     const all = [...(leads.inquiry||[]),...(leads.proposal||[]),...(leads.negotiation||[]),...(leads.booked||[])];
     const lead = all.find(l => l._id === active.id);
     if (!lead || lead.stage === newStage) return;
-    const old = lead.stage;
-    setLeads(p => ({ ...p, [old]: p[old].filter(l => l._id !== active.id), [newStage]: [...(p[newStage]||[]), { ...lead, stage: newStage }] }));
-    try { await api.put(`/leads/${active.id}/stage`, { stage: newStage }); }
-    catch { setLeads(p => ({ ...p, [newStage]: p[newStage].filter(l => l._id !== active.id), [old]: [...(p[old]||[]), lead] })); }
+    await updateLeadStage(active.id, newStage);
   };
 
   const openCreate = () => { setSelectedLead(null); setForm(emptyForm); setShowModal(true); };
@@ -289,17 +268,15 @@ export default function Leads() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      if (selectedLead) await api.put(`/leads/${selectedLead._id}`, form);
-      else await api.post('/leads', form);
-      loadData(); closeModal();
-    } catch (e) { console.error(e); }
+    if (selectedLead) await updateLead(selectedLead._id, form);
+    else await createLead(form);
+    closeModal();
   };
 
   const handleConvert = async () => {
     if (!selectedLead) return;
-    try { await api.post(`/leads/${selectedLead._id}/convert`, { weddingDate: form.weddingDate }); loadData(); closeModal(); }
-    catch (e) { console.error(e); }
+    await convertLead(selectedLead._id, form.weddingDate);
+    closeModal();
   };
 
   const filtered = allLeads.filter(l => {

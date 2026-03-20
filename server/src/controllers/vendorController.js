@@ -39,7 +39,8 @@ export const getVendors = async (req, res) => {
 
     res.json({ vendors });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get vendors error:', error);
+    res.status(500).json({ message: 'Failed to load vendors. Please try again.' });
   }
 };
 
@@ -54,12 +55,19 @@ export const getVendor = async (req, res) => {
 
     res.json({ vendor });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get vendor error:', error);
+    res.status(500).json({ message: 'Failed to load vendor details. Please try again.' });
   }
 };
 
 export const createVendor = async (req, res) => {
   try {
+    const { name, category, contactPerson, email, phone } = req.body;
+    
+    if (!name || !category) {
+      return res.status(400).json({ message: 'Vendor name and category are required' });
+    }
+
     const vendor = await Vendor.create({
       ...req.body,
       createdBy: req.user._id
@@ -67,7 +75,11 @@ export const createVendor = async (req, res) => {
 
     res.status(201).json({ vendor });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Create vendor error:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'A vendor with this name already exists' });
+    }
+    res.status(500).json({ message: 'Failed to create vendor. Please try again.' });
   }
 };
 
@@ -99,7 +111,8 @@ export const updateVendor = async (req, res) => {
 
     res.json({ vendor });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Update vendor error:', error);
+    res.status(500).json({ message: 'Failed to update vendor. Please try again.' });
   }
 };
 
@@ -115,9 +128,10 @@ export const deleteVendor = async (req, res) => {
       return res.status(404).json({ message: 'Vendor not found' });
     }
 
-    res.json({ message: 'Vendor deactivated' });
+    res.json({ message: 'Vendor deactivated successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Delete vendor error:', error);
+    res.status(500).json({ message: 'Failed to delete vendor. Please try again.' });
   }
 };
 
@@ -133,7 +147,8 @@ export const getVendorsByCategory = async (req, res) => {
 
     res.json({ vendors: byCategory });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get vendors by category error:', error);
+    res.status(500).json({ message: 'Failed to load vendors. Please try again.' });
   }
 };
 
@@ -164,6 +179,7 @@ export const getVendorLinkedEvents = async (req, res) => {
       weddings: Object.values(weddingsMap)
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get vendor linked events error:', error);
+    res.status(500).json({ message: 'Failed to load vendor events. Please try again.' });
   }
 };

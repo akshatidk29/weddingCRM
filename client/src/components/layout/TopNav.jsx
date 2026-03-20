@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { LogOut, User, ChevronDown, Menu, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import useAuthStore from '../../stores/authStore';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -47,7 +47,8 @@ function NavItem({ to, label, onClick }) {
 }
 
 export default function TopNav() {
-  const { user, logout }  = useAuth();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const navigate          = useNavigate();
   const [isMenuOpen, setIsMenuOpen]           = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);

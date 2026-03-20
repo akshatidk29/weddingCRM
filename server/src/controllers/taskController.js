@@ -52,7 +52,7 @@ export const getTasks = async (req, res) => {
 
     res.json({ tasks });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -73,7 +73,7 @@ export const getTask = async (req, res) => {
 
     res.json({ task });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -143,7 +143,7 @@ export const createTask = async (req, res) => {
 
     res.status(201).json({ task });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -161,7 +161,7 @@ export const createBulkTasks = async (req, res) => {
 
     res.status(201).json({ tasks: createdTasks });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -223,7 +223,7 @@ export const updateTask = async (req, res) => {
 
     res.json({ task });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -293,7 +293,7 @@ export const updateTaskStatus = async (req, res) => {
 
     res.json({ task });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -305,7 +305,7 @@ export const deleteTask = async (req, res) => {
     }
     res.json({ message: 'Task deleted' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -334,7 +334,7 @@ export const getTasksByWedding = async (req, res) => {
 
     res.json({ tasks, byCategory, stats });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -350,7 +350,7 @@ export const getMyTasks = async (req, res) => {
 
     res.json({ tasks });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -367,7 +367,7 @@ export const getOverdueTasks = async (req, res) => {
 
     res.json({ tasks });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -388,7 +388,7 @@ export const addSubtask = async (req, res) => {
 
     res.status(201).json({ task });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -421,7 +421,7 @@ export const toggleSubtask = async (req, res) => {
 
     res.json({ task });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -438,7 +438,7 @@ export const deleteSubtask = async (req, res) => {
 
     res.json({ task });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -500,7 +500,7 @@ export const addTaskVendor = async (req, res) => {
 
     res.status(201).json({ task });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -534,7 +534,7 @@ export const updateTaskVendorStatus = async (req, res) => {
 
     res.json({ task });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -551,7 +551,7 @@ export const deleteTaskVendor = async (req, res) => {
 
     res.json({ task });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -569,7 +569,7 @@ export const getTasksByVendorId = async (req, res) => {
 
     res.json({ tasks });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -600,7 +600,7 @@ export const toggleVendorAcrossTasks = async (req, res) => {
 
     res.json({ tasks: updatedTasks });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 
@@ -642,7 +642,7 @@ export const updatePayment = async (req, res) => {
 
     res.json({ task });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Operation failed. Please try again.' });
   }
 };
 

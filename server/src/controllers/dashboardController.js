@@ -75,7 +75,8 @@ export const getDashboardStats = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get dashboard stats error:', error);
+    res.status(500).json({ message: 'Failed to load dashboard. Please try again.' });
   }
 };
 
@@ -106,7 +107,8 @@ export const getRecentActivity = async (req, res) => {
       upcomingTasks
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get recent activity error:', error);
+    res.status(500).json({ message: 'Failed to load recent activity.' });
   }
 };
 
@@ -153,7 +155,8 @@ export const getMonthlyStats = async (req, res) => {
       conversionsPerMonth
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get monthly stats error:', error);
+    res.status(500).json({ message: 'Failed to load statistics.' });
   }
 };
 
@@ -170,16 +173,18 @@ export const getNotifications = async (req, res) => {
 
     res.json({ notifications, unreadCount });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Get notifications error:', error);
+    res.status(500).json({ message: 'Failed to load notifications.' });
   }
 };
 
 export const markNotificationRead = async (req, res) => {
   try {
     await Notification.findByIdAndUpdate(req.params.id, { read: true });
-    res.json({ message: 'Marked as read' });
+    res.json({ message: 'Notification marked as read' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Mark notification read error:', error);
+    res.status(500).json({ message: 'Failed to update notification.' });
   }
 };
 
@@ -189,8 +194,9 @@ export const markAllNotificationsRead = async (req, res) => {
       { user: req.user._id, read: false },
       { read: true }
     );
-    res.json({ message: 'All marked as read' });
+    res.json({ message: 'All notifications marked as read' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Mark all notifications read error:', error);
+    res.status(500).json({ message: 'Failed to update notifications.' });
   }
 };

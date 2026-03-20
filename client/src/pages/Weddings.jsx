@@ -5,8 +5,8 @@ import {
   ChevronRight, X, ArrowRight
 } from 'lucide-react';
 import { formatDate, formatCurrency, daysUntil } from '../utils/helpers';
-import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import useAuthStore from '../stores/authStore';
+import useWeddingStore from '../stores/weddingStore';
 
 /* ─────────────────────────────────────────
    SHARED PRIMITIVES
@@ -88,13 +88,11 @@ function Sk({ className = '' }) {
    MAIN PAGE
 ═══════════════════════════════════════ */
 export default function Weddings() {
-  const { isManager }               = useAuth();
-  const navigate                    = useNavigate();
-  const [weddings, setWeddings]     = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const isManager = useAuthStore((s) => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
+  const navigate = useNavigate();
+  const { weddings, users, loading, fetchWeddings, createWedding, updateWedding } = useWeddingStore();
   const [showModal, setShowModal]   = useState(false);
   const [editingWedding, setEditingWedding] = useState(null);
-  const [users, setUsers]           = useState([]);
   const [filter, setFilter]         = useState('all');
   const [search, setSearch]         = useState('');
 
@@ -107,44 +105,18 @@ export default function Weddings() {
   };
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    try {
-      const [wr, ur] = await Promise.all([api.get('/weddings'), api.get('/auth/users')]);
-      setWeddings(wr.data.weddings);
-      setUsers(ur.data.users);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+  useEffect(() => { fetchWeddings(); }, [fetchWeddings]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const payload = {
-        ...form,
-        budget: { estimated: Number(form.budget.estimated) || 0 },
-        guestCount: Number(form.guestCount) || 0,
-      };
-      if (editingWedding) await api.put(`/weddings/${editingWedding._id}`, payload);
-      else await api.post('/weddings', payload);
-      loadData(); closeModal();
-    } catch (e) { console.error(e); }
-  };
-
-  const openEdit = (wedding, e) => {
-    e?.preventDefault(); e?.stopPropagation();
-    setEditingWedding(wedding);
-    setForm({
-      name: wedding.name, clientName: wedding.clientName,
-      clientEmail: wedding.clientEmail || '', clientPhone: wedding.clientPhone || '',
-      weddingDate: wedding.weddingDate?.split('T')[0] || '',
-      endDate: wedding.endDate?.split('T')[0] || '',
-      venue: wedding.venue || { name: '', address: '', city: '' },
-      guestCount: wedding.guestCount || '', budget: { estimated: wedding.budget?.estimated || '' },
-      relationshipManager: wedding.relationshipManager?._id || '', notes: wedding.notes || ''
-    });
-    setShowModal(true);
+    const payload = {
+      ...form,
+      budget: { estimated: Number(form.budget.estimated) || 0 },
+      guestCount: Number(form.guestCount) || 0,
+    };
+    if (editingWedding) await updateWedding(editingWedding._id, payload);
+    else await createWedding(payload);
+    closeModal();
   };
 
   const closeModal = () => { setShowModal(false); setEditingWedding(null); setForm(emptyForm); };

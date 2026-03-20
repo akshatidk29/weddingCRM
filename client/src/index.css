@@ -6,6 +6,7 @@
   --animate-float: float 6s ease-in-out infinite;
   --animate-fade-in: fadeIn 200ms ease-out;
   --animate-slide-up: slideUp 200ms ease-out;
+  --animate-slide-in: slideIn 300ms ease-out;
 }
 
 @keyframes float {
@@ -30,5 +31,16 @@
   to { 
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }

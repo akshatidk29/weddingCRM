@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronRight, Trash2, Phone, X, AlertCircle, Mail
 } from 'lucide-react';
 import { formatDate, formatCurrency, taskCategories, vendorCategories, daysUntil, isOverdue } from '../utils/helpers';
-import { useAuth } from '../context/AuthContext';
+import useAuthStore from '../stores/authStore';
 import api from '../utils/api';
 
 /* ─────────────────────────────────────────
@@ -259,7 +259,8 @@ function TaskRow({ task, onStatusChange, onToggleSubtask, onUpdateVendorStatus, 
 ═══════════════════════════════════════ */
 export default function WeddingDetail() {
   const { id } = useParams();
-  const { user, isManager, isAdmin } = useAuth();
+  const isManager = useAuthStore((s) => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
+  const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
 
   const [wedding, setWedding]               = useState(null);
   const [tasks, setTasks]                   = useState([]);
@@ -316,19 +317,19 @@ export default function WeddingDetail() {
     finally { setLoading(false); }
   };
 
-  const loadUsers   = async () => { try { const r = await api.get('/auth/users'); setUsers(r.data.users); } catch {} };
-  const loadVendors = async () => { try { const r = await api.get('/vendors'); setVendors(r.data.vendors); } catch {} };
+  const loadUsers   = async () => { try { const r = await api.get('/auth/users'); setUsers(r.data.users); } catch { /* handled by interceptor */ } };
+  const loadVendors = async () => { try { const r = await api.get('/vendors'); setVendors(r.data.vendors); } catch { /* handled by interceptor */ } };
 
   /* Task ops */
-  const handleTaskStatus    = async (taskId, status) => { try { await api.put(`/tasks/${taskId}/status`, { status }); loadWedding(); } catch (e) { alert(e.response?.data?.message || 'Failed'); } };
-  const handleToggleSubtask = async (taskId, subId) => { try { await api.put(`/tasks/${taskId}/subtasks/${subId}`); loadWedding(); } catch {} };
-  const handleDeleteSubtask = async (taskId, subId) => { try { await api.delete(`/tasks/${taskId}/subtasks/${subId}`); loadWedding(); } catch {} };
-  const handleVendorStatus  = async (taskId, tvId, status) => { try { await api.put(`/tasks/${taskId}/vendors/${tvId}`, { status }); loadWedding(); } catch {} };
-  const handleDeleteVendor  = async (taskId, tvId) => { try { await api.delete(`/tasks/${taskId}/vendors/${tvId}`); loadWedding(); } catch {} };
+  const handleTaskStatus    = async (taskId, status) => { try { await api.put(`/tasks/${taskId}/status`, { status }); loadWedding(); } catch { /* handled by interceptor */ } };
+  const handleToggleSubtask = async (taskId, subId) => { try { await api.put(`/tasks/${taskId}/subtasks/${subId}`); loadWedding(); } catch { /* handled by interceptor */ } };
+  const handleDeleteSubtask = async (taskId, subId) => { try { await api.delete(`/tasks/${taskId}/subtasks/${subId}`); loadWedding(); } catch { /* handled by interceptor */ } };
+  const handleVendorStatus  = async (taskId, tvId, status) => { try { await api.put(`/tasks/${taskId}/vendors/${tvId}`, { status }); loadWedding(); } catch { /* handled by interceptor */ } };
+  const handleDeleteVendor  = async (taskId, tvId) => { try { await api.delete(`/tasks/${taskId}/vendors/${tvId}`); loadWedding(); } catch { /* handled by interceptor */ } };
 
   /* Team / Vendor ops */
-  const handleAddTeam   = async (e) => { e.preventDefault(); try { await api.post(`/weddings/${id}/team`, teamForm); loadWedding(); setShowTeamModal(false); setTeamForm({ userId: '', role: '' }); } catch {} };
-  const handleAddVendor = async (e) => { e.preventDefault(); try { await api.post(`/weddings/${id}/vendors`, vendorForm); loadWedding(); setShowVendorModal(false); setVendorForm({ vendorId: '', category: '', amount: '', notes: '' }); } catch {} };
+  const handleAddTeam   = async (e) => { e.preventDefault(); try { await api.post(`/weddings/${id}/team`, teamForm); loadWedding(); setShowTeamModal(false); setTeamForm({ userId: '', role: '' }); } catch { /* handled by interceptor */ } };
+  const handleAddVendor = async (e) => { e.preventDefault(); try { await api.post(`/weddings/${id}/vendors`, vendorForm); loadWedding(); setShowVendorModal(false); setVendorForm({ vendorId: '', category: '', amount: '', notes: '' }); } catch { /* handled by interceptor */ } };
 
   /* Event ops */
   const handleEventSubmit = async (e) => {
@@ -337,18 +338,18 @@ export default function WeddingDetail() {
       if (editingEvent) await api.put(`/events/${editingEvent._id}`, { ...eventForm, wedding: id });
       else await api.post('/events', { ...eventForm, wedding: id });
       loadWedding(); closeEventModal();
-    } catch {}
+    } catch { /* handled by interceptor */ }
   };
   const handleDeleteEvent = async (eventId) => {
     if (!confirm('Delete this event and all its tasks?')) return;
-    try { await api.delete(`/events/${eventId}`); loadWedding(); } catch {}
+    try { await api.delete(`/events/${eventId}`); loadWedding(); } catch { /* handled by interceptor */ }
   };
   const handleAddEventTeam = async (e) => {
     e.preventDefault();
     if (!selectedEventForTeam) return;
-    try { await api.post(`/events/${selectedEventForTeam}/team`, eventTeamForm); loadWedding(); setShowEventTeamModal(false); setEventTeamForm({ userId: '', role: '' }); setSelectedEventForTeam(null); } catch {}
+    try { await api.post(`/events/${selectedEventForTeam}/team`, eventTeamForm); loadWedding(); setShowEventTeamModal(false); setEventTeamForm({ userId: '', role: '' }); setSelectedEventForTeam(null); } catch { /* handled by interceptor */ }
   };
-  const handleRemoveEventTeam = async (eventId, userId) => { try { await api.delete(`/events/${eventId}/team/${userId}`); loadWedding(); } catch {} };
+  const handleRemoveEventTeam = async (eventId, userId) => { try { await api.delete(`/events/${eventId}/team/${userId}`); loadWedding(); } catch { /* handled by interceptor */ } };
 
   /* Task form ops */
   const handleTaskSubmit = async (e) => {
@@ -370,7 +371,7 @@ export default function WeddingDetail() {
         await api.post('/tasks', cp);
       }
       loadWedding(); loadVendors(); closeTaskModal();
-    } catch (e) { console.error(e); }
+    } catch { /* handled by interceptor */ }
   };
 
   const openEditTask = (task) => {

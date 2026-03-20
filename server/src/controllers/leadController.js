@@ -28,7 +28,7 @@ export const getLeads = async (req, res) => {
 
     res.json({ leads });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to load leads' });
   }
 };
 
@@ -45,12 +45,18 @@ export const getLead = async (req, res) => {
 
     res.json({ lead });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to load lead details' });
   }
 };
 
 export const createLead = async (req, res) => {
   try {
+    const { name, phone } = req.body;
+    
+    if (!name || !phone) {
+      return res.status(400).json({ message: 'Name and phone number are required' });
+    }
+
     const lead = await Lead.create({
       ...req.body,
       createdBy: req.user._id
@@ -70,7 +76,11 @@ export const createLead = async (req, res) => {
 
     res.status(201).json({ lead });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ message: messages[0] || 'Validation failed' });
+    }
+    res.status(500).json({ message: 'Failed to create lead' });
   }
 };
 
@@ -98,13 +108,22 @@ export const updateLead = async (req, res) => {
 
     res.json({ lead });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ message: messages[0] || 'Validation failed' });
+    }
+    res.status(500).json({ message: 'Failed to update lead' });
   }
 };
 
 export const updateLeadStage = async (req, res) => {
   try {
     const { stage } = req.body;
+    
+    if (!stage) {
+      return res.status(400).json({ message: 'Stage is required' });
+    }
+
     const lead = await Lead.findById(req.params.id);
 
     if (!lead) {
@@ -124,7 +143,7 @@ export const updateLeadStage = async (req, res) => {
 
     res.json({ lead });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to update lead stage' });
   }
 };
 
@@ -145,7 +164,7 @@ export const addActivity = async (req, res) => {
 
     res.json({ lead });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to add activity' });
   }
 };
 
@@ -157,7 +176,12 @@ export const convertToWedding = async (req, res) => {
     }
 
     if (lead.convertedToWedding) {
-      return res.status(400).json({ message: 'Lead already converted' });
+      return res.status(400).json({ message: 'This lead has already been converted to a wedding' });
+    }
+
+    const weddingDate = req.body.weddingDate || lead.weddingDate;
+    if (!weddingDate) {
+      return res.status(400).json({ message: 'Wedding date is required to convert lead' });
     }
 
     const wedding = await Wedding.create({
@@ -165,7 +189,7 @@ export const convertToWedding = async (req, res) => {
       clientName: lead.name,
       clientEmail: lead.email,
       clientPhone: lead.phone,
-      weddingDate: req.body.weddingDate || lead.weddingDate,
+      weddingDate: weddingDate,
       venue: { name: lead.venue },
       guestCount: lead.guestCount,
       budget: { estimated: lead.estimatedBudget },
@@ -185,7 +209,11 @@ export const convertToWedding = async (req, res) => {
 
     res.status(201).json({ wedding, lead });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ message: messages[0] || 'Validation failed' });
+    }
+    res.status(500).json({ message: 'Failed to convert lead to wedding' });
   }
 };
 
@@ -195,9 +223,9 @@ export const deleteLead = async (req, res) => {
     if (!lead) {
       return res.status(404).json({ message: 'Lead not found' });
     }
-    res.json({ message: 'Lead deleted' });
+    res.json({ message: 'Lead deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to delete lead' });
   }
 };
 
@@ -221,6 +249,6 @@ export const getLeadsByStage = async (req, res) => {
 
     res.json({ leads: grouped });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to load leads pipeline' });
   }
 };
