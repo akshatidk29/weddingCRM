@@ -1,207 +1,397 @@
-# Wedding CRM - End-to-End Operations Platform
+# 💍 Aayojan — Wedding CRM & Operations Platform
 
-A modern, full-stack CRM system designed for professional wedding planners to manage leads, weddings, tasks, vendors, and teams.
+> **The modern end-to-end CRM built for professional wedding planners.** Replace fragmented WhatsApp threads and Excel sheets with one beautifully crafted platform that manages your entire business — from first inquiry to final farewell.
 
-## Features
+---
 
-### Core Features
-- **Lead Pipeline**: Kanban-style drag-and-drop lead management with stages (Inquiry → Proposal → Negotiation → Booked)
-- **Wedding Management**: Comprehensive wedding dashboard with progress tracking, team assignment, and vendor management
-- **Task System**: Category-based task management with maker-checker workflow (F&B, Decor, Logistics, AV, etc.)
-- **Vendor Directory**: Complete vendor management with categories, ratings, and price ranges
-- **Dashboard Analytics**: Real-time statistics, charts, and activity feeds
+## 📸 Screenshots
 
-### Technical Features
-- JWT-based authentication with role-based access control
-- Three user roles: Admin, Relationship Manager, Team Member
-- Modern glassmorphic UI with dark theme
-- Responsive design (desktop-first)
-- RESTful API architecture
+### Dashboard
+<!-- Add your dashboard screenshot here -->
+![Dashboard](./screenshots/dashboard.png)
 
-## Project Structure
+### Weddings Overview
+<!-- Add your weddings page screenshot here -->
+![Weddings](./screenshots/weddings.png)
+
+---
+
+## 🎯 Objective
+
+Aayojan (Hindi: *आयोजन* — "to organize, to plan") is designed for Indian wedding planners who manage dozens of simultaneous events across multiple teams, vendors, and clients. The platform addresses three core pain points:
+
+1. **Scattered communication** — All leads, tasks, and vendor coordination live in one place instead of across WhatsApp groups and spreadsheets.
+2. **No visibility into progress** — Real-time progress tracking per wedding, per event, and per task with a maker-checker approval workflow.
+3. **Operational chaos** — Structured role-based access ensures team members see only what they need, managers can delegate effectively, and admins retain full oversight.
+
+---
+
+## ✨ Key Features
+
+| Feature | Description |
+|---|---|
+| **Lead Pipeline** | Kanban-style drag-and-drop board (Inquiry → Proposal → Negotiation → Booked) with analytics |
+| **Wedding Management** | Full wedding lifecycle with events, task checklists, vendor assignments, and a calendar |
+| **Task System** | Category-based tasks with subtasks, vendor linking, priority levels, and maker-checker verification |
+| **Budget Tracker** | Per-wedding financial overview with payment status (pending / partial / completed) |
+| **Vendor Directory** | Searchable vendor database with ratings, categories, and task linking |
+| **Mood Board** | Pinterest-style inspiration board with Pixabay image search integration |
+| **Wedding Templates** | One-click creation of full weddings (Destination, Local, Luxury, Intimate) with pre-built events and tasks |
+| **Hotel Search** | TripAdvisor-powered hotel search with direct event linking |
+| **AI Assistant** | Groq-powered chatbot with live context of your weddings, tasks, and leads |
+| **Notifications** | Real-time in-app notifications + automated vendor email/SMS reminders via Twilio & Nodemailer |
+| **Role-Based Access** | Admin, Relationship Manager, Team Member, and Client roles with granular permissions |
+| **Document Uploads** | Attach PDFs, images, and docs directly to tasks and events |
+
+---
+
+## 🛠 Tech Stack
+
+### Frontend
+| Technology | Purpose |
+|---|---|
+| **React 19** | UI framework with hooks-based architecture |
+| **Vite 8** | Ultra-fast dev server and build tool |
+| **TailwindCSS 4** | Utility-first CSS with a custom stone/warm color palette |
+| **Zustand** | Lightweight, scalable state management (replaces Redux) |
+| **React Router v7** | Client-side routing with protected and public routes |
+| **@dnd-kit** | Accessible drag-and-drop for the Kanban lead pipeline |
+| **Recharts** | Composable chart library for dashboard analytics |
+| **Axios** | HTTP client with JWT interceptors and centralized error handling |
+| **date-fns** | Lightweight date manipulation |
+| **Lucide React** | Consistent, customizable icon set |
+| **Groq SDK** | LLM inference for the AI chatbot (llama-3.1-8b-instant) |
+
+### Backend
+| Technology | Purpose |
+|---|---|
+| **Node.js + Express 4** | RESTful API server |
+| **MongoDB + Mongoose 8** | Document database with rich schema validation |
+| **JWT (jsonwebtoken)** | Stateless authentication with 7-day token expiry |
+| **bcryptjs** | Password hashing with 12 salt rounds |
+| **Multer** | Multipart file upload handling (docs, images, videos) |
+| **node-cron** | Scheduled vendor notification jobs (runs every 30 min) |
+| **Nodemailer** | SMTP-based email notifications to vendors |
+| **Twilio** | SMS alerts to vendors for upcoming task deadlines |
+
+---
+
+## 📁 Project Structure
 
 ```
-weddingCRM/
-├── client/                 # React frontend (Vite)
-│   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   │   ├── layout/     # Sidebar, Topbar, Layout
-│   │   │   └── ui/         # Button, Card, Modal, etc.
-│   │   ├── context/        # Auth context
-│   │   ├── pages/          # Page components
-│   │   ├── utils/          # API client, helpers
-│   │   └── App.jsx         # Main app with routing
-│   └── package.json
+aayojan/
+├── client/                         # React frontend (Vite)
+│   ├── public/                     # Static assets (logo, images)
+│   └── src/
+│       ├── components/
+│       │   ├── chat/               # AI chatbot + notification bell
+│       │   ├── layout/             # Sidebar, TopNav, Footer, PageContainer
+│       │   ├── shared/             # DocumentsDrawer
+│       │   └── ui/                 # Toast notifications, ErrorBoundary
+│       ├── hooks/                  # useWeddingPoller (AI nudge system)
+│       ├── pages/                  # All page-level components
+│       │   ├── Dashboard.jsx
+│       │   ├── Weddings.jsx
+│       │   ├── WeddingDetail.jsx
+│       │   ├── Leads.jsx
+│       │   ├── Tasks.jsx
+│       │   ├── Vendors.jsx
+│       │   ├── Budget.jsx
+│       │   ├── Hotels.jsx
+│       │   ├── Templates.jsx
+│       │   ├── MoodBoard.jsx
+│       │   ├── Profile.jsx
+│       │   ├── Login.jsx
+│       │   ├── Register.jsx
+│       │   └── Landing.jsx
+│       ├── stores/                 # Zustand state stores
+│       │   ├── authStore.js
+│       │   ├── weddingStore.js
+│       │   ├── leadStore.js
+│       │   ├── taskStore.js
+│       │   ├── vendorStore.js
+│       │   ├── budgetStore.js
+│       │   ├── dashboardStore.js
+│       │   ├── chatStore.js
+│       │   ├── notificationStore.js
+│       │   └── toastStore.js
+│       └── utils/
+│           ├── api.js              # Axios instance with interceptors
+│           ├── groq.js             # Groq LLM helper
+│           └── helpers.js          # Date, currency, category utils
 │
-└── server/                 # Node.js backend (Express)
-    ├── controllers/        # Route handlers
-    ├── middleware/         # Auth, error handling
-    ├── models/             # Mongoose schemas
-    ├── routes/             # API routes
-    ├── utils/              # Helper functions
-    └── index.js            # Server entry point
+└── server/                         # Node.js backend (Express)
+    ├── src/
+    │   ├── controllers/            # Route handlers (business logic)
+    │   ├── middleware/             # auth.js, errorHandler.js, upload.js
+    │   ├── models/                 # Mongoose schemas
+    │   │   ├── User.js
+    │   │   ├── Wedding.js
+    │   │   ├── Lead.js
+    │   │   ├── Task.js
+    │   │   ├── Vendor.js
+    │   │   ├── Event.js
+    │   │   ├── MoodBoard.js
+    │   │   └── Notification.js
+    │   ├── routes/                 # Express route definitions
+    │   ├── data/                   # Static template data
+    │   └── utils/
+    │       ├── helpers.js          # JWT generation, progress calculation
+    │       └── notificationScheduler.js  # Cron job for vendor reminders
+    └── index.js                    # Server entry point
 ```
 
-## Tech Stack
+---
 
-**Frontend:**
-- React 18 + Vite
-- TailwindCSS
-- React Router v6
-- @dnd-kit (drag-and-drop)
-- Recharts (charts)
-- Lucide React (icons)
-- Axios
+## 🚀 Getting Started
 
-**Backend:**
-- Node.js + Express
-- MongoDB + Mongoose
-- JWT (jsonwebtoken)
-- bcryptjs
+### Prerequisites
 
-## Prerequisites
+- **Node.js** v18 or higher
+- **MongoDB** (local instance or [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
+- **npm** v9 or higher
 
-- Node.js v18+
-- MongoDB (local or Atlas)
-- npm or yarn
+---
 
-## Getting Started
-
-### 1. Clone and Setup
+### 1. Clone the Repository
 
 ```bash
-cd weddingCRM
+git clone https://github.com/your-username/aayojan.git
+cd aayojan
 ```
 
-### 2. Setup Backend
+---
+
+### 2. Set Up the Backend
 
 ```bash
 cd server
 npm install
 ```
 
-Create `.env` file (or copy from `.env.example`):
+Create a `.env` file in the `server/` directory:
 
 ```env
+# Server
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/wedding-crm
-JWT_SECRET=your-secret-key-change-in-production
+NODE_ENV=development
+
+# Database
+MONGODB_URI=mongodb://localhost:27017/aayojan
+
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=7d
+
+# CORS — comma-separated list of allowed origins
+CLIENT_URL=http://localhost:5173
+
+# Email Notifications (optional — disables email if not set)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+
+# SMS Notifications via Twilio (optional — disables SMS if not set)
+TWILIO_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+TWILIO_PHONE=+1xxxxxxxxxx
+
+# Hotel Search — TripAdvisor via RapidAPI (optional)
+RAPIDAPI_KEY=your-rapidapi-key
+
+# Mood Board — Pixabay image search (optional)
+PIXABAY_API=your-pixabay-api-key
 ```
 
-Start MongoDB:
-```bash
-# If using local MongoDB
-mongod
+Start the backend server with hot-reload:
 
-# Or use MongoDB Atlas connection string in MONGODB_URI
-```
-
-Start the server:
 ```bash
 npm run dev
 ```
 
-### 3. Setup Frontend
+The API will be available at **http://localhost:5000/api**
 
-Open a new terminal:
+---
+
+### 3. Set Up the Frontend
+
+Open a new terminal tab:
 
 ```bash
 cd client
 npm install
+```
+
+Create a `.env` file in the `client/` directory:
+
+```env
+# Backend API URL
+VITE_API_URL=http://localhost:5000/api
+
+# Groq AI (for the chatbot assistant)
+VITE_GROQ_API_KEY=your-groq-api-key
+```
+
+> **Get a free Groq API key** at [console.groq.com](https://console.groq.com) — the chatbot uses `llama-3.1-8b-instant` for fast, free inference.
+
+Start the frontend dev server:
+
+```bash
 npm run dev
 ```
 
-### 4. Access the Application
+The app will be available at **http://localhost:5173**
 
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:5000/api
+---
 
-## User Roles
+### 4. Summary — Running Both Servers
 
-| Role | Permissions |
-|------|-------------|
-| **Admin** | Full access, user management, verify tasks |
-| **Relationship Manager** | Manage leads, weddings, tasks, vendors |
-| **Team Member** | View assigned items, update task status |
-
-## API Endpoints
-
-### Auth
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Get current user
-- `GET /api/auth/users` - List all users
-
-### Leads
-- `GET /api/leads` - List leads
-- `GET /api/leads/pipeline` - Get leads grouped by stage
-- `POST /api/leads` - Create lead
-- `PUT /api/leads/:id` - Update lead
-- `PUT /api/leads/:id/stage` - Update lead stage
-- `POST /api/leads/:id/convert` - Convert lead to wedding
-
-### Weddings
-- `GET /api/weddings` - List weddings
-- `GET /api/weddings/:id` - Get wedding details
-- `POST /api/weddings` - Create wedding
-- `PUT /api/weddings/:id` - Update wedding
-- `POST /api/weddings/:id/team` - Add team member
-- `POST /api/weddings/:id/vendors` - Add vendor
-
-### Tasks
-- `GET /api/tasks` - List tasks
-- `GET /api/tasks/wedding/:id` - Get tasks by wedding
-- `POST /api/tasks` - Create task
-- `PUT /api/tasks/:id/status` - Update task status
-
-### Vendors
-- `GET /api/vendors` - List vendors
-- `POST /api/vendors` - Create vendor
-- `PUT /api/vendors/:id` - Update vendor
-
-### Dashboard
-- `GET /api/dashboard/stats` - Get statistics
-- `GET /api/dashboard/activity` - Get recent activity
-- `GET /api/dashboard/notifications` - Get notifications
-
-## UI Features
-
-- Modern glassmorphic design
-- Dark theme optimized for long usage
-- Responsive layout
-- Smooth animations and transitions
-- Interactive Kanban board for leads
-- Progress indicators for weddings
-- Category-based task grouping
-
-## Default Test Credentials
-
-After registering your first user, they'll be assigned the role specified during registration. The first admin user can then manage other users' roles.
-
-## Development
-
-### Running in Development
-
-Backend (with auto-reload):
+**Terminal 1 (Backend):**
 ```bash
-cd server && npm run dev
+cd server
+npm run dev
 ```
 
-Frontend (with HMR):
+**Terminal 2 (Frontend):**
 ```bash
-cd client && npm run dev
+cd client
+npm run dev
 ```
 
-### Building for Production
+---
 
-```bash
-# Build frontend
-cd client && npm run build
+## 👤 User Roles & Permissions
 
-# The built files will be in client/dist
+| Permission | Admin | Relationship Manager | Team Member | Client |
+|---|:---:|:---:|:---:|:---:|
+| View Dashboard (global) | ✅ | ✅ | Personal only | Wedding only |
+| Manage Leads | ✅ | ✅ (assigned) | View only | ❌ |
+| Convert Lead → Wedding | ✅ | ✅ | ❌ | ❌ |
+| Create / Edit Weddings | ✅ | ✅ | ❌ | ❌ |
+| Create / Edit Tasks | ✅ | ✅ | ❌ | ❌ |
+| Mark Tasks Done | ✅ | ✅ | ✅ (assigned) | ✅ |
+| Verify Tasks | ✅ | ✅ | ❌ | ❌ |
+| Manage Vendors | ✅ | ✅ | View only | ❌ |
+| Manage Users | ✅ | ❌ | ❌ | ❌ |
+| View Mood Board | ✅ | ✅ | ✅ | ✅ |
+| Upload Documents | ✅ | ✅ | ❌ | ✅ |
+
+---
+
+## 🗺 API Overview
+
+```
+POST   /api/auth/register          Register a new user
+POST   /api/auth/login             Login and receive JWT
+GET    /api/auth/me                Get current user profile
+
+GET    /api/leads                  List all leads
+POST   /api/leads                  Create a lead
+PUT    /api/leads/:id/stage        Drag-and-drop stage update
+POST   /api/leads/:id/convert      Convert lead to wedding
+
+GET    /api/weddings               List all weddings (with progress)
+GET    /api/weddings/:id           Get wedding detail with tasks & events
+POST   /api/weddings               Create a wedding
+POST   /api/weddings/:id/team      Add team member
+POST   /api/weddings/:id/vendors   Add vendor to wedding
+
+GET    /api/tasks                  List tasks (filtered by role)
+POST   /api/tasks                  Create a task
+PUT    /api/tasks/:id/status       Update task status (done / verified)
+PUT    /api/tasks/:id/subtasks/:subId  Toggle subtask completion
+
+GET    /api/events/wedding/:id     Get events for a wedding
+POST   /api/events                 Create a wedding event
+POST   /api/events/:id/hotels      Link a hotel to an event
+
+GET    /api/vendors                List vendors
+POST   /api/vendors                Create a vendor
+
+GET    /api/budget                 Get financial summary per wedding
+
+POST   /api/templates/:type/convert  Convert a template into a full wedding
+
+GET    /api/hotels/search          Search hotels via TripAdvisor
+
+GET    /api/moodboard              Get mood board items
+POST   /api/moodboard              Upload inspiration item
+GET    /api/moodboard/pixabay      Search free images via Pixabay
+
+GET    /api/dashboard/stats        Aggregated KPIs
+GET    /api/dashboard/notifications  User notifications
 ```
 
-## License
+---
 
-MIT License
+## 🏗 Database Architecture
+
+```
+User ──────────────────────────────────────────────────────────┐
+  │                                                             │
+  ├── Lead (assignedTo, createdBy)                              │
+  │     └── [activities[]]                                      │
+  │     └── convertedToWedding ──► Wedding                      │
+  │                                                             │
+  └── Wedding (relationshipManager, assignedTeam[], clientId)   │
+        ├── Event[] ────────────────────────────────────────────┤
+        │     ├── assignedTeam[]                                 │
+        │     ├── documents[]                                    │
+        │     └── hotels[]                                       │
+        │                                                        │
+        ├── Task[] (wedding, event, assignedTo)                  │
+        │     ├── subtasks[]                                     │
+        │     ├── taskVendors[] ──► Vendor                       │
+        │     └── documents[]                                    │
+        │                                                        │
+        ├── vendors[] ──► Vendor                                 │
+        └── lead ──► Lead                                        │
+                                                                 │
+Notification (user ──────────────────────────────────────────── ┘)
+MoodBoard (wedding, linkedEvents[], createdBy)
+```
+
+---
+
+## 📦 Building for Production
+
+```bash
+# Build the frontend
+cd client
+npm run build
+# Output: client/dist/
+
+# Start the backend in production
+cd server
+NODE_ENV=production npm start
+```
+
+To serve the frontend from the same Express server, copy `client/dist` into the server root and add a static file route pointing to it.
+
+---
+
+## 🔧 Optional Integrations
+
+| Integration | Env Variable(s) | Feature Unlocked |
+|---|---|---|
+| Groq (free) | `VITE_GROQ_API_KEY` | AI chatbot with pipeline context |
+| Gmail SMTP | `SMTP_USER`, `SMTP_PASS` | Vendor task-due email reminders |
+| Twilio | `TWILIO_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE` | Vendor SMS alerts |
+| RapidAPI (TripAdvisor) | `RAPIDAPI_KEY` | Hotel search for events |
+| Pixabay | `PIXABAY_API` | Free image search for mood boards |
+
+All integrations are **optional** — the core CRM works without any of them.
+
+---
+
+## 📜 License
+
+MIT License — see [LICENSE](./LICENSE) for details.
+
+---
+
+<div align="center">
+  <p>Built with ❤️ for wedding planners who mean business.</p>
+  <p><strong>Aayojan</strong> — Plan. Organize. Celebrate.</p>
+</div>
