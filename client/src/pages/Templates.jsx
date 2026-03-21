@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronDown, X, Plus, ArrowRight, CheckSquare } from 'lucide-react';
 import api from '../utils/api';
 import useAuthStore from '../stores/authStore';
+import useToastStore from '../stores/toastStore';
 
 /* ─────────────────────────────────────────
    SHARED PRIMITIVES
@@ -104,7 +105,7 @@ export default function Templates() {
       navigate(`/weddings/${res.data.wedding._id}`);
     } catch (err) {
       console.error('Conversion error:', err);
-      alert(err.response?.data?.message || 'Failed to convert template');
+      useToastStore.getState().error(err.response?.data?.message || 'Failed to convert template');
     } finally {
       setConverting(false);
     }

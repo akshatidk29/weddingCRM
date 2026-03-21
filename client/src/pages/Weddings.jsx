@@ -234,6 +234,9 @@ export default function Weddings() {
       budget: { estimated: Number(form.budget.estimated) || 0 },
       guestCount: Number(form.guestCount) || 0,
     };
+    if (!payload.clientId) delete payload.clientId;
+    if (!payload.relationshipManager) delete payload.relationshipManager;
+
     if (editingWedding) await updateWedding(editingWedding._id, payload);
     else await createWedding(payload);
     closeModal();

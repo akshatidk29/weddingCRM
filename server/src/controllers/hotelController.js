@@ -1,5 +1,5 @@
 const RAPIDAPI_HOST = 'tripadvisor16.p.rapidapi.com';
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || '7db4e8621bmshe0271626cbdd145p1c4f7ejsn1f676ee4671c';
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || 'ae62aa81d8mshb228cb32b743141p1b2043jsn396bd98cd793';
 
 export const searchHotels = async (req, res) => {
   try {

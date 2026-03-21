@@ -49,6 +49,13 @@ export const getEventsByWedding = async (req, res) => {
     if (req.user.role === 'client' && weddingAuth.clientId?.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized' });
     }
+    if (req.user.role === 'team_member') {
+      const isAssigned = weddingAuth.assignedTeam.some(t => t.user.toString() === req.user._id.toString());
+      if (!isAssigned) return res.status(403).json({ message: 'Not authorized' });
+    }
+    if (req.user.role === 'relationship_manager' && weddingAuth.relationshipManager?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
 
     const events = await Event.find({ wedding: req.params.weddingId })
       .populate('assignedTeam.user', 'name email avatar')
@@ -95,6 +102,18 @@ export const getEvent = async (req, res) => {
     if (req.user.role === 'client' && event.wedding?.clientId?.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized' });
     }
+    if (req.user.role === 'team_member') {
+      const wedding = await Wedding.findById(event.wedding?._id);
+      if (!wedding) return res.status(404).json({ message: 'Wedding not found' });
+      const isAssigned = wedding.assignedTeam.some(t => t.user.toString() === req.user._id.toString());
+      if (!isAssigned) return res.status(403).json({ message: 'Not authorized' });
+    }
+    if (req.user.role === 'relationship_manager' && event.wedding?.clientId) {
+      const wedding = await Wedding.findById(event.wedding._id);
+      if (!wedding || wedding.relationshipManager?.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+    }
 
     const tasks = await Task.find({ event: event._id })
       .populate('assignedTo', 'name email')
@@ -114,6 +133,10 @@ export const getEvent = async (req, res) => {
 // @route   POST /api/events
 export const createEvent = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const { wedding: weddingId, name, eventDate } = req.body;
 
     if (!name) {
@@ -131,6 +154,9 @@ export const createEvent = async (req, res) => {
     }
 
     if (req.user.role === 'client' && wedding.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    if (req.user.role === 'relationship_manager' && wedding.relationshipManager?.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
@@ -152,6 +178,10 @@ export const createEvent = async (req, res) => {
 // @route   PUT /api/events/:id
 export const updateEvent = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const event = await Event.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -167,6 +197,12 @@ export const updateEvent = async (req, res) => {
     if (req.user.role === 'client' && event.wedding?.clientId?.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized' });
     }
+    if (req.user.role === 'relationship_manager') {
+      const wedding = await Wedding.findById(event.wedding?._id);
+      if (!wedding || wedding.relationshipManager?.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+    }
 
     res.json({ event });
   } catch (error) {
@@ -179,12 +215,19 @@ export const updateEvent = async (req, res) => {
 // @route   DELETE /api/events/:id
 export const deleteEvent = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const event = await Event.findById(req.params.id).populate('wedding');
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
 
     if (req.user.role === 'client' && event.wedding?.clientId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    if (req.user.role === 'relationship_manager' && event.wedding?.relationshipManager?.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
@@ -204,6 +247,10 @@ export const deleteEvent = async (req, res) => {
 // @route   POST /api/events/:id/team
 export const addEventTeamMember = async (req, res) => {
   try {
+    if (req.user.role === 'team_member' || req.user.role === 'client') {
+      return res.status(403).json({ message: 'Not authorized to manage event team members' });
+    }
+
     const { userId, role } = req.body;
     
     if (!userId) {
@@ -240,6 +287,10 @@ export const addEventTeamMember = async (req, res) => {
 // @route   DELETE /api/events/:id/team/:userId
 export const removeEventTeamMember = async (req, res) => {
   try {
+    if (req.user.role === 'team_member' || req.user.role === 'client') {
+      return res.status(403).json({ message: 'Not authorized to manage event team members' });
+    }
+
     const event = await Event.findById(req.params.id);
 
     if (!event) {

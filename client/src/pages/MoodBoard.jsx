@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, Search, X, Image, Video, Palette, Tag, Link2, Unlink, Trash2, Edit, Eye, ChevronDown, Filter } from 'lucide-react';
 import api from '../utils/api';
 import useAuthStore from '../stores/authStore';
+import useToastStore from '../stores/toastStore';
 
 /* ─────────────────────────────────────────
    CONSTANTS
@@ -213,7 +214,7 @@ export default function MoodBoard() {
       setShowModal(false);
       loadItems();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to save item');
+      useToastStore.getState().error(err.response?.data?.message || 'Failed to save item');
     }
   };
 
@@ -244,6 +245,13 @@ export default function MoodBoard() {
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   const ROOT = API_URL.replace('/api', '');
+  const resolveMediaUrl = (mediaUrl) => {
+    if (!mediaUrl) return '';
+    const url = String(mediaUrl).trim();
+    if (/^(https?:|data:|blob:)/i.test(url)) return url;
+    if (url.startsWith('/')) return `${ROOT}${url}`;
+    return `${ROOT}/${url}`;
+  };
 
   // Collect all unique tags for filter
   const allTags = [...new Set(items.flatMap(i => i.tags || []))].sort();
@@ -264,22 +272,25 @@ export default function MoodBoard() {
       `}</style>
 
       <div className="font-body min-h-screen bg-[#faf9f7] text-stone-900 selection:bg-stone-200">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-8 sm:py-12">
 
-          {/* ── Header ── */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 mb-8 border-b border-stone-200/60 pb-6 sm:pb-8">
+        {/* ── Hero Header ── */}
+        <div className="bg-stone-900 py-12 sm:py-16 px-5 sm:px-8 lg:px-10">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Visual Planning</p>
-              <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-medium text-stone-900">Mood Board</h1>
-              <p className="text-stone-400 text-sm mt-2 italic">{items.length} inspiration items</p>
+              <p className="text-[11px] font-bold tracking-[0.2em] text-[#b07d46] uppercase mb-2">Visual Planning</p>
+              <h1 className="font-display text-4xl sm:text-5xl font-medium text-white">Mood Board</h1>
+              <p className="text-stone-400 text-sm mt-2">{items.length} inspiration items</p>
             </div>
             {isManager && (
               <button onClick={openCreate}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-[#faf9f7] rounded-lg text-sm font-medium hover:bg-stone-800 transition-all self-start sm:self-auto flex-shrink-0">
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#faf9f7] text-stone-900 rounded-lg text-sm font-medium hover:bg-white transition-all self-start sm:self-auto flex-shrink-0">
                 <Plus className="h-4 w-4" /> Add Inspiration
               </button>
             )}
           </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-8 sm:py-12">
 
           {/* ── Summary Cards ── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -351,7 +362,7 @@ export default function MoodBoard() {
                     {/* Media preview */}
                     {item.type === 'image' && item.mediaUrl && (
                       <div className="relative overflow-hidden">
-                        <img src={item.mediaUrl?.startsWith('http') ? item.mediaUrl : `${ROOT}${item.mediaUrl}`} alt={item.title} className="w-full object-cover" loading="lazy" />
+                        <img src={resolveMediaUrl(item.mediaUrl)} alt={item.title} className="w-full object-cover" loading="lazy" />
                         <div className="absolute inset-0 bg-gradient-to-t from-stone-900/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     )}
@@ -534,11 +545,11 @@ export default function MoodBoard() {
             <div className="space-y-5">
               {/* Media */}
               {detailItem.type === 'image' && detailItem.mediaUrl && (
-                <img src={detailItem.isPixabay || detailItem.mediaUrl?.startsWith('http') ? detailItem.mediaUrl : `${ROOT}${detailItem.mediaUrl}`} alt={detailItem.title} className="w-full rounded-xl border border-stone-200/60" />
+                <img src={resolveMediaUrl(detailItem.mediaUrl)} alt={detailItem.title} className="w-full rounded-xl border border-stone-200/60" />
               )}
               {detailItem.type === 'video' && detailItem.mediaUrl && (
                 <video controls className="w-full rounded-xl border border-stone-200/60">
-                  <source src={`${ROOT}${detailItem.mediaUrl}`} />
+                  <source src={resolveMediaUrl(detailItem.mediaUrl)} />
                 </video>
               )}
               {detailItem.type === 'color' && (

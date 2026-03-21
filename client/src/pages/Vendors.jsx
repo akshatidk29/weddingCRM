@@ -21,19 +21,18 @@ function Field({ label, children }) {
    CATEGORY META — Stone palette
 ───────────────────────────────────────── */
 const categoryMeta = {
-  catering:     { bar: 'bg-stone-700',  label: 'Catering' },
-  decor:        { bar: 'bg-stone-500',  label: 'Decor' },
-  photography:  { bar: 'bg-stone-800',  label: 'Photography' },
-  videography:  { bar: 'bg-stone-600',  label: 'Videography' },
-  music:        { bar: 'bg-stone-400',  label: 'Music' },
-  makeup:       { bar: 'bg-stone-500',  label: 'Makeup' },
-  venue:        { bar: 'bg-stone-900',  label: 'Venue' },
-  transport:    { bar: 'bg-stone-600',  label: 'Transport' },
-  invitation:   { bar: 'bg-stone-400',  label: 'Invitation' },
-  other:        { bar: 'bg-stone-300',  label: 'Other' },
+  catering: { bar: 'bg-stone-700', label: 'Catering' },
+  decor: { bar: 'bg-stone-500', label: 'Decor' },
+  photography: { bar: 'bg-stone-800', label: 'Photography' },
+  videography: { bar: 'bg-stone-600', label: 'Videography' },
+  music: { bar: 'bg-stone-400', label: 'Music' },
+  makeup: { bar: 'bg-stone-500', label: 'Makeup' },
+  venue: { bar: 'bg-stone-900', label: 'Venue' },
+  transport: { bar: 'bg-stone-600', label: 'Transport' },
+  invitation: { bar: 'bg-stone-400', label: 'Invitation' },
+  other: { bar: 'bg-stone-300', label: 'Other' },
 };
 
-const priceLabels = { budget: '₹', moderate: '₹₹', premium: '₹₹₹', luxury: '₹₹₹₹' };
 
 /* ─────────────────────────────────────────
    STAR DISPLAY
@@ -51,7 +50,7 @@ function StarRating({ value }) {
 function StarPicker({ value, onChange }) {
   return (
     <div className="flex items-center gap-1.5">
-      {[1,2,3,4,5].map(s => (
+      {[1, 2, 3, 4, 5].map(s => (
         <button key={s} type="button" onClick={() => onChange(s)} className="p-0.5">
           <Star className={`w-5 h-5 transition-colors ${s <= value ? 'text-amber-700 fill-amber-700' : 'text-stone-200 hover:text-stone-300'}`} />
         </button>
@@ -89,7 +88,7 @@ function VendorDrawer({ vendor, onClose, onEdit, onDelete, isManager }) {
   const { vendorTasks, vendorEvents, loadVendorDetails } = useVendorStore();
   const [loadingTasks, setLoadingTasks] = useState(false);
 
-  const tasks  = vendor ? vendorTasks[vendor._id]  : undefined;
+  const tasks = vendor ? vendorTasks[vendor._id] : undefined;
   const events = vendor ? (vendorEvents[vendor._id] || []) : [];
 
   useEffect(() => {
@@ -107,7 +106,7 @@ function VendorDrawer({ vendor, onClose, onEdit, onDelete, isManager }) {
   if (!vendor) return null;
 
   const totalAmt = (tasks || []).reduce((s, t) => s + Math.abs(t.taskVendors?.find(tv => tv.vendor?._id === vendor._id)?.amount || 0), 0);
-  const paidAmt  = (tasks || []).reduce((s, t) => s + Math.abs(t.taskVendors?.find(tv => tv.vendor?._id === vendor._id)?.paidAmount || 0), 0);
+  const paidAmt = (tasks || []).reduce((s, t) => s + Math.abs(t.taskVendors?.find(tv => tv.vendor?._id === vendor._id)?.paidAmount || 0), 0);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -157,7 +156,6 @@ function VendorDrawer({ vendor, onClose, onEdit, onDelete, isManager }) {
             </div>
             <div>
               <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-1">Price Range</p>
-              <p className="text-sm font-medium text-stone-700">{priceLabels[vendor.priceRange] || '—'}</p>
             </div>
           </div>
 
@@ -224,9 +222,8 @@ function VendorDrawer({ vendor, onClose, onEdit, onDelete, isManager }) {
                       <span className={`text-[13px] flex-1 ${done ? 'text-stone-300 line-through' : 'text-stone-600'}`}>{task.title}</span>
                       {task.wedding?.name && <span className="text-[10px] text-stone-400 truncate max-w-[80px] italic">{task.wedding.name}</span>}
                       {ve.amount > 0 && (
-                        <span className={`text-[11px] font-medium flex-shrink-0 ${
-                          ve.paymentStatus === 'completed' ? 'text-teal-700' : ve.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
-                        }`}>₹{Math.abs(ve.amount).toLocaleString()}</span>
+                        <span className={`text-[11px] font-medium flex-shrink-0 ${ve.paymentStatus === 'completed' ? 'text-teal-700' : ve.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
+                          }`}>₹{Math.abs(ve.amount).toLocaleString()}</span>
                       )}
                     </div>
                   );
@@ -256,12 +253,12 @@ function Sk({ className = '' }) {
 export default function Vendors() {
   const isManager = useAuthStore((s) => s.user?.role === 'relationship_manager' || s.user?.role === 'admin');
   const { vendors, loading, fetchVendors, createVendor, updateVendor, deleteVendor } = useVendorStore();
-  const [showModal, setShowModal]   = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingVendor, setEditingVendor] = useState(null);
-  const [search, setSearch]         = useState('');
+  const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedVendor, setSelectedVendor] = useState(null);
-  const [animKey, setAnimKey]       = useState(0);
+  const [animKey, setAnimKey] = useState(0);
 
   const emptyForm = {
     name: '', category: 'other', contactPerson: '', email: '', phone: '',
@@ -354,8 +351,8 @@ export default function Vendors() {
 
           {loading ? (
             <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
-              <div className="space-y-2">{[...Array(7)].map((_,i) => <Sk key={i} className="h-12" />)}</div>
-              <div className="space-y-3"><Sk className="h-14" />{[...Array(5)].map((_,i) => <Sk key={i} className="h-16" />)}</div>
+              <div className="space-y-2">{[...Array(7)].map((_, i) => <Sk key={i} className="h-12" />)}</div>
+              <div className="space-y-3"><Sk className="h-14" />{[...Array(5)].map((_, i) => <Sk key={i} className="h-16" />)}</div>
             </div>
           ) : vendors.length === 0 ? (
             <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm py-20 text-center">
@@ -374,11 +371,10 @@ export default function Vendors() {
               <nav className="bg-white rounded-2xl border border-stone-200/60 shadow-sm overflow-hidden lg:sticky lg:top-6">
                 <button
                   onClick={() => handleCategoryChange('all')}
-                  className={`w-full flex items-center justify-between px-4 py-3.5 text-sm transition-colors border-b border-stone-100/60 ${
-                    selectedCategory === 'all'
+                  className={`w-full flex items-center justify-between px-4 py-3.5 text-sm transition-colors border-b border-stone-100/60 ${selectedCategory === 'all'
                       ? 'bg-stone-900 text-white'
                       : 'text-stone-500 hover:text-stone-900 hover:bg-[#faf9f7]'
-                  }`}
+                    }`}
                 >
                   <span className="font-medium">All Vendors</span>
                   <span className={`text-xs font-semibold ${selectedCategory === 'all' ? 'text-white/60' : 'text-stone-400'}`}>
@@ -387,18 +383,17 @@ export default function Vendors() {
                 </button>
 
                 {activeCategories.map(cat => {
-                  const m     = categoryMeta[cat.value] || categoryMeta.other;
+                  const m = categoryMeta[cat.value] || categoryMeta.other;
                   const count = categoryCounts[cat.value] || 0;
                   const active = selectedCategory === cat.value;
                   return (
                     <button
                       key={cat.value}
                       onClick={() => handleCategoryChange(cat.value)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors border-b border-stone-100/60 last:border-0 ${
-                        active
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors border-b border-stone-100/60 last:border-0 ${active
                           ? 'bg-[#faf9f7] text-stone-900'
                           : 'text-stone-400 hover:text-stone-700 hover:bg-[#faf9f7]/60'
-                      }`}
+                        }`}
                     >
                       <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${m.bar}`} />
                       <span className={`flex-1 text-left ${active ? 'font-semibold' : 'font-medium'}`}>{m.label}</span>
@@ -493,11 +488,6 @@ export default function Vendors() {
                                 <StarRating value={vendor.rating} />
                               </td>
 
-                              {/* Price */}
-                              <td className="px-5 py-4 hidden lg:table-cell">
-                                <span className="text-sm font-semibold text-stone-600">{priceLabels[vendor.priceRange]}</span>
-                              </td>
-
                               {/* Arrow */}
                               <td className="px-5 py-4 text-right">
                                 <ChevronRight className="h-4 w-4 text-stone-300 group-hover:text-stone-900 transition-colors inline-block" />
@@ -574,12 +564,15 @@ export default function Vendors() {
               </div>
             </Field>
             <Field label="Price Range">
-              <select value={form.priceRange} onChange={e => setForm(f => ({ ...f, priceRange: e.target.value }))}
-                className={`${inputCls} appearance-none`}>
-                <option value="budget">Budget (₹)</option>
-                <option value="moderate">Moderate (₹₹)</option>
-                <option value="premium">Premium (₹₹₹)</option>
-                <option value="luxury">Luxury (₹₹₹₹)</option>
+              <select
+                value={form.priceRange}
+                onChange={e => setForm(f => ({ ...f, priceRange: e.target.value }))}
+                className={`${inputCls} appearance-none rounded-xl px-4`}
+              >
+                <option value="budget">Budget</option>
+                <option value="moderate">Moderate</option>
+                <option value="premium">Premium</option>
+                <option value="luxury">Luxury</option>
               </select>
             </Field>
           </div>

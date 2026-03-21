@@ -123,6 +123,7 @@ export default function ChatBot() {
   const clearMessages = useChatStore(s => s.clearMessages);
   const hasUnread     = useChatStore(s => s.hasUnread);
   const user          = useAuthStore(s => s.user);
+  const isAuthenticated = Boolean(user);
 
   const [input, setInput]     = useState('');
   const [context, setContext] = useState('');
@@ -153,7 +154,7 @@ export default function ChatBot() {
 
   const send = async (text) => {
     const content = (text || input).trim();
-    if (!content || isLoading) return;
+    if (!isAuthenticated || !content || isLoading) return;
     setInput('');
     addMessage('user', content);
     setLoading(true);
@@ -276,8 +277,16 @@ export default function ChatBot() {
                 </p>
                 <div className="flex flex-col gap-2 w-full">
                   {SUGGESTIONS.map(s => (
-                    <button key={s} onClick={() => send(s)}
-                      className="text-left text-[12px] text-stone-600 bg-white border border-stone-100 hover:border-stone-300 hover:bg-white px-4 py-2.5 rounded-xl transition-all">
+                    <button
+                      key={s}
+                      onClick={() => send(s)}
+                      disabled={!isAuthenticated}
+                      className={`text-left text-[12px] bg-white border px-4 py-2.5 rounded-xl transition-all ${
+                        isAuthenticated
+                          ? 'text-stone-600 border-stone-100 hover:border-stone-300 hover:bg-white'
+                          : 'text-stone-400 border-stone-100 cursor-not-allowed'
+                      }`}
+                    >
                       {s}
                     </button>
                   ))}
@@ -294,31 +303,46 @@ export default function ChatBot() {
 
           {/* Input */}
           <div className="px-4 py-3 flex-shrink-0" style={{ background: '#ffffff', borderTop: '1px solid #f0ede8' }}>
+            {!isAuthenticated && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {SUGGESTIONS.map(s => (
+                  <span
+                    key={`disabled-${s}`}
+                    className="text-[11px] text-stone-500 bg-stone-50 border border-stone-100 px-2.5 py-1 rounded-full"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="flex items-end gap-2 bg-stone-50 border border-stone-100 rounded-xl px-3.5 py-2.5 focus-within:border-stone-300 transition-colors">
               <textarea
                 ref={inputRef}
                 rows={1}
                 value={input}
                 onChange={e => setInput(e.target.value)}
+                disabled={!isAuthenticated}
                 onKeyDown={e => {
                   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
                 }}
-                placeholder="Ask about your weddings..."
+                placeholder={isAuthenticated ? 'Ask about your weddings...' : 'Log in to continue'}
                 className="flex-1 bg-transparent resize-none border-none focus:outline-none text-[13px] text-stone-800 placeholder-stone-400 leading-relaxed"
                 style={{ minHeight: '20px', maxHeight: '96px' }}
               />
               <button
                 onClick={() => send()}
-                disabled={!input.trim() || isLoading}
+                disabled={!isAuthenticated || !input.trim() || isLoading}
                 className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all mb-0.5"
                 style={{
-                  background: input.trim() && !isLoading ? '#1c1917' : '#e7e5e4',
-                  color: input.trim() && !isLoading ? '#f0ede8' : '#a8a29e',
+                  background: isAuthenticated && input.trim() && !isLoading ? '#1c1917' : '#e7e5e4',
+                  color: isAuthenticated && input.trim() && !isLoading ? '#f0ede8' : '#a8a29e',
                 }}>
                 <Send className="w-3.5 h-3.5" />
               </button>
             </div>
-            <p className="text-[10px] text-stone-300 text-center mt-1.5">Enter to send · Shift+Enter for new line</p>
+            <p className="text-[10px] text-stone-300 text-center mt-1.5">
+              {isAuthenticated ? 'Enter to send · Shift+Enter for new line' : 'Log in to continue'}
+            </p>
           </div>
         </div>
       )}

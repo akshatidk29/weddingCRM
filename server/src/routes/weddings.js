@@ -26,7 +26,7 @@ router.route('/')
 router.route('/:id')
   .get(getWedding)
   .put(isAdminManagerOrClient, updateWedding)
-  .delete(isAdminManagerOrClient, deleteWedding);
+  .delete(isAdminOrManager, deleteWedding);
 
 router.post('/:id/team', isAdminManagerOrClient, addTeamMember);
 router.delete('/:id/team/:userId', isAdminManagerOrClient, removeTeamMember);

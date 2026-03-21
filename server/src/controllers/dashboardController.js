@@ -8,10 +8,13 @@ export const getDashboardStats = async (req, res) => {
     const query = {};
     if (req.user.role === 'team_member') {
       query.assignedTo = req.user._id;
+    } else if (req.user.role === 'relationship_manager') {
+      query.assignedTo = req.user._id;
     }
     
     // Clients have 0 leads
     const isClient = req.user.role === 'client';
+    const isRM = req.user.role === 'relationship_manager';
     const totalLeads = isClient ? 0 : await Lead.countDocuments(query);
     const leadsByStage = isClient ? [] : await Lead.aggregate([
       { $match: query },
@@ -23,6 +26,8 @@ export const getDashboardStats = async (req, res) => {
       weddingQuery = { 'assignedTeam.user': req.user._id };
     } else if (req.user.role === 'client') {
       weddingQuery = { clientId: req.user._id };
+    } else if (req.user.role === 'relationship_manager') {
+      weddingQuery = { relationshipManager: req.user._id };
     }
 
     const activeWeddings = await Wedding.countDocuments({
@@ -35,6 +40,9 @@ export const getDashboardStats = async (req, res) => {
       taskQuery = { assignedTo: req.user._id };
     } else if (req.user.role === 'client') {
       const userWeddings = await Wedding.find({ clientId: req.user._id }).select('_id');
+      taskQuery = { wedding: { $in: userWeddings.map(w => w._id) } };
+    } else if (req.user.role === 'relationship_manager') {
+      const userWeddings = await Wedding.find({ relationshipManager: req.user._id }).select('_id');
       taskQuery = { wedding: { $in: userWeddings.map(w => w._id) } };
     }
 
@@ -103,6 +111,8 @@ export const getRecentActivity = async (req, res) => {
       weddingQuery = { 'assignedTeam.user': req.user._id };
     } else if (isClient) {
       weddingQuery = { clientId: req.user._id };
+    } else if (req.user.role === 'relationship_manager') {
+      weddingQuery = { relationshipManager: req.user._id };
     }
 
     const recentWeddings = await Wedding.find(weddingQuery)
@@ -118,6 +128,9 @@ export const getRecentActivity = async (req, res) => {
       taskQuery.assignedTo = req.user._id;
     } else if (isClient) {
       const userWeddings = await Wedding.find({ clientId: req.user._id }).select('_id');
+      taskQuery.wedding = { $in: userWeddings.map(w => w._id) };
+    } else if (req.user.role === 'relationship_manager') {
+      const userWeddings = await Wedding.find({ relationshipManager: req.user._id }).select('_id');
       taskQuery.wedding = { $in: userWeddings.map(w => w._id) };
     }
 
@@ -144,11 +157,18 @@ export const getMonthlyStats = async (req, res) => {
       return res.json({ leadsPerMonth: [], conversionsPerMonth: [] });
     }
 
+    const matchQuery = {};
+    if (req.user.role === 'relationship_manager') {
+      matchQuery.assignedTo = req.user._id;
+    } else if (req.user.role === 'team_member') {
+      matchQuery.assignedTo = req.user._id;
+    }
+
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
     const leadsPerMonth = await Lead.aggregate([
-      { $match: { createdAt: { $gte: sixMonthsAgo } } },
+      { $match: { ...matchQuery, createdAt: { $gte: sixMonthsAgo } } },
       {
         $group: {
           _id: {
@@ -164,6 +184,7 @@ export const getMonthlyStats = async (req, res) => {
     const conversionsPerMonth = await Lead.aggregate([
       { 
         $match: { 
+          ...matchQuery,
           stage: 'booked',
           updatedAt: { $gte: sixMonthsAgo } 
         } 

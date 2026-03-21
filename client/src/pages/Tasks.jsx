@@ -7,6 +7,7 @@ import {
 import { formatDate, taskCategories, vendorCategories, isOverdue } from '../utils/helpers';
 import useAuthStore from '../stores/authStore';
 import useTaskStore from '../stores/taskStore';
+import useToastStore from '../stores/toastStore';
 import DocumentsDrawer from '../components/shared/DocumentsDrawer';
 
 /* ─────────────────────────────────────────
@@ -388,7 +389,7 @@ export default function Tasks() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.wedding) { alert('Please select a wedding'); return; }
+    if (!form.wedding) { useToastStore.getState().warning('Please select a wedding'); return; }
     const payload = {
       ...form,
       assignedTo: form.assignedTo || undefined,
@@ -442,10 +443,12 @@ export default function Tasks() {
               <h1 className="font-display text-4xl sm:text-5xl font-medium text-white">Task Directory</h1>
               <p className="text-stone-400 text-sm mt-2">Master checklist across all events.</p>
             </div>
-            <button onClick={openCreate}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#faf9f7] text-stone-900 rounded-lg text-sm font-medium hover:bg-white transition-all self-start sm:self-auto flex-shrink-0">
-              <Plus className="h-4 w-4" /> New Task
-            </button>
+            {isManager && (
+              <button onClick={openCreate}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#faf9f7] text-stone-900 rounded-lg text-sm font-medium hover:bg-white transition-all self-start sm:self-auto flex-shrink-0">
+                <Plus className="h-4 w-4" /> New Task
+              </button>
+            )}
           </div>
         </div>
 

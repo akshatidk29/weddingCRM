@@ -14,6 +14,12 @@ const useAuthStore = create((set, get) => ({
     const user = get().user;
     return user?.role === 'relationship_manager' || user?.role === 'admin';
   },
+  get isTeamMember() {
+    return get().user?.role === 'team_member';
+  },
+  get isClient() {
+    return get().user?.role === 'client';
+  },
 
   // Initialize auth state from localStorage
   initialize: async () => {

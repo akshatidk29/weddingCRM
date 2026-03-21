@@ -95,8 +95,8 @@ function AnimatedAayojan() {
 
   return (
     <h1
-      className="font-display leading-[0.88] text-stone-900 mb-6 whitespace-nowrap"
-      style={{ fontSize: 'clamp(3rem, 10vw, 8rem)', fontWeight: 700, minHeight: '1.1em' }}
+      className="font-display leading-[0.88] text-stone-900 mb-6"
+      style={{ fontSize: 'clamp(2.5rem, 9vw, 8rem)', fontWeight: 700, minHeight: '1.1em' }}
     >
       {showHindi && hindi.map((char, i) => (
         <span
@@ -143,7 +143,7 @@ export default function Landing() {
       tag: 'Lead Management',
       headline: 'Never lose a lead again.',
       body: 'Capture every inquiry, track conversations, and move prospects through your pipeline with ease. Know exactly where every couple stands from first hello to signed contract.',
-      img: 'img.png',
+      img: '3.png',
       imgAlt: 'Lead pipeline view',
       flip: false,
     },
@@ -151,7 +151,7 @@ export default function Landing() {
       tag: 'Wedding Planning',
       headline: 'Every detail, one place.',
       body: 'From guest count to floral themes, Aayojan keeps all wedding details beautifully organised. Assign tasks, set milestones, and deliver a flawless experience every time.',
-      img: 'img.png',
+      img: '2.png',
       imgAlt: 'Wedding detail view',
       flip: true,
     },
@@ -159,7 +159,7 @@ export default function Landing() {
       tag: 'Vendor Network',
       headline: 'Your go to vendors, always at hand.',
       body: 'Build your trusted vendor directory. Rate performance, track payments, and instantly know who to call for any occasion.',
-      img: 'img.png',
+      img: '4.png',
       imgAlt: 'Vendor network view',
       flip: false,
     },
@@ -227,13 +227,13 @@ export default function Landing() {
 
                 <div className="relative flex items-center justify-center">
                   <img
-                    src="img.png"
+                    src="1.png"
                     alt="Aayojan dashboard"
                     /* 1. Changed object-cover to object-contain to prevent cropping.
                        2. Removed fixed aspect ratio to let the image's natural shape lead.
                        3. Removed the border and shadow from this specific wrapper to let the image 'float'.
                     */
-                    className="w-full h-auto max-h-125 object-contain drop-shadow-2xl"
+                    className="w-full h-auto max-h-125 rounded-2xl border border-stone-200/60 object-contain drop-shadow-2xl"
                     onError={e => {
                       e.currentTarget.style.display = 'none';
                       e.currentTarget.nextElementSibling.style.display = 'flex';

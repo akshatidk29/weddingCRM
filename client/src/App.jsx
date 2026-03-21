@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import useAuthStore from './stores/authStore';
 import { Layout } from './components/layout/Layout';
 import ToastContainer from './components/ui/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -36,7 +37,16 @@ function ScrollToTop() {
 // Initialize auth state from localStorage on app mount
 function AuthInit() {
   const initialize = useAuthStore((s) => s.initialize);
-  useEffect(() => { initialize(); }, [initialize]);
+  useEffect(() => {
+    initialize();
+    // Catch unhandled promise rejections globally
+    const handler = (event) => {
+      event.preventDefault();
+      console.error('[Unhandled Rejection]', event.reason);
+    };
+    window.addEventListener('unhandledrejection', handler);
+    return () => window.removeEventListener('unhandledrejection', handler);
+  }, [initialize]);
   return null;
 }
 
@@ -63,6 +73,7 @@ function PublicRoute({ children }) {
 function App() {
   useWeddingPoller();
   return (
+    <ErrorBoundary>
     <BrowserRouter>
       <ScrollToTop />
       <AuthInit />
@@ -112,6 +123,7 @@ function App() {
       <Footer />
       <ChatBot />
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

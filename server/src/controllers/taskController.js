@@ -47,6 +47,13 @@ export const getTasks = async (req, res) => {
         return res.status(403).json({ message: 'Not authorized' });
       }
       if (!query.wedding) query.wedding = { $in: allowedWeddings };
+    } else if (req.user.role === 'relationship_manager') {
+      const userWeddings = await Wedding.find({ relationshipManager: req.user._id }).select('_id');
+      const allowedWeddings = userWeddings.map(w => w._id.toString());
+      if (query.wedding && !allowedWeddings.includes(query.wedding.toString())) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+      if (!query.wedding) query.wedding = { $in: allowedWeddings };
     }
 
     const tasks = await Task.find(query)
@@ -91,6 +98,10 @@ export const getTask = async (req, res) => {
 
 export const createTask = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const { taskVendors: vendorInputs, ...taskData } = req.body;
     
     // Process vendor inputs: create or find vendors in global collection
@@ -168,6 +179,10 @@ export const createTask = async (req, res) => {
 
 export const createBulkTasks = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const { tasks, wedding } = req.body;
 
     const weddingCheck = await Wedding.findById(wedding);
@@ -191,6 +206,10 @@ export const createBulkTasks = async (req, res) => {
 
 export const updateTask = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const { taskVendors: vendorInputs, ...taskData } = req.body;
     
     // Process vendor inputs if provided
@@ -332,6 +351,10 @@ export const updateTaskStatus = async (req, res) => {
 
 export const deleteTask = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const taskCheck = await Task.findById(req.params.id);
     if (!taskCheck) return res.status(404).json({ message: 'Task not found' });
 
@@ -421,6 +444,10 @@ export const getOverdueTasks = async (req, res) => {
 
 export const addSubtask = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
@@ -473,6 +500,10 @@ export const toggleSubtask = async (req, res) => {
 
 export const deleteSubtask = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
@@ -492,6 +523,10 @@ export const deleteSubtask = async (req, res) => {
 
 export const addTaskVendor = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
@@ -586,6 +621,10 @@ export const updateTaskVendorStatus = async (req, res) => {
 
 export const deleteTaskVendor = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });

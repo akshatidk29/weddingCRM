@@ -23,6 +23,8 @@ export const getLeads = async (req, res) => {
 
     if (req.user.role === 'team_member') {
       query.assignedTo = req.user._id;
+    } else if (req.user.role === 'relationship_manager') {
+      query.assignedTo = req.user._id;
     }
 
     const leads = await Lead.find(query)
@@ -49,6 +51,13 @@ export const getLead = async (req, res) => {
 
     if (!lead) {
       return res.status(404).json({ message: 'Lead not found' });
+    }
+
+    if (req.user.role === 'relationship_manager' && lead.assignedTo?._id?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to view this lead' });
+    }
+    if (req.user.role === 'team_member' && lead.assignedTo?._id?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to view this lead' });
     }
 
     res.json({ lead });
@@ -245,6 +254,8 @@ export const getLeadsByStage = async (req, res) => {
 
     const query = {};
     if (req.user.role === 'team_member') {
+      query.assignedTo = req.user._id;
+    } else if (req.user.role === 'relationship_manager') {
       query.assignedTo = req.user._id;
     }
 

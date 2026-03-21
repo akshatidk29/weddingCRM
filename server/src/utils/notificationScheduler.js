@@ -24,13 +24,13 @@ const createTransporter = () => {
 // Create Twilio client
 const createTwilioClient = () => {
   if (!process.env.TWILIO_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE) {
-    console.log('📱 Twilio credentials not configured — SMS notifications disabled');
+    console.log('Twilio credentials not configured — SMS notifications disabled');
     return null;
   }
   try {
     return twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
   } catch (e) {
-    console.log('📱 Twilio initialization failed:', e.message);
+    console.log('Twilio initialization failed:', e.message);
     return null;
   }
 };
@@ -42,11 +42,11 @@ const sendEmailNotification = async (transporter, vendorEmail, vendorName, taskT
     await transporter.sendMail({
       from: `"Wedding CRM" <${process.env.SMTP_USER}>`,
       to: vendorEmail,
-      subject: `⚠️ Task Reminder: "${taskTitle}" is due soon`,
+      subject: `Task Reminder: "${taskTitle}" is due soon`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #7c3aed, #a855f7); padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0;">⏰ Task Reminder</h1>
+            <h1 style="color: white; margin: 0;">Task Reminder</h1>
           </div>
           <div style="background: #f9fafb; padding: 24px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb;">
             <p style="color: #374151; font-size: 16px;">Dear <strong>${vendorName}</strong>,</p>
@@ -79,24 +79,24 @@ const sendSMSNotification = async (twilioClient, vendorPhone, vendorName, taskTi
 
   try {
     await twilioClient.messages.create({
-      body: `⏰ Reminder: Task "${taskTitle}" for client ${clientName} is due at ${new Date(dueDate).toLocaleString('en-IN', { timeStyle: 'short', dateStyle: 'short' })}. Please complete it ASAP. — Wedding CRM`,
+      body: `Reminder: Task "${taskTitle}" for client ${clientName} is due at ${new Date(dueDate).toLocaleString('en-IN', { timeStyle: 'short', dateStyle: 'short' })}. Please complete it ASAP. — Wedding CRM`,
       from: process.env.TWILIO_PHONE,
       to: formattedPhone
     });
-    console.log(`📱 SMS sent to ${formattedPhone} for task "${taskTitle}"`);
+    console.log(`SMS sent to ${formattedPhone} for task "${taskTitle}"`);
   } catch (error) {
-    console.error(`📱 Failed to send SMS to ${formattedPhone}:`, error.message);
+    console.error(`Failed to send SMS to ${formattedPhone}:`, error.message);
   }
 };
 
 const checkAndNotifyVendors = async () => {
-  console.log(`🔔 [${new Date().toLocaleString('en-IN')}] Running vendor notification check...`);
+  console.log(`[${new Date().toLocaleString('en-IN')}] Running vendor notification check...`);
 
   const transporter = createTransporter();
   const twilioClient = createTwilioClient();
 
   if (!transporter && !twilioClient) {
-    console.log('🔔 No notification channels configured, skipping...');
+    console.log('No notification channels configured, skipping...');
     return;
   }
 
@@ -115,7 +115,7 @@ const checkAndNotifyVendors = async () => {
       .populate('taskVendors.vendor', 'name phone email');
 
     if (tasks.length === 0) {
-      console.log('🔔 No tasks requiring vendor notifications.');
+      console.log('No tasks requiring vendor notifications.');
       return;
     }
 
@@ -135,7 +135,7 @@ const checkAndNotifyVendors = async () => {
         });
 
         if (existingNotification) {
-          console.log(`🔔 Already notified ${tv.vendor.name} for task "${task.title}" recently, skipping.`);
+          console.log(`Already notified ${tv.vendor.name} for task "${task.title}" recently, skipping.`);
           continue;
         }
 
@@ -169,15 +169,15 @@ const checkAndNotifyVendors = async () => {
       }
     }
 
-    console.log(`🔔 Notification check complete. Processed ${tasks.length} task(s).`);
+    console.log(`Notification check complete. Processed ${tasks.length} task(s).`);
   } catch (error) {
-    console.error('🔔 Notification scheduler error:', error.message);
+    console.error('Notification scheduler error:', error.message);
   }
 };
 
 // Start the scheduler — runs every 30 minutes
 export const startNotificationScheduler = () => {
-  console.log('🔔 Vendor notification scheduler started (runs every 30 minutes)');
+  console.log('Vendor notification scheduler started (runs every 30 minutes)');
 
   // Run every 30 minutes
   cron.schedule('*/30 * * * *', () => {

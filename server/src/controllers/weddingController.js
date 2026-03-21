@@ -24,6 +24,8 @@ export const getWeddings = async (req, res) => {
       query['assignedTeam.user'] = req.user._id;
     } else if (req.user.role === 'client') {
       query.clientId = req.user._id;
+    } else if (req.user.role === 'relationship_manager') {
+      query.relationshipManager = req.user._id;
     }
 
     const weddings = await Wedding.find(query)
@@ -74,11 +76,16 @@ export const getWedding = async (req, res) => {
       if (wedding.clientId?.toString() !== req.user._id.toString()) {
         return res.status(403).json({ message: 'You are not authorized to view this wedding' });
       }
+    } else if (req.user.role === 'relationship_manager') {
+      if (wedding.relationshipManager?.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'You are not assigned to this wedding' });
+      }
     }
 
     const tasks = await Task.find({ wedding: wedding._id })
       .populate('assignedTo', 'name')
       .populate('event', 'name eventDate')
+      .populate('taskVendors.vendor', 'name phone email address city category')
       .sort({ dueDate: 1 });
 
     const tasksByCategory = tasks.reduce((acc, task) => {
@@ -135,10 +142,14 @@ export const createWedding = async (req, res) => {
       return res.status(400).json({ message: 'Wedding name, client name, and date are required' });
     }
 
-    const wedding = await Wedding.create({
+    const weddingData = {
       ...req.body,
       createdBy: req.user._id
-    });
+    };
+    if (!weddingData.clientId) delete weddingData.clientId;
+    if (!weddingData.relationshipManager) delete weddingData.relationshipManager;
+
+    const wedding = await Wedding.create(weddingData);
 
     await wedding.populate('relationshipManager', 'name email');
 
@@ -154,8 +165,13 @@ export const createWedding = async (req, res) => {
 
 export const updateWedding = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const query = { _id: req.params.id };
     if (req.user.role === 'client') query.clientId = req.user._id;
+    if (req.user.role === 'relationship_manager') query.relationshipManager = req.user._id;
 
     const wedding = await Wedding.findOneAndUpdate(
       query,
@@ -181,8 +197,12 @@ export const updateWedding = async (req, res) => {
 
 export const deleteWedding = async (req, res) => {
   try {
+    if (req.user.role === 'team_member' || req.user.role === 'client') {
+      return res.status(403).json({ message: 'Not authorized to delete weddings' });
+    }
+
     const query = { _id: req.params.id };
-    if (req.user.role === 'client') query.clientId = req.user._id;
+    if (req.user.role === 'relationship_manager') query.relationshipManager = req.user._id;
 
     const wedding = await Wedding.findOneAndDelete(query);
     if (!wedding) {
@@ -201,6 +221,10 @@ export const deleteWedding = async (req, res) => {
 
 export const addTeamMember = async (req, res) => {
   try {
+    if (req.user.role === 'team_member' || req.user.role === 'client') {
+      return res.status(403).json({ message: 'Not authorized to manage team members' });
+    }
+
     const { userId, role } = req.body;
     
     if (!userId) {
@@ -208,7 +232,7 @@ export const addTeamMember = async (req, res) => {
     }
 
     const query = { _id: req.params.id };
-    if (req.user.role === 'client') query.clientId = req.user._id;
+    if (req.user.role === 'relationship_manager') query.relationshipManager = req.user._id;
 
     const wedding = await Wedding.findOne(query);
 
@@ -237,8 +261,12 @@ export const addTeamMember = async (req, res) => {
 
 export const removeTeamMember = async (req, res) => {
   try {
+    if (req.user.role === 'team_member' || req.user.role === 'client') {
+      return res.status(403).json({ message: 'Not authorized to manage team members' });
+    }
+
     const query = { _id: req.params.id };
-    if (req.user.role === 'client') query.clientId = req.user._id;
+    if (req.user.role === 'relationship_manager') query.relationshipManager = req.user._id;
 
     const wedding = await Wedding.findOne(query);
 
@@ -261,6 +289,10 @@ export const removeTeamMember = async (req, res) => {
 
 export const addVendorToWedding = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const { vendorId, category, amount, notes } = req.body;
     
     if (!vendorId) {
@@ -269,6 +301,7 @@ export const addVendorToWedding = async (req, res) => {
 
     const query = { _id: req.params.id };
     if (req.user.role === 'client') query.clientId = req.user._id;
+    if (req.user.role === 'relationship_manager') query.relationshipManager = req.user._id;
 
     const wedding = await Wedding.findOne(query);
 
@@ -294,8 +327,13 @@ export const addVendorToWedding = async (req, res) => {
 
 export const removeVendorFromWedding = async (req, res) => {
   try {
+    if (req.user.role === 'team_member') {
+      return res.status(403).json({ message: 'Team members have view-only access' });
+    }
+
     const query = { _id: req.params.id };
     if (req.user.role === 'client') query.clientId = req.user._id;
+    if (req.user.role === 'relationship_manager') query.relationshipManager = req.user._id;
 
     const wedding = await Wedding.findOne(query);
 
@@ -326,6 +364,8 @@ export const getUpcomingWeddings = async (req, res) => {
     };
 
     if (req.user.role === 'client') query.clientId = req.user._id;
+    if (req.user.role === 'team_member') query['assignedTeam.user'] = req.user._id;
+    if (req.user.role === 'relationship_manager') query.relationshipManager = req.user._id;
 
     const weddings = await Wedding.find(query)
       .populate('relationshipManager', 'name')

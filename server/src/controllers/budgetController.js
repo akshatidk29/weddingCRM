@@ -16,6 +16,12 @@ export const getBudget = async (req, res) => {
     if (req.user.role === 'client') {
       const userWeddings = await Wedding.find({ clientId: req.user._id }).select('_id');
       taskQuery.wedding = { $in: userWeddings.map(w => w._id) };
+    } else if (req.user.role === 'relationship_manager') {
+      const userWeddings = await Wedding.find({ relationshipManager: req.user._id }).select('_id');
+      taskQuery.wedding = { $in: userWeddings.map(w => w._id) };
+    } else if (req.user.role === 'team_member') {
+      const userWeddings = await Wedding.find({ 'assignedTeam.user': req.user._id }).select('_id');
+      taskQuery.wedding = { $in: userWeddings.map(w => w._id) };
     }
 
     // Find all tasks that define an amount in either subtasks or taskVendors
@@ -72,6 +78,10 @@ export const getBudget = async (req, res) => {
     let weddingQuery = { 'budget.estimated': { $gt: 0 } };
     if (req.user.role === 'client') {
       weddingQuery.clientId = req.user._id;
+    } else if (req.user.role === 'relationship_manager') {
+      weddingQuery.relationshipManager = req.user._id;
+    } else if (req.user.role === 'team_member') {
+      weddingQuery['assignedTeam.user'] = req.user._id;
     }
 
     const weddings = await Wedding.find(weddingQuery)

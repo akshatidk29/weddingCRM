@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, Plus, Clock, UserPlus, Edit, Check,
+  ArrowLeft, Plus, UserPlus, Edit, Check,
   ChevronDown, ChevronRight, Trash2, Phone, X, AlertCircle, Mail,
-  MapPin, Calendar, IndianRupee, Users, Heart, Building2, Star, FileText, Palette, Image, Video
+  MapPin, Calendar, IndianRupee, Users, Heart, Building2, Star, FileText
 } from 'lucide-react';
 import { formatDate, formatCurrency, taskCategories, vendorCategories, daysUntil, isOverdue } from '../utils/helpers';
 import useAuthStore from '../stores/authStore';
 import api from '../utils/api';
 import DocumentsDrawer from '../components/shared/DocumentsDrawer';
-
-/* ─────────────────────────────────────────
-   DESIGN TOKENS (matches Dashboard / Leads)
-   Font: Cormorant Garamond (display) + Inter (body)
-───────────────────────────────────────── */
 
 const inputCls = "w-full px-4 py-3 bg-white border border-stone-200/60 shadow-sm rounded-xl text-sm text-stone-900 placeholder-stone-300 focus:outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400 transition-all duration-300";
 const labelCls = "block text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2";
@@ -22,7 +17,6 @@ function Field({ label, children }) {
   return <div>{label && <label className={labelCls}>{label}</label>}{children}</div>;
 }
 
-/* ── Modal ── */
 function Modal({ isOpen, onClose, title, children, size = 'md' }) {
   if (!isOpen) return null;
   const maxW = { sm: 'sm:max-w-md', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl' }[size] || 'sm:max-w-lg';
@@ -42,7 +36,6 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }) {
   );
 }
 
-/* ── Checkbox ── */
 function Checkbox({ checked, onChange, size = 'md' }) {
   const sz = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
   return (
@@ -58,7 +51,6 @@ function Checkbox({ checked, onChange, size = 'md' }) {
   );
 }
 
-/* ── Progress Ring ── */
 function ProgressRing({ pct = 0, size = 36, stroke = 3, color = '#a8a29e' }) {
   const r = (size - stroke * 2) / 2;
   const circ = 2 * Math.PI * r;
@@ -72,12 +64,10 @@ function ProgressRing({ pct = 0, size = 36, stroke = 3, color = '#a8a29e' }) {
   );
 }
 
-/* ── Skeleton ── */
 function Sk({ className = '' }) {
   return <div className={`bg-stone-200/50 animate-pulse rounded-2xl ${className}`} />;
 }
 
-/* ── Helpers ── */
 function getCompletionInfo(task) {
   const sDone = task.subtasks?.filter(s => s.completed).length || 0;
   const sTotal = task.subtasks?.length || 0;
@@ -98,7 +88,6 @@ const getVName = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.vendor.
 const getVPhone = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.vendor.phone : (tv.phone || '');
 const getVEmail = tv => (tv.vendor && typeof tv.vendor === 'object') ? tv.vendor.email : (tv.email || '');
 
-/* ── Priority styles ── */
 const PRIORITY = {
   low: { bar: 'bg-stone-300', label: null },
   medium: { bar: 'bg-stone-400', label: null },
@@ -106,9 +95,6 @@ const PRIORITY = {
   urgent: { bar: 'bg-[#c0604a]', label: 'text-[#c0604a]' },
 };
 
-/* ─────────────────────────────────────────
-   TASK ROW  (flat row · click opens drawer)
-───────────────────────────────────────── */
 function TaskRow({ task, onStatusChange, onSelect, onEdit, isManager, isAdmin }) {
   const info = getCompletionInfo(task);
   const done = task.status === 'done' || task.status === 'verified';
@@ -137,12 +123,19 @@ function TaskRow({ task, onStatusChange, onSelect, onEdit, isManager, isAdmin })
         )}
       </div>
       <div className="flex items-center gap-3 flex-shrink-0">
-        {task.status === 'verified' && <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-teal-700">Verified</span>}
+        {task.status === 'verified' && (
+          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-teal-700">Verified</span>
+        )}
         {(info.hasSubtasks || info.hasVendors) && !done && (
-          <span className="text-[10px] text-stone-400">{info.subtasksDone + info.vendorsDone}/{info.subtasksTotal + info.vendorsTotal}</span>
+          <span className="text-[10px] text-stone-400">
+            {info.subtasksDone + info.vendorsDone}/{info.subtasksTotal + info.vendorsTotal}
+          </span>
         )}
         {(isAdmin || isManager) && (
-          <button onClick={e => { e.stopPropagation(); onEdit(task); }} className="p-1 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-all opacity-0 group-hover:opacity-100">
+          <button
+            onClick={e => { e.stopPropagation(); onEdit(task); }}
+            className="p-1 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-all opacity-0 group-hover:opacity-100"
+          >
             <Edit className="w-3.5 h-3.5" />
           </button>
         )}
@@ -152,9 +145,6 @@ function TaskRow({ task, onStatusChange, onSelect, onEdit, isManager, isAdmin })
   );
 }
 
-/* ─────────────────────────────────────────
-   TASK DETAIL DRAWER  (slides in from right)
-───────────────────────────────────────── */
 function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUpdateVendorStatus, onDeleteSubtask, onDeleteVendor, onEdit, isManager, isAdmin, onOpenDocs }) {
   const [visible, setVisible] = useState(false);
   const info = task ? getCompletionInfo(task) : {};
@@ -162,9 +152,7 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
   const overdue = task && task.status === 'pending' && isOverdue(task.dueDate);
 
   useEffect(() => {
-    if (task) {
-      requestAnimationFrame(() => setVisible(true));
-    }
+    if (task) requestAnimationFrame(() => setVisible(true));
   }, [task]);
 
   const handleClose = () => {
@@ -176,13 +164,17 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className={`absolute inset-0 transition-opacity duration-300 ${visible ? 'bg-stone-950/20 backdrop-blur-[2px]' : 'bg-transparent'}`} onClick={handleClose} />
+      <div
+        className={`absolute inset-0 transition-opacity duration-300 ${visible ? 'bg-stone-950/20 backdrop-blur-[2px]' : 'bg-transparent'}`}
+        onClick={handleClose}
+      />
       <div className={`relative w-full max-w-md bg-[#faf9f7] shadow-2xl transition-transform duration-300 ease-out overflow-y-auto ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
-        {/* Header */}
         <div className="sticky top-0 bg-[#faf9f7] border-b border-stone-100 px-6 py-4 flex items-center justify-between z-10">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-1">Task Detail</p>
-            <h3 className={`font-display text-lg font-medium leading-tight ${done ? 'text-stone-300 line-through' : 'text-stone-900'}`}>{task.title}</h3>
+            <h3 className={`font-display text-lg font-medium leading-tight ${done ? 'text-stone-300 line-through' : 'text-stone-900'}`}>
+              {task.title}
+            </h3>
           </div>
           <button onClick={handleClose} className="p-2 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors flex-shrink-0 ml-3">
             <X className="h-4 w-4" />
@@ -190,7 +182,6 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
         </div>
 
         <div className="px-6 py-5 space-y-6">
-          {/* Meta grid */}
           <div className="grid grid-cols-2 gap-3">
             {task.dueDate && (
               <div>
@@ -206,41 +197,51 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
             )}
             <div>
               <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-1">Priority</p>
-              <p className={`text-sm font-medium capitalize ${task.priority === 'urgent' ? 'text-[#c0604a]' : task.priority === 'high' ? 'text-amber-700' : 'text-stone-700'}`}>{task.priority}</p>
+              <p className={`text-sm font-medium capitalize ${task.priority === 'urgent' ? 'text-[#c0604a]' :
+                task.priority === 'high' ? 'text-amber-700' : 'text-stone-700'
+                }`}>{task.priority}</p>
             </div>
             <div>
               <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-1">Status</p>
-              <p className={`text-sm font-medium capitalize ${done ? 'text-teal-700' : overdue ? 'text-amber-700' : 'text-stone-700'}`}>{task.status?.replace('_', ' ')}</p>
+              <p className={`text-sm font-medium capitalize ${done ? 'text-teal-700' : overdue ? 'text-amber-700' : 'text-stone-700'}`}>
+                {task.status?.replace('_', ' ')}
+              </p>
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex gap-2">
             {!done && (
-              <button onClick={() => { onStatusChange(task._id, (isAdmin || isManager) ? 'verified' : 'done'); handleClose(); }}
-                className="flex-1 px-4 py-2.5 bg-stone-900 text-white rounded-full text-[11px] font-semibold hover:bg-stone-800 transition-all text-center">
+              <button
+                onClick={() => { onStatusChange(task._id, (isAdmin || isManager) ? 'verified' : 'done'); handleClose(); }}
+                className="flex-1 px-4 py-2.5 bg-stone-900 text-white rounded-full text-[11px] font-semibold hover:bg-stone-800 transition-all text-center"
+              >
                 Mark Complete
               </button>
             )}
             {done && (
-              <button onClick={() => { onStatusChange(task._id, 'pending'); handleClose(); }}
-                className="flex-1 px-4 py-2.5 border border-stone-200 text-stone-600 rounded-full text-[11px] font-semibold hover:bg-stone-50 transition-all text-center">
+              <button
+                onClick={() => { onStatusChange(task._id, 'pending'); handleClose(); }}
+                className="flex-1 px-4 py-2.5 border border-stone-200 text-stone-600 rounded-full text-[11px] font-semibold hover:bg-stone-50 transition-all text-center"
+              >
                 Reopen
               </button>
             )}
             {(isAdmin || isManager) && (
-              <button onClick={() => { onEdit(task); handleClose(); }}
-                className="px-4 py-2.5 border border-stone-200 text-stone-600 rounded-full text-[11px] font-semibold hover:bg-stone-50 transition-all">
+              <button
+                onClick={() => { onEdit(task); handleClose(); }}
+                className="px-4 py-2.5 border border-stone-200 text-stone-600 rounded-full text-[11px] font-semibold hover:bg-stone-50 transition-all"
+              >
                 Edit
               </button>
             )}
-            <button onClick={() => { onOpenDocs('task', task._id, task.title, task.documents); }}
-              className="px-4 py-2.5 border border-stone-200 text-stone-600 rounded-full text-[11px] font-semibold hover:bg-stone-50 transition-all">
+            <button
+              onClick={() => onOpenDocs('task', task._id, task.title, task.documents)}
+              className="px-4 py-2.5 border border-stone-200 text-stone-600 rounded-full text-[11px] font-semibold hover:bg-stone-50 transition-all"
+            >
               Docs {task.documents?.length ? `(${task.documents.length})` : ''}
             </button>
           </div>
 
-          {/* Subtasks */}
           {info.hasSubtasks && (
             <div>
               <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-3">
@@ -252,11 +253,15 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
                     <Checkbox size="sm" checked={sub.completed} onChange={() => onToggleSubtask(task._id, sub._id)} />
                     <span className={`text-[13px] flex-1 ${sub.completed ? 'text-stone-300 line-through' : 'text-stone-600'}`}>{sub.title}</span>
                     {sub.amount !== 0 && (
-                      <span className={`text-[11px] font-medium flex-shrink-0 ${sub.paymentStatus === 'completed' ? 'text-teal-700' : sub.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
+                      <span className={`text-[11px] font-medium flex-shrink-0 ${sub.paymentStatus === 'completed' ? 'text-teal-700' :
+                        sub.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
                         }`}>₹{Math.abs(sub.amount).toLocaleString()}</span>
                     )}
                     {(isAdmin || isManager) && (
-                      <button onClick={() => onDeleteSubtask(task._id, sub._id)} className="opacity-0 group-hover:opacity-100 p-0.5 text-stone-300 hover:text-[#c0604a] transition-all"><Trash2 className="w-3 h-3" /></button>
+                      <button onClick={() => onDeleteSubtask(task._id, sub._id)}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 text-stone-300 hover:text-[#c0604a] transition-all">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     )}
                   </div>
                 ))}
@@ -264,7 +269,6 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
             </div>
           )}
 
-          {/* Vendors */}
           {info.hasVendors && (
             <div>
               <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-3">
@@ -278,15 +282,21 @@ function TaskDetailDrawer({ task, onClose, onStatusChange, onToggleSubtask, onUp
                     <div className="flex-1 min-w-0">
                       <p className={`text-[13px] ${tv.status === 'completed' ? 'text-stone-300 line-through' : 'text-stone-600'}`}>{getVName(tv)}</p>
                       {(getVPhone(tv) || getVEmail(tv)) && (
-                        <p className="text-[11px] text-stone-400 mt-0.5 truncate">{getVPhone(tv)}{getVPhone(tv) && getVEmail(tv) && ' · '}{getVEmail(tv)}</p>
+                        <p className="text-[11px] text-stone-400 mt-0.5 truncate">
+                          {getVPhone(tv)}{getVPhone(tv) && getVEmail(tv) && ' · '}{getVEmail(tv)}
+                        </p>
                       )}
                     </div>
                     {tv.amount !== 0 && (
-                      <span className={`text-[11px] font-medium flex-shrink-0 ${tv.paymentStatus === 'completed' ? 'text-teal-700' : tv.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
+                      <span className={`text-[11px] font-medium flex-shrink-0 ${tv.paymentStatus === 'completed' ? 'text-teal-700' :
+                        tv.paymentStatus === 'partial' ? 'text-amber-700' : 'text-stone-400'
                         }`}>₹{Math.abs(tv.amount).toLocaleString()}</span>
                     )}
                     {(isAdmin || isManager) && (
-                      <button onClick={() => onDeleteVendor(task._id, tv._id)} className="opacity-0 group-hover:opacity-100 p-0.5 text-stone-300 hover:text-[#c0604a] transition-all"><Trash2 className="w-3 h-3" /></button>
+                      <button onClick={() => onDeleteVendor(task._id, tv._id)}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 text-stone-300 hover:text-[#c0604a] transition-all">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     )}
                   </div>
                 ))}
@@ -327,10 +337,8 @@ export default function WeddingDetailWrapper() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [selectedEventForTask, setSelectedEventForTask] = useState(null);
   const [selectedEventForTeam, setSelectedEventForTeam] = useState(null);
-  const [selectedTask, setSelectedTask]                 = useState(null);
-  const [docsSettings, setDocsSettings]                 = useState({ isOpen: false, entityId: null, entityType: null, title: '' });
-  const [eventMoodItems, setEventMoodItems]             = useState({});
-  const [moodDetailItem, setMoodDetailItem]             = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [docsSettings, setDocsSettings] = useState({ isOpen: false, entityId: null, entityType: null, title: '' });
 
   const emptyTask = { title: '', description: '', category: 'other', priority: 'medium', assignedTo: '', dueDate: '', notes: '', event: '', subtasks: [], taskVendors: [] };
   const emptyEvent = { name: '', description: '', eventDate: '', endDate: '', venue: { name: '', address: '', city: '' }, notes: '' };
@@ -344,6 +352,7 @@ export default function WeddingDetailWrapper() {
   const [newSubtaskAmount, setNewSubtaskAmount] = useState('');
   const emptyVendor = { name: '', phone: '', email: '', address: '', city: '', category: 'other', amount: '' };
   const [newVendor, setNewVendor] = useState(emptyVendor);
+  const teamUsers = users.filter(u => u.role === 'team_member');
 
   useEffect(() => { loadWedding(); loadUsers(); loadVendors(); }, [id]);
 
@@ -354,20 +363,15 @@ export default function WeddingDetailWrapper() {
       setTasks(r.data.tasks);
       setTasksByCategory(r.data.tasksByCategory);
       setEvents(r.data.events || []);
-      /* Keep drawer data fresh if open */
       setSelectedTask(prev => prev ? r.data.tasks.find(t => t._id === prev._id) || null : null);
-      /* Start collapsed — user clicks to expand */
       setExpandedCats(prev => Object.keys(prev).length ? prev : {});
       setExpandedEvents(prev => Object.keys(prev).length ? prev : {});
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
 
-  const loadUsers   = async () => { try { const r = await api.get('/auth/users'); setUsers(r.data.users); } catch {} };
-  const loadVendors = async () => { try { const r = await api.get('/vendors'); setVendors(r.data.vendors); } catch {} };
-  const loadEventMoodItems = async (eventId) => {
-    try { const r = await api.get(`/moodboard/event/${eventId}`); setEventMoodItems(prev => ({ ...prev, [eventId]: r.data.items })); } catch {}
-  };
+  const loadUsers = async () => { try { const r = await api.get('/auth/users'); setUsers(r.data.users); } catch { } };
+  const loadVendors = async () => { try { const r = await api.get('/vendors'); setVendors(r.data.vendors); } catch { } };
 
   const handleTaskStatus = async (taskId, status) => { try { await api.put(`/tasks/${taskId}/status`, { status }); loadWedding(); } catch { } };
   const handleToggleSubtask = async (taskId, subId) => { try { await api.put(`/tasks/${taskId}/subtasks/${subId}`); loadWedding(); } catch { } };
@@ -393,14 +397,26 @@ export default function WeddingDetailWrapper() {
   const handleAddEventTeam = async (e) => {
     e.preventDefault();
     if (!selectedEventForTeam) return;
-    try { await api.post(`/events/${selectedEventForTeam}/team`, eventTeamForm); loadWedding(); setShowEventTeamModal(false); setEventTeamForm({ userId: '', role: '' }); setSelectedEventForTeam(null); } catch { }
+    try {
+      const memberId = eventTeamForm.userId;
+      const alreadyInWedding = (wedding?.assignedTeam || []).some(m => (m.user?._id || m.user) === memberId);
+
+      // If the selected member is not in wedding team yet, add them first.
+      if (!alreadyInWedding) {
+        await api.post(`/weddings/${id}/team`, { userId: memberId, role: 'Member' });
+      }
+
+      await api.post(`/events/${selectedEventForTeam}/team`, eventTeamForm);
+      loadWedding();
+      setShowEventTeamModal(false);
+      setEventTeamForm({ userId: '', role: '' });
+      setSelectedEventForTeam(null);
+    } catch { }
   };
   const handleRemoveEventTeam = async (eventId, userId) => { try { await api.delete(`/events/${eventId}/team/${userId}`); loadWedding(); } catch { } };
 
-  const handleOpenDocs = (type, id, title) => {
-    setDocsSettings({ isOpen: true, entityId: id, entityType: type, title });
-  };
-  const handleDocsUpdate = () => { loadWedding(); };
+  const handleOpenDocs = (type, id, title) => setDocsSettings({ isOpen: true, entityId: id, entityType: type, title });
+  const handleDocsUpdate = () => loadWedding();
 
   const handleTaskSubmit = async (e) => {
     e.preventDefault();
@@ -430,11 +446,7 @@ export default function WeddingDetailWrapper() {
     setTaskForm({ title: task.title, description: task.description || '', category: task.category, priority: task.priority, assignedTo: task.assignedTo?._id || '', dueDate: task.dueDate ? task.dueDate.split('T')[0] : '', notes: task.notes || '', event: task.event?._id || '', subtasks: task.subtasks || [], taskVendors: task.taskVendors || [] });
     setShowTaskModal(true);
   };
-  const openAddTaskToEvent = (eventId) => {
-    setSelectedEventForTask(eventId);
-    setTaskForm({ ...emptyTask, event: eventId });
-    setShowTaskModal(true);
-  };
+  const openAddTaskToEvent = (eventId) => { setSelectedEventForTask(eventId); setTaskForm({ ...emptyTask, event: eventId }); setShowTaskModal(true); };
   const openEditEvent = (event) => {
     setEditingEvent(event);
     setEventForm({ name: event.name, description: event.description || '', eventDate: event.eventDate ? event.eventDate.split('T')[0] : '', endDate: event.endDate ? event.endDate.split('T')[0] : '', venue: event.venue || { name: '', address: '', city: '' }, notes: event.notes || '' });
@@ -489,11 +501,11 @@ export default function WeddingDetailWrapper() {
   const days = daysUntil(wedding.weddingDate);
   const prog = wedding.progress || 0;
 
-  const daysColor = days === null ? 'text-stone-900'
+  const daysColor = days === null ? 'text-white'
     : days === 0 ? 'text-[#c0604a]'
       : days <= 7 ? 'text-[#c0604a]'
         : days <= 30 ? 'text-[#b07d46]'
-          : 'text-stone-900';
+          : 'text-white';
 
   return (
     <>
@@ -503,70 +515,85 @@ export default function WeddingDetailWrapper() {
         .font-body    { font-family: 'Inter', sans-serif; }
         @keyframes slideReveal { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         .anim-reveal { animation: slideReveal 0.3s ease-out forwards; }
-        .anim-stagger > * { opacity: 0; animation: slideReveal 0.25s ease-out forwards; }
       `}</style>
 
-      <div className="font-body min-h-screen bg-[#faf9f7]">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-6 sm:py-8">
+      <div className="font-body bg-[#faf9f7] text-stone-900 selection:bg-stone-200 min-h-[calc(100vh-56px)] pb-8">
 
-          {/* Back */}
-          <Link to="/weddings" className="inline-flex items-center gap-2 text-stone-400 hover:text-stone-700 text-sm transition-colors mb-5 group">
-            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-            Weddings
-          </Link>
-
-          {/* ── HERO BANNER (compact) ── */}
-          <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm overflow-hidden mb-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 sm:px-6 py-5">
-              <div className="flex items-center gap-4 min-w-0">
-                {/* Progress ring inline */}
-                <div className="relative flex-shrink-0">
-                  <ProgressRing pct={prog} size={52} stroke={4} color={prog === 100 ? '#5a8f72' : '#1c1917'} />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-stone-600">{prog}%</span>
-                  </div>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-0.5">Wedding</p>
-                  <h1 className="font-display text-2xl sm:text-3xl font-medium text-stone-900 leading-tight truncate">{wedding.name}</h1>
-                  <p className="text-stone-400 text-xs mt-0.5 italic truncate">{wedding.clientName} · {formatDate(wedding.weddingDate)}</p>
-                </div>
+        {/* ── DARK HERO RIBBON — matches Weddings.jsx exactly ── */}
+        <div className="bg-stone-900 py-12 sm:py-16 px-5 sm:px-8 lg:px-10">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+              <div>
+                <p className="text-[11px] font-bold tracking-[0.2em] text-[#b07d46] uppercase mb-2">Wedding Detail</p>
+                <h1 className="font-display text-4xl sm:text-5xl font-medium text-white">{wedding.name}</h1>
+                <p className="text-stone-400 text-sm mt-2 italic">
+                  {wedding.clientName} · {formatDate(wedding.weddingDate)}
+                </p>
               </div>
+
               {days !== null && days >= 0 && (
-                <div className="flex-shrink-0 flex items-center gap-3 sm:gap-4 bg-stone-50 rounded-xl px-4 py-3 border border-stone-100/60">
-                  <div className="text-center">
-                    <span className={`font-display text-3xl sm:text-4xl font-medium leading-none ${daysColor}`}>{days}</span>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold tracking-[0.15em] text-stone-400 uppercase">Days</p>
-                    <p className="text-[10px] font-bold tracking-[0.15em] text-stone-400 uppercase">Left</p>
+                <div className="flex-shrink-0 self-start sm:self-auto text-right">
+                  <p className="text-[11px] font-bold tracking-[0.2em] text-stone-500 uppercase mb-1">Countdown</p>
+                  <div className="flex items-baseline gap-2 sm:justify-end">
+                    <span className={`font-display text-5xl sm:text-6xl font-medium leading-none ${daysColor}`}>{days}</span>
+                    <span className="text-stone-500 text-sm">days left</span>
                   </div>
                 </div>
               )}
             </div>
-          </div>
 
-          {/* ── STAT CARDS ROW ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
-            {[
-              { label: 'Venue', value: wedding.venue?.name || 'TBD', icon: MapPin, bar: 'bg-stone-300' },
-              { label: 'Guests', value: wedding.guestCount || '—', icon: Users, bar: 'bg-stone-400' },
-              { label: 'Budget', value: wedding.budget?.estimated > 0 ? formatCurrency(wedding.budget.estimated) : '—', icon: IndianRupee, bar: 'bg-amber-700' },
-              { label: 'Tasks', value: `${wedding.taskStats?.completed || 0}/${wedding.taskStats?.total || 0}`, icon: Check, bar: 'bg-teal-700' },
-              { label: 'Events', value: events.length, icon: Calendar, bar: 'bg-stone-900' },
-            ].map(s => {
-              const Icon = s.icon;
-              return (
-                <div key={s.label} className="bg-white p-4 rounded-2xl border border-stone-200/60 shadow-sm group hover:-translate-y-0.5 transition-all duration-300">
-                  <div className={`h-[1px] w-5 ${s.bar} mb-3 group-hover:w-8 transition-all duration-300`} />
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Icon className="w-3 h-3 text-stone-300" />
-                    <p className="text-[9px] font-bold tracking-[0.2em] text-stone-400 uppercase">{s.label}</p>
-                  </div>
-                  <p className="text-sm font-medium text-stone-800 truncate">{s.value}</p>
+          </div>
+        </div>
+        {/* ── END DARK HERO RIBBON ── */}
+
+        {/* ── PAGE BODY ── */}
+        <div className="max-w-7xl px-5 sm:px-8 lg:px-10 py-6 sm:py-8">
+
+          <div className="mx-auto py-6 sm:py-8">
+            {/* 1. The Stats Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {[
+                { label: 'Venue', value: wedding.venue?.name || 'TBD', bar: 'bg-stone-300' },
+                { label: 'Guests', value: wedding.guestCount || '—', bar: 'bg-amber-700' },
+                { label: 'Budget', value: wedding.budget?.estimated > 0 ? formatCurrency(wedding.budget.estimated) : '—', bar: 'bg-teal-700' },
+                { label: 'Progress', value: `${prog}%`, bar: 'bg-stone-900' },
+              ].map((m) => (
+                <div key={m.label} className="group bg-white rounded-2xl p-5 border border-stone-200/60 shadow-sm transition-all duration-300 hover:-translate-y-0.5">
+                  <div className={`h-[1px] w-6 ${m.bar} mb-4 group-hover:w-10 transition-all duration-300`} />
+                  {/* Value is Large */}
+                  <p className="font-display text-2xl sm:text-3xl font-medium text-stone-900 leading-none truncate">
+                    {m.value}
+                  </p>
+                  {/* Label is Small/Spaced */}
+                  <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mt-3">
+                    {m.label}
+                  </p>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+
+            {/* 2. The Detailed Progress Bar (The Ribbon) */}
+            <div className="mt-8 bg-white p-6 rounded-2xl border border-stone-200/60 shadow-sm">
+              <div className="flex justify-between items-end mb-3">
+                <div>
+                  <h4 className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">Planning Completion</h4>
+                  <p className="text-xs text-stone-600 mt-1">
+                    {wedding.taskStats?.completed || 0} completed · {wedding.taskStats?.pending || 0} pending
+                  </p>
+                </div>
+                <span className="font-display text-xl font-medium text-stone-900">{prog}%</span>
+              </div>
+
+              <div className="h-[2px] bg-stone-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full transition-all duration-1000 ease-out"
+                  style={{
+                    width: `${prog}%`,
+                    backgroundColor: prog === 100 ? '#5a8f72' : '#1c1917' // Using stone-900 instead of brown for a cleaner look
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
           {/* ── MAIN GRID ── */}
@@ -611,11 +638,7 @@ export default function WeddingDetailWrapper() {
                         <div key={ev._id}>
                           <div
                             className="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-[#faf9f7] transition-colors group"
-                            onClick={() => {
-                              const toggled = !expandedEvents[ev._id];
-                              setExpandedEvents(p => ({ ...p, [ev._id]: toggled }));
-                              if (toggled && !eventMoodItems[ev._id]) loadEventMoodItems(ev._id);
-                            }}
+                            onClick={() => setExpandedEvents(p => ({ ...p, [ev._id]: !p[ev._id] }))}
                           >
                             <div className={`w-[2px] h-8 rounded-full flex-shrink-0 ${evProg === 100 ? 'bg-teal-700' : 'bg-stone-300'}`} />
                             <div className="flex-1 min-w-0">
@@ -626,9 +649,8 @@ export default function WeddingDetailWrapper() {
                             </div>
                             <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
                               <span className="text-[10px] text-stone-400 hidden sm:block">{evProg}%</span>
-                              <button onClick={(e) => { e.stopPropagation(); handleOpenDocs('event', ev._id, ev.name); }}
-                                className="p-1 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-all opacity-0 group-hover:opacity-100"
-                                title="Documents">
+                              <button onClick={() => handleOpenDocs('event', ev._id, ev.name)}
+                                className="p-1 rounded-lg text-stone-300 hover:text-stone-600 hover:bg-stone-100 transition-all opacity-0 group-hover:opacity-100">
                                 <FileText className="h-3.5 w-3.5" />
                               </button>
                               {(isAdmin || isManager) && (
@@ -644,7 +666,6 @@ export default function WeddingDetailWrapper() {
                           {isExp && (
                             <div className="px-5 pb-4 pt-2 anim-reveal">
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Event tasks */}
                                 <div className="md:col-span-2">
                                   <div className="flex items-center justify-between mb-2">
                                     <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">Tasks</p>
@@ -658,43 +679,14 @@ export default function WeddingDetailWrapper() {
                                   {evTasks.length === 0 ? (
                                     <p className="text-xs text-stone-400 italic py-2">No tasks for this event</p>
                                   ) : (
-                                    <div className="bg-stone-50/40 rounded-xl border border-stone-200/60 overflow-hidden">
-                                      <table className="w-full">
-                                        <tbody className="divide-y divide-stone-100/60">
-                                          {evTasks.map(task => {
-                                            const info = getCompletionInfo(task);
-                                            const isDone = task.status === 'done' || task.status === 'verified';
-                                            const overdue = task.status === 'pending' && isOverdue(task.dueDate);
-                                            return (
-                                              <tr key={task._id} onClick={() => setSelectedTask(task)} className="cursor-pointer hover:bg-[#faf9f7] transition-all group">
-                                                <td className="px-4 py-2.5">
-                                                  <div className="flex items-center gap-2.5">
-                                                    <div onClick={e => e.stopPropagation()}>
-                                                      <Checkbox checked={isDone} onChange={() => {
-                                                        if (isDone) { taskHandlers.onStatusChange(task._id, 'pending'); return; }
-                                                        if ((info.hasSubtasks || info.hasVendors) && !info.canAutoComplete) { setSelectedTask(task); return; }
-                                                        taskHandlers.onStatusChange(task._id, 'done');
-                                                      }} />
-                                                    </div>
-                                                    <span className={`text-[13px] truncate ${isDone ? 'text-stone-300 line-through' : 'font-medium text-stone-800'}`}>{task.title}</span>
-                                                  </div>
-                                                </td>
-                                                <td className="px-3 py-2.5 hidden sm:table-cell whitespace-nowrap">
-                                                  {task.dueDate && <span className={`text-[11px] ${overdue ? 'text-amber-700' : 'text-stone-400'}`}>{formatDate(task.dueDate)}</span>}
-                                                </td>
-                                                <td className="px-3 py-2.5 text-right">
-                                                  <ChevronRight className="h-3.5 w-3.5 text-stone-300 group-hover:text-stone-600 transition-colors inline-block" />
-                                                </td>
-                                              </tr>
-                                            );
-                                          })}
-                                        </tbody>
-                                      </table>
+                                    <div className="bg-stone-50/40 rounded-xl border border-stone-200/60 overflow-hidden divide-y divide-stone-100/60">
+                                      {evTasks.map(task => (
+                                        <TaskRow key={task._id} task={task} {...taskHandlers} />
+                                      ))}
                                     </div>
                                   )}
                                 </div>
 
-                                {/* Event team */}
                                 <div>
                                   <div className="flex items-center justify-between mb-2">
                                     <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">Team</p>
@@ -732,23 +724,16 @@ export default function WeddingDetailWrapper() {
                                   )}
                                 </div>
 
-                                {/* Event Hotels */}
                                 {ev.hotels && ev.hotels.length > 0 && (
                                   <div className="mt-4 pt-4 border-t border-stone-200/60">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">Linked Hotels</p>
-                                    </div>
+                                    <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Linked Hotels</p>
                                     <div className="space-y-3">
                                       {ev.hotels.map((h, i) => (
                                         <div key={i} className="flex gap-3 bg-white p-2.5 rounded-xl border border-stone-200/60 shadow-sm">
                                           <div className="w-12 h-12 rounded-lg bg-stone-100 overflow-hidden flex-shrink-0">
-                                            {h.photoUrl ? (
-                                              <img src={h.photoUrl} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                              <div className="w-full h-full flex items-center justify-center">
-                                                <Building2 className="w-5 h-5 text-stone-300" />
-                                              </div>
-                                            )}
+                                            {h.photoUrl
+                                              ? <img src={h.photoUrl} alt="" className="w-full h-full object-cover" />
+                                              : <div className="w-full h-full flex items-center justify-center"><Building2 className="w-5 h-5 text-stone-300" /></div>}
                                           </div>
                                           <div className="min-w-0 flex-1">
                                             <p className="text-[13px] font-semibold text-stone-900 truncate">{h.title}</p>
@@ -761,43 +746,13 @@ export default function WeddingDetailWrapper() {
                                                 </div>
                                               )}
                                               {h.externalUrl && (
-                                                <a href={h.externalUrl} target="_blank" rel="noreferrer" className="text-[10px] font-medium text-[#b07d46] hover:underline">
-                                                  Details
-                                                </a>
+                                                <a href={h.externalUrl} target="_blank" rel="noreferrer"
+                                                  className="text-[10px] font-medium text-[#b07d46] hover:underline">Details</a>
                                               )}
                                             </div>
                                           </div>
                                         </div>
                                       ))}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Inspiration Items */}
-                                {eventMoodItems[ev._id] && eventMoodItems[ev._id].length > 0 && (
-                                  <div className="mt-4 pt-4 border-t border-stone-200/60 col-span-full">
-                                    <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2">Inspiration</p>
-                                    <div className="flex gap-2.5 overflow-x-auto pb-1">
-                                      {eventMoodItems[ev._id].map(mi => {
-                                        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-                                        const ROOT = API_URL.replace('/api', '');
-                                        return (
-                                          <div key={mi._id} onClick={() => setMoodDetailItem(mi)} className="flex-shrink-0 w-20 cursor-pointer group">
-                                            {mi.type === 'image' && mi.mediaUrl ? (
-                                              <div className="w-20 h-20 rounded-xl overflow-hidden border border-stone-200/60 shadow-sm group-hover:shadow-md transition-all">
-                                                <img src={`${ROOT}${mi.mediaUrl}`} alt={mi.title} className="w-full h-full object-cover" />
-                                              </div>
-                                            ) : mi.type === 'color' ? (
-                                              <div className="w-20 h-20 rounded-xl border border-stone-200/60 shadow-sm group-hover:shadow-md transition-all" style={{ backgroundColor: mi.colorHex }} />
-                                            ) : (
-                                              <div className="w-20 h-20 rounded-xl border border-stone-200/60 bg-purple-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
-                                                <Video className="w-5 h-5 text-purple-300" />
-                                              </div>
-                                            )}
-                                            <p className="text-[10px] text-stone-500 mt-1 truncate text-center">{mi.title}</p>
-                                          </div>
-                                        );
-                                      })}
                                     </div>
                                   </div>
                                 )}
@@ -818,10 +773,12 @@ export default function WeddingDetailWrapper() {
                     <p className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-0.5">Checklist</p>
                     <h2 className="font-display text-lg font-medium text-stone-900">Tasks</h2>
                   </div>
-                  <button onClick={() => setShowTaskModal(true)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-stone-900 text-white rounded-full text-[11px] font-semibold hover:bg-stone-800 transition-all">
-                    <Plus className="h-3 w-3" /> Add Task
-                  </button>
+                  {(isAdmin || isManager) && (
+                    <button onClick={() => setShowTaskModal(true)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-stone-900 text-white rounded-full text-[11px] font-semibold hover:bg-stone-800 transition-all">
+                      <Plus className="h-3 w-3" /> Add Task
+                    </button>
+                  )}
                 </div>
 
                 {Object.keys(tasksByCategory).length === 0 ? (
@@ -849,7 +806,6 @@ export default function WeddingDetailWrapper() {
 
                           return (
                             <React.Fragment key={category}>
-                              {/* Category header row */}
                               <tr
                                 className="cursor-pointer hover:bg-[#faf9f7] transition-colors group"
                                 onClick={() => setExpandedCats(p => ({ ...p, [category]: !p[category] }))}
@@ -860,7 +816,8 @@ export default function WeddingDetailWrapper() {
                                     <span className="text-sm font-semibold text-stone-900 capitalize">{category.replace('_', ' ')}</span>
                                     <span className="text-[10px] text-stone-400">{done}/{catTasks.length}</span>
                                     <div className="hidden sm:block w-14 h-[2px] bg-stone-100 rounded-full overflow-hidden ml-2">
-                                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: pct === 100 ? '#115e59' : '#a8a29e' }} />
+                                      <div className="h-full rounded-full transition-all duration-500"
+                                        style={{ width: `${pct}%`, background: pct === 100 ? '#5a8f72' : '#a8a29e' }} />
                                     </div>
                                   </div>
                                 </td>
@@ -868,18 +825,14 @@ export default function WeddingDetailWrapper() {
                                 <td></td>
                               </tr>
 
-                              {/* Task sub-rows */}
                               {isExp && catTasks.map(task => {
                                 const info = getCompletionInfo(task);
                                 const isDone = task.status === 'done' || task.status === 'verified';
                                 const overdue = task.status === 'pending' && isOverdue(task.dueDate);
 
                                 return (
-                                  <tr
-                                    key={task._id}
-                                    onClick={() => setSelectedTask(task)}
-                                    className="cursor-pointer hover:bg-[#faf9f7] transition-all group bg-stone-50/40"
-                                  >
+                                  <tr key={task._id} onClick={() => setSelectedTask(task)}
+                                    className="cursor-pointer hover:bg-[#faf9f7] transition-all group bg-stone-50/40">
                                     <td className="px-5 py-3 pl-12">
                                       <div className="flex items-center gap-3">
                                         <div onClick={e => e.stopPropagation()}>
@@ -896,14 +849,14 @@ export default function WeddingDetailWrapper() {
                                       </div>
                                     </td>
                                     <td className="px-5 py-3 hidden md:table-cell whitespace-nowrap">
-                                      {task.dueDate ? (
-                                        <span className={`text-sm ${overdue ? 'text-amber-700 font-medium' : 'text-stone-500'}`}>{formatDate(task.dueDate)}</span>
-                                      ) : <span className="text-stone-300 text-sm">—</span>}
+                                      {task.dueDate
+                                        ? <span className={`text-sm ${overdue ? 'text-amber-700 font-medium' : 'text-stone-500'}`}>{formatDate(task.dueDate)}</span>
+                                        : <span className="text-stone-300 text-sm">—</span>}
                                     </td>
                                     <td className="px-5 py-3 hidden md:table-cell">
                                       {task.assignedTo ? (
                                         <div className="flex items-center gap-2">
-                                          <div className="w-6 h-6 rounded-full border border-stone-200/60 bg-stone-100 flex items-center justify-center flex-shrink-0">
+                                          <div className="w-6 h-6 rounded-full bg-stone-100 flex items-center justify-center flex-shrink-0">
                                             <span className="text-[10px] font-medium text-stone-600">{task.assignedTo.name?.charAt(0)?.toUpperCase()}</span>
                                           </div>
                                           <span className="text-xs text-stone-500 truncate max-w-[60px]">{task.assignedTo.name?.split(' ')[0]}</span>
@@ -936,78 +889,68 @@ export default function WeddingDetailWrapper() {
             {/* RIGHT: Sidebar */}
             <div className="space-y-3">
 
-              {/* Quick Stats (dark card) */}
-              <div className="bg-stone-900 text-[#faf9f7] rounded-2xl p-4 relative overflow-hidden">
+              {/* Quick Stats */}
+              <div className="bg-stone-900 text-[#faf9f7] rounded-2xl p-4">
                 <h4 className="font-display italic text-sm mb-3">Overview</h4>
                 <div className="space-y-2 text-[13px]">
-                  <div className="flex justify-between items-center">
-                    <span className="text-stone-400">Days Left</span>
-                    <span className="font-medium">{days !== null && days >= 0 ? days : '—'}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-stone-400">Tasks Done</span>
-                    <span className="font-medium">{wedding.taskStats?.completed || 0} / {wedding.taskStats?.total || 0}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-stone-400">Vendors</span>
-                    <span className="font-medium">{wedding.vendors?.filter(v => v.confirmed).length || 0} / {wedding.vendors?.length || 0} confirmed</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-stone-400">Budget</span>
-                    <span className="font-medium">{wedding.budget?.estimated > 0 ? formatCurrency(wedding.budget.estimated) : '—'}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-stone-400">Events</span>
-                    <span className="font-medium">{events.length} planned</span>
-                  </div>
+                  {[
+                    { label: 'Days Left', value: days !== null && days >= 0 ? days : '—' },
+                    { label: 'Tasks Done', value: `${wedding.taskStats?.completed || 0} / ${wedding.taskStats?.total || 0}` },
+                    { label: 'Vendors', value: `${wedding.vendors?.filter(v => v.confirmed).length || 0} / ${wedding.vendors?.length || 0} confirmed` },
+                    { label: 'Budget', value: wedding.budget?.estimated > 0 ? formatCurrency(wedding.budget.estimated) : '—' },
+                    { label: 'Events', value: `${events.length} planned` },
+                  ].map(s => (
+                    <div key={s.label} className="flex justify-between items-center">
+                      <span className="text-stone-400">{s.label}</span>
+                      <span className="font-medium">{s.value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Task Completion Donut */}
-              {(wedding.taskStats?.total > 0) && (() => {
+              {/* Task Progress Donut */}
+              {wedding.taskStats?.total > 0 && (() => {
                 const total = wedding.taskStats?.total || 0;
                 const done = wedding.taskStats?.completed || 0;
                 const pending = wedding.taskStats?.pending || 0;
                 const pct = total ? Math.round((done / total) * 100) : 0;
                 const size = 90;
-                const strokeWidth = 16;
-                const radius = (size - strokeWidth) / 2;
-                const circumference = 2 * Math.PI * radius;
+                const sw = 16;
+                const radius = (size - sw) / 2;
+                const circ = 2 * Math.PI * radius;
                 return (
                   <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4">
                     <p className={labelCls}>Task Progress</p>
                     <div className="flex items-center gap-4 mt-2">
                       <div className="relative" style={{ width: size, height: size }}>
                         <svg width={size} height={size} className="-rotate-90">
-                          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f0ede8" strokeWidth={strokeWidth} />
-                          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={pct === 100 ? '#5a8f72' : '#1c1917'} strokeWidth={strokeWidth}
-                            strokeDasharray={circumference} strokeDashoffset={circumference - (pct / 100) * circumference} strokeLinecap="round"
+                          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f0ede8" strokeWidth={sw} />
+                          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={pct === 100 ? '#5a8f72' : '#1c1917'} strokeWidth={sw}
+                            strokeDasharray={circ} strokeDashoffset={circ - (pct / 100) * circ} strokeLinecap="round"
                             style={{ transition: 'stroke-dashoffset 0.7s ease' }} />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center">
-                            <p className="font-display text-xl font-medium text-stone-900">{pct}%</p>
-                          </div>
+                          <p className="font-display text-xl font-medium text-stone-900">{pct}%</p>
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-xs">
-                          <div className="w-2 h-2 rounded-full bg-stone-900" />
-                          <span className="text-stone-600">Completed</span>
-                          <span className="text-stone-400 ml-auto">{done}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs">
-                          <div className="w-2 h-2 rounded-full bg-stone-200" />
-                          <span className="text-stone-600">Pending</span>
-                          <span className="text-stone-400 ml-auto">{pending}</span>
-                        </div>
+                        {[
+                          { color: 'bg-stone-900', label: 'Completed', value: done },
+                          { color: 'bg-stone-200', label: 'Pending', value: pending },
+                        ].map(s => (
+                          <div key={s.label} className="flex items-center gap-2 text-xs">
+                            <div className={`w-2 h-2 rounded-full ${s.color}`} />
+                            <span className="text-stone-600">{s.label}</span>
+                            <span className="text-stone-400 ml-auto">{s.value}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 );
               })()}
 
-              {/* Budget by Category */}
+              {/* Vendor Budget */}
               {wedding.vendors?.length > 0 && (() => {
                 const catData = {};
                 (wedding.vendors || []).forEach(v => {
@@ -1016,28 +959,26 @@ export default function WeddingDetailWrapper() {
                 });
                 const entries = Object.entries(catData).filter(([, amt]) => amt > 0).sort((a, b) => b[1] - a[1]);
                 const maxAmt = Math.max(...entries.map(([, a]) => a), 1);
-                const totalSpent = entries.reduce((s, [, a]) => s + a, 0);
-                if (entries.length === 0) return null;
+                const total = entries.reduce((s, [, a]) => s + a, 0);
+                if (!entries.length) return null;
                 const catColors = { catering: 'bg-stone-900', decor: 'bg-amber-700', photography: 'bg-stone-600', videography: 'bg-stone-400', music: 'bg-teal-700', makeup: 'bg-rose-400', venue: 'bg-stone-700', transport: 'bg-stone-300', invitation: 'bg-stone-500', other: 'bg-stone-200' };
                 return (
                   <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm p-4">
                     <p className={labelCls}>Vendor Budget</p>
-                    <p className="font-display text-lg font-medium text-stone-900 mt-0.5 mb-3">{formatCurrency(totalSpent)}</p>
+                    <p className="font-display text-lg font-medium text-stone-900 mt-0.5 mb-3">{formatCurrency(total)}</p>
                     <div className="space-y-2">
-                      {entries.slice(0, 6).map(([cat, amt]) => {
-                        const widthPct = Math.max((amt / maxAmt) * 100, 8);
-                        return (
-                          <div key={cat}>
-                            <div className="flex justify-between text-[10px] text-stone-400 mb-1">
-                              <span className="capitalize font-bold tracking-wider uppercase">{cat}</span>
-                              <span>{formatCurrency(amt)}</span>
-                            </div>
-                            <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
-                              <div className={`h-full rounded-full transition-all duration-500 ${catColors[cat] || 'bg-stone-300'}`} style={{ width: `${widthPct}%` }} />
-                            </div>
+                      {entries.slice(0, 6).map(([cat, amt]) => (
+                        <div key={cat}>
+                          <div className="flex justify-between text-[10px] text-stone-400 mb-1">
+                            <span className="font-bold tracking-wider uppercase">{cat}</span>
+                            <span>{formatCurrency(amt)}</span>
                           </div>
-                        );
-                      })}
+                          <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all duration-500 ${catColors[cat] || 'bg-stone-300'}`}
+                              style={{ width: `${Math.max((amt / maxAmt) * 100, 8)}%` }} />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
@@ -1074,7 +1015,6 @@ export default function WeddingDetailWrapper() {
                     </button>
                   )}
                 </div>
-
                 {wedding.relationshipManager && (
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 border border-stone-100 mb-3">
                     <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center flex-shrink-0">
@@ -1086,7 +1026,6 @@ export default function WeddingDetailWrapper() {
                     </div>
                   </div>
                 )}
-
                 <div className="space-y-1.5">
                   {wedding.assignedTeam?.map((m, i) => (
                     <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-stone-50 border border-stone-100">
@@ -1143,7 +1082,6 @@ export default function WeddingDetailWrapper() {
 
       {/* ════ MODALS ════ */}
 
-      {/* Task modal */}
       <Modal isOpen={showTaskModal} onClose={closeTaskModal} title={editingTask ? 'Edit Task' : 'Add Task'} size="lg">
         <form onSubmit={handleTaskSubmit} className="space-y-4">
           <Field label="Title">
@@ -1181,8 +1119,6 @@ export default function WeddingDetailWrapper() {
               {events.map(ev => <option key={ev._id} value={ev._id}>{ev.name}</option>)}
             </select>
           </Field>
-
-          {/* Subtasks */}
           <div>
             <label className={labelCls}>Subtasks</label>
             <div className="space-y-1.5 mb-2">
@@ -1197,7 +1133,8 @@ export default function WeddingDetailWrapper() {
               ))}
             </div>
             <div className="flex gap-2">
-              <input type="text" placeholder="Add subtask..." value={newSubtaskTitle} onChange={e => setNewSubtaskTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSubtask(); } }}
+              <input type="text" placeholder="Add subtask..." value={newSubtaskTitle} onChange={e => setNewSubtaskTitle(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSubtask(); } }}
                 className="flex-1 px-4 py-2.5 border border-stone-200 rounded-xl text-sm bg-white placeholder-stone-300 focus:outline-none focus:border-stone-400" />
               <input type="number" placeholder="₹" value={newSubtaskAmount} onChange={e => setNewSubtaskAmount(e.target.value)}
                 className="w-24 px-4 py-2.5 border border-stone-200 rounded-xl text-sm bg-white placeholder-stone-300 focus:outline-none focus:border-stone-400" />
@@ -1205,8 +1142,6 @@ export default function WeddingDetailWrapper() {
                 className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl transition-colors"><Plus className="w-4 h-4" /></button>
             </div>
           </div>
-
-          {/* Vendors */}
           <div>
             <label className={labelCls}>Vendors</label>
             <div className="space-y-1.5 mb-2">
@@ -1242,11 +1177,9 @@ export default function WeddingDetailWrapper() {
               </button>
             </div>
           </div>
-
           <Field label="Notes">
             <textarea value={taskForm.notes} rows={2} onChange={e => setTaskForm(f => ({ ...f, notes: e.target.value }))} className={`${inputCls} resize-none`} />
           </Field>
-
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-100">
             <button type="button" onClick={closeTaskModal} className="px-5 py-2.5 rounded-full text-sm text-stone-500 border border-stone-200 hover:border-stone-400 transition-all">Cancel</button>
             <button type="submit" className="px-7 py-2.5 rounded-full text-sm font-semibold bg-stone-900 text-white hover:bg-stone-800 transition-all">{editingTask ? 'Update' : 'Create'} Task</button>
@@ -1254,13 +1187,12 @@ export default function WeddingDetailWrapper() {
         </form>
       </Modal>
 
-      {/* Team modal */}
       <Modal isOpen={showTeamModal} onClose={() => setShowTeamModal(false)} title="Add Team Member" size="sm">
         <form onSubmit={handleAddTeam} className="space-y-4">
           <Field label="Team Member">
             <select value={teamForm.userId} onChange={e => setTeamForm(f => ({ ...f, userId: e.target.value }))} required className={`${inputCls} appearance-none`}>
               <option value="">Select member...</option>
-              {users.map(u => <option key={u._id} value={u._id}>{u.name} ({u.role.replace('_', ' ')})</option>)}
+              {teamUsers.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
             </select>
           </Field>
           <Field label="Role">
@@ -1273,7 +1205,6 @@ export default function WeddingDetailWrapper() {
         </form>
       </Modal>
 
-      {/* Vendor modal */}
       <Modal isOpen={showVendorModal} onClose={() => setShowVendorModal(false)} title="Add Vendor" size="sm">
         <form onSubmit={handleAddVendor} className="space-y-4">
           <Field label="Vendor">
@@ -1295,7 +1226,6 @@ export default function WeddingDetailWrapper() {
         </form>
       </Modal>
 
-      {/* Event modal */}
       <Modal isOpen={showEventModal} onClose={closeEventModal} title={editingEvent ? 'Edit Event' : 'Add Event'} size="md">
         <form onSubmit={handleEventSubmit} className="space-y-4">
           <Field label="Event Name">
@@ -1330,13 +1260,12 @@ export default function WeddingDetailWrapper() {
         </form>
       </Modal>
 
-      {/* Event team modal */}
       <Modal isOpen={showEventTeamModal} onClose={() => setShowEventTeamModal(false)} title="Assign to Event" size="sm">
         <form onSubmit={handleAddEventTeam} className="space-y-4">
           <Field label="Team Member">
             <select value={eventTeamForm.userId} onChange={e => setEventTeamForm(f => ({ ...f, userId: e.target.value }))} required className={`${inputCls} appearance-none`}>
-              <option value="">Select from wedding team...</option>
-              {(wedding.assignedTeam || []).map(m => <option key={m.user?._id} value={m.user?._id}>{m.user?.name} ({m.role || 'Member'})</option>)}
+              <option value="">Select team member...</option>
+              {teamUsers.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
             </select>
           </Field>
           <Field label="Event Role (optional)">
@@ -1349,7 +1278,6 @@ export default function WeddingDetailWrapper() {
         </form>
       </Modal>
 
-      {/* Task detail drawer */}
       <TaskDetailDrawer
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
@@ -1363,6 +1291,7 @@ export default function WeddingDetailWrapper() {
         isAdmin={isAdmin}
         onOpenDocs={handleOpenDocs}
       />
+
       <DocumentsDrawer
         isOpen={docsSettings.isOpen}
         onClose={() => setDocsSettings(s => ({ ...s, isOpen: false }))}
@@ -1376,64 +1305,6 @@ export default function WeddingDetailWrapper() {
         onUpload={() => loadWedding()}
         onDelete={() => loadWedding()}
       />
-
-      {/* Mood Board Detail Modal */}
-      <Modal isOpen={!!moodDetailItem} onClose={() => setMoodDetailItem(null)} title={moodDetailItem?.title || 'Inspiration'}>
-        {moodDetailItem && (() => {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-          const ROOT = API_URL.replace('/api', '');
-          
-          return (
-            <div className="space-y-4">
-              {moodDetailItem.type === 'image' && moodDetailItem.mediaUrl && (
-                <img src={`${ROOT}${moodDetailItem.mediaUrl}`} alt={moodDetailItem.title} className="w-full rounded-xl border border-stone-200/60" />
-              )}
-              {moodDetailItem.type === 'video' && moodDetailItem.mediaUrl && (
-                <video controls className="w-full rounded-xl border border-stone-200/60">
-                  <source src={`${ROOT}${moodDetailItem.mediaUrl}`} />
-                </video>
-              )}
-              {moodDetailItem.type === 'color' && (
-                <div className="h-40 rounded-xl border border-stone-200/60" style={{ backgroundColor: moodDetailItem.colorHex }}>
-                  <div className="h-full flex items-end p-4">
-                    <span className="bg-white/90 backdrop-blur-sm text-sm font-bold tracking-wider font-mono text-stone-700 px-3 py-1.5 rounded-lg">{moodDetailItem.colorHex}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-stone-50/50 rounded-xl border border-stone-100 p-3">
-                  <p className="block text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2 font-body">Type</p>
-                  <div className="flex items-center gap-1.5">
-                    {moodDetailItem.type === 'image' && <Image className="w-3.5 h-3.5 text-sky-700" />}
-                    {moodDetailItem.type === 'video' && <Video className="w-3.5 h-3.5 text-purple-700" />}
-                    {moodDetailItem.type === 'color' && <Palette className="w-3.5 h-3.5 text-amber-700" />}
-                    <span className="text-sm text-stone-700 capitalize">{moodDetailItem.type}</span>
-                  </div>
-                </div>
-              </div>
-
-              {moodDetailItem.tags && moodDetailItem.tags.length > 0 && (
-                <div>
-                  <p className="block text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2 font-body">Tags</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {moodDetailItem.tags.map(tag => (
-                      <span key={tag} className="text-[10px] font-bold tracking-wider uppercase bg-stone-100 text-stone-500 px-2.5 py-1 rounded-full">{tag}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {moodDetailItem.notes && (
-                <div className="bg-stone-50/50 rounded-xl border border-stone-100 p-3">
-                  <p className="block text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase mb-2 font-body">Notes</p>
-                  <p className="text-sm text-stone-600 whitespace-pre-wrap">{moodDetailItem.notes}</p>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-      </Modal>
     </>
   );
 }

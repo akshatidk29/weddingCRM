@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Calendar, Users, Building2, Plus, X, ChevronDown, Check, Star } from 'lucide-react';
 import api from '../utils/api';
 import useAuthStore from '../stores/authStore';
+import useToastStore from '../stores/toastStore';
 
 /* ─────────────────────────────────────────
    DESIGN TOKENS
@@ -99,7 +100,7 @@ export default function Hotels() {
       }
     } catch (error) {
       console.error('Failed to hunt for hotels', error);
-      alert('Failed to find hotels. Please refine your search.');
+      useToastStore.getState().error('Failed to find hotels. Please refine your search.');
     } finally {
       setLoading(false);
     }
@@ -146,11 +147,11 @@ export default function Hotels() {
         hotel: hotelDoc
       });
 
-      alert(res.data.message || 'Hotel linked successfully!');
+      useToastStore.getState().success(res.data.message || 'Hotel linked successfully!');
       closeLinkModal();
     } catch (error) {
       console.error('Failed to link hotel', error);
-      alert('Failed to link hotel. Please try again.');
+      useToastStore.getState().error('Failed to link hotel. Please try again.');
     } finally {
       setLinking(false);
     }
