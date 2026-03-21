@@ -8,14 +8,14 @@
 
 ### Dashboard
 <!-- Add your dashboard screenshot here -->
-(./assets/dashboard.jpeg)
+!(./assets/dashboard.jpeg)
 
 ### Hotel Manager Overview
 <!-- Add your weddings page screenshot here -->
-(./assets/hotels.jpeg)
+!(./assets/hotels.jpeg)
 
 ### Leads Overview
-(./assets/leads.jpeg)
+!(./assets/leads.jpeg)
 
 
 ##  Objective
