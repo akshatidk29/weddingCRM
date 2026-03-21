@@ -8,15 +8,17 @@
 
 ### Dashboard
 <!-- Add your dashboard screenshot here -->
-![Dashboard](./screenshots/dashboard.png)
+(./assets/dashboard.jpeg)
 
-### Weddings Overview
+### Hotel Manager Overview
 <!-- Add your weddings page screenshot here -->
-![Weddings](./screenshots/weddings.png)
+(./assets/hotels.jpeg)
 
----
+### Leads Overview
+(./assets/leads.jpeg)
 
-## 🎯 Objective
+
+##  Objective
 
 Aayojan (Hindi: *आयोजन* — "to organize, to plan") is designed for Indian wedding planners who manage dozens of simultaneous events across multiple teams, vendors, and clients. The platform addresses three core pain points:
 
@@ -26,7 +28,7 @@ Aayojan (Hindi: *आयोजन* — "to organize, to plan") is designed for In
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 | Feature | Description |
 |---|---|
@@ -76,7 +78,7 @@ Aayojan (Hindi: *आयोजन* — "to organize, to plan") is designed for In
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 aayojan/
@@ -354,7 +356,7 @@ MoodBoard (wedding, linkedEvents[], createdBy)
 
 ---
 
-## 📦 Building for Production
+##  Building for Production
 
 ```bash
 # Build the frontend
@@ -371,7 +373,7 @@ To serve the frontend from the same Express server, copy `client/dist` into the 
 
 ---
 
-## 🔧 Optional Integrations
+## Optional Integrations
 
 | Integration | Env Variable(s) | Feature Unlocked |
 |---|---|---|
@@ -385,13 +387,13 @@ All integrations are **optional** — the core CRM works without any of them.
 
 ---
 
-## 📜 License
+## License
 
 MIT License — see [LICENSE](./LICENSE) for details.
 
 ---
 
 <div align="center">
-  <p>Built with ❤️ for wedding planners who mean business.</p>
+  <p>Built with love for wedding planners who mean business.</p>
   <p><strong>Aayojan</strong> — Plan. Organize. Celebrate.</p>
 </div>
