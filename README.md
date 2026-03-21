@@ -17,6 +17,18 @@
 ### Leads Overview
 ![leads](./assets/leads.jpeg)
 
+### PDF Demo
+After you add the file, this section will render your PDF in supported Markdown viewers.
+
+<object data="./Aayojan.pdf" type="application/pdf" width="100%" height="700">
+  <p>
+    PDF preview is not available in this viewer.
+    <a href="./Aayojan.pdf">Open the demo PDF</a>.
+  </p>
+</object>
+
+[Open PDF Demo](./Aayojan.pdf)
+
 
 ##  Objective
 
@@ -394,6 +406,5 @@ MIT License — see [LICENSE](./LICENSE) for details.
 ---
 
 <div align="center">
-  <p>Built with love for wedding planners who mean business.</p>
   <p><strong>Aayojan</strong> — Plan. Organize. Celebrate.</p>
 </div>
