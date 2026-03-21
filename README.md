@@ -280,13 +280,13 @@ npm run dev
 | Permission | Admin | Relationship Manager | Team Member | Client |
 |---|:---:|:---:|:---:|:---:|
 | View Dashboard (global) | ✅ | ✅ | Personal only | Wedding only |
-| Manage Leads | ✅ | ✅ (assigned) | View only | ❌ |
+| Manage Leads | ✅ | ✅ | View only | ❌ |
 | Convert Lead → Wedding | ✅ | ✅ | ❌ | ❌ |
 | Create / Edit Weddings | ✅ | ✅ | ❌ | ❌ |
 | Create / Edit Tasks | ✅ | ✅ | ❌ | ❌ |
-| Mark Tasks Done | ✅ | ✅ | ✅ (assigned) | ✅ |
+| Mark Tasks Done | ✅ | ✅ | ✅ | ✅ |
 | Verify Tasks | ✅ | ✅ | ❌ | ❌ |
-| Manage Vendors | ✅ | ✅ | View only | ❌ |
+| Manage Vendors | ✅ | ✅ | ❌ | ❌ |
 | Manage Users | ✅ | ❌ | ❌ | ❌ |
 | View Mood Board | ✅ | ✅ | ✅ | ✅ |
 | Upload Documents | ✅ | ✅ | ❌ | ✅ |
